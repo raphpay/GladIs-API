@@ -35,6 +35,11 @@ final class User: Model, Content {
     @Enum(key: "userType")
     var userType: UserType
     
+    @Siblings(through: ModuleUserPivot.self,
+              from: \.$user,
+              to: \.$module)
+    var modules: [Module]
+    
     init() {}
     
     init(id: UUID? = nil,
