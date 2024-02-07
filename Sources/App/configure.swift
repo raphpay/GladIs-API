@@ -15,6 +15,8 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateUser())
     app.migrations.add(CreateAdminUser())
     app.migrations.add(CreateModule())
+    app.migrations.add(CreateModuleUserPivot())
+    app.migrations.add(CreateToken())
 
     // register routes
     try routes(app)

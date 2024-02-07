@@ -17,16 +17,7 @@ final class Module: Model, Content {
     @Field(key: Module.v20240207.name)
     var name: String
 
-//    @Parent(key: User.v20240207.id)
-//    var user: User
-
     init() {}
-
-//    init(id: UUID? = nil, name: String, userID: User.IDValue) {
-//        self.id = id
-//        self.name = name
-//        self.$user.id = userID
-//    }
     
     init(id: UUID? = nil, name: String) {
         self.id = id

@@ -23,7 +23,6 @@ struct UserController: RouteCollection {
         let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthGroup = users.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
-//        tokenAuthGroup.post(use: create)
         tokenAuthGroup.post(":userID", "modules", ":moduleID", use: addModule)
         // Read
         tokenAuthGroup.get(use: getAll)
@@ -36,6 +35,10 @@ struct UserController: RouteCollection {
         
         guard !user.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
+        }
+        
+        guard user.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin to create another user")
         }
         
         user.password = try Bcrypt.hash(user.password)
