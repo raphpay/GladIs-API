@@ -12,7 +12,18 @@ public func configure(_ app: Application) async throws {
         connectionString: Environment.get("DATABASE_URL") ?? "mongodb://localhost:27017/vapor_database"
     ), as: .mongo)
 
-    app.migrations.add(CreateTodo())
+    app.migrations.add(CreateUser())
+    app.migrations.add(CreateModule())
+    app.migrations.add(CreateModuleUserPivot())
+    app.migrations.add(CreateToken())
+    
+    switch app.environment {
+        case .development:
+            app.migrations.add(CreateAdminUser())
+            app.databases.middleware.use(UserMiddleware(), on: .mongo)
+        default:
+            break
+    }
 
     // register routes
     try routes(app)
