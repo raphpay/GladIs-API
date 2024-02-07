@@ -31,6 +31,11 @@ struct UserController: RouteCollection {
     // MARK: - Create
     func create(req: Request) throws -> EventLoopFuture<User.Public> {
         let user = try req.content.decode(User.self)
+        
+        guard !user.password.isEmpty else {
+            throw Abort(.badRequest, reason: "Password cannot be empty")
+        }
+        
         user.password = try Bcrypt.hash(user.password)
 
         return user

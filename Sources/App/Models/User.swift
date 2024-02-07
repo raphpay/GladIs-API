@@ -23,11 +23,14 @@ final class User: Model, Content {
     @Field(key: User.v20240207.email)
     var email: String
     
-    @Field(key: User.v20240207.identifier)
-    var identifier: String
+    @Field(key: User.v20240207.username)
+    var username: String
     
     @Field(key: User.v20240207.password)
     var password: String
+    
+    @Field(key: User.v20240207.phoneNumber)
+    var phoneNumber: String
     
     @Enum(key: "userType")
     var userType: UserType
@@ -36,13 +39,13 @@ final class User: Model, Content {
     
     init(id: UUID? = nil,
          firstName: String, lastName: String,
-         email: String, identifier: String,
+         email: String, username: String,
          password: String, userType: UserType = .client) {
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
         self.email = email
-        self.identifier = identifier
+        self.username = username
         self.password = password
         self.userType = userType
     }
@@ -52,17 +55,17 @@ final class User: Model, Content {
         var firstName: String
         var lastName: String
         var email: String
-        var identifier: String
+        var username: String
         var userType: UserType
         
         init(id: UUID?,
              firstName: String, lastName: String,
-             email: String, identifier: String, userType: UserType = .client) {
+             email: String, username: String, userType: UserType = .client) {
             self.id = id
             self.firstName = firstName
             self.lastName = lastName
             self.email = email
-            self.identifier = identifier
+            self.username = username
             self.userType = userType
         }
     }
@@ -72,7 +75,7 @@ extension User {
     func convertToPublic() -> User.Public {
         User.Public(id: id,
                     firstName: firstName, lastName: lastName,
-                    email: email, identifier: identifier,
+                    email: email, username: username,
                     userType: userType)
     }
 }
@@ -99,7 +102,7 @@ extension EventLoopFuture where Value == Array<User> {
 }
 
 extension User: ModelAuthenticatable {
-    static let usernameKey = \User.$identifier
+    static let usernameKey = \User.$username
     static let passwordHashKey = \User.$password
     
     func verify(password: String) throws -> Bool {
