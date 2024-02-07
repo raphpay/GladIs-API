@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  CreateAdminUser.swift
 //  
 //
 //  Created by Raphaël Payet on 07/02/2024.
@@ -19,15 +19,17 @@ struct CreateAdminUser: Migration {
         
         let user = User(
             firstName: "Admin", lastName: "Admin",
-            email: "admin@admin.com", identifier: "admin.admin", password: passwordHash
+            email: "admin@admin.com", identifier: "admin.admin",
+            password: passwordHash, userType: .admin
         )
+        
         return user.save(on: database)
     }
     
     func revert(on database: Database) -> EventLoopFuture<Void> {
         User
             .query(on: database)
-            .filter(\.$identifier == "admin")
+            .filter(\.$identifier == "admin.admin")
             .delete()
     }
 }
