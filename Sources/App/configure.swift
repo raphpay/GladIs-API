@@ -13,10 +13,17 @@ public func configure(_ app: Application) async throws {
     ), as: .mongo)
 
     app.migrations.add(CreateUser())
-    app.migrations.add(CreateAdminUser())
     app.migrations.add(CreateModule())
     app.migrations.add(CreateModuleUserPivot())
     app.migrations.add(CreateToken())
+    
+    switch app.environment {
+        case .development:
+            app.migrations.add(CreateAdminUser())
+            app.databases.middleware.use(UserMiddleware(), on: .mongo)
+        default:
+            break
+    }
 
     // register routes
     try routes(app)
