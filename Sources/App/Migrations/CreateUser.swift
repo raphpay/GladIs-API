@@ -22,6 +22,7 @@ struct CreateUser: Migration {
                     .field(User.v20240207.username, .string, .required)
                     .field(User.v20240207.email, .string, .required)
                     .field(User.v20240207.password, .string, .required)
+                    .field(User.v20240207.phoneNumber, .string)
                     .field("userType", userType, .required)
                     .unique(on: User.v20240207.username)
                     .create()

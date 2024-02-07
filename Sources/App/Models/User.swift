@@ -29,8 +29,8 @@ final class User: Model, Content {
     @Field(key: User.v20240207.password)
     var password: String
     
-    @Field(key: User.v20240207.phoneNumber)
-    var phoneNumber: String
+    @OptionalField(key: User.v20240207.phoneNumber)
+    var phoneNumber: String?
     
     @Enum(key: "userType")
     var userType: UserType
@@ -40,7 +40,9 @@ final class User: Model, Content {
     init(id: UUID? = nil,
          firstName: String, lastName: String,
          email: String, username: String,
-         password: String, userType: UserType = .client) {
+         password: String, userType: UserType = .client,
+         phoneNumber: String = ""
+    ) {
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
@@ -48,6 +50,7 @@ final class User: Model, Content {
         self.username = username
         self.password = password
         self.userType = userType
+        self.phoneNumber = phoneNumber
     }
     
     final class Public: Content {
