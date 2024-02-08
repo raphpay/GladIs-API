@@ -26,7 +26,10 @@ struct UserController: RouteCollection {
         tokenAuthGroup.post(":userID", "modules", ":moduleID", use: addModule)
         // Read
         tokenAuthGroup.get(use: getAll)
+        tokenAuthGroup.get(":userID", use: getUser)
         tokenAuthGroup.get(":userID", "modules", use: getModules)
+        // Update
+        tokenAuthGroup.get(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
     }
     
     // MARK: - Create
@@ -74,6 +77,15 @@ struct UserController: RouteCollection {
             .convertToPublic()
     }
     
+    func getUser(req: Request) throws -> EventLoopFuture<User.Public> {
+        User
+            .find(req.parameters.get("userID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .map { user in
+                return user.convertToPublic()
+            }
+    }
+    
     func getModules(req: Request) throws -> EventLoopFuture<[Module]> {
         User
             .find(req.parameters.get("userID"), on: req.db)
@@ -87,6 +99,16 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Update
+    func setUserFirstConnectionToFalse(req: Request) throws -> EventLoopFuture<User.Public> {
+        User
+            .find(req.parameters.get("userID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .map { user in
+                user.firstConnection = false
+                return user.convertToPublic()
+            }
+    }
+    
     // MARK: - Delete
     // MARK: - Login
     func login(_ req: Request) throws -> EventLoopFuture<Token> {

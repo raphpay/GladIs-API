@@ -29,6 +29,9 @@ final class User: Model, Content {
     @Field(key: User.v20240207.password)
     var password: String
     
+    @Field(key: User.v20240207.firstConnection)
+    var firstConnection: Bool
+    
     @OptionalField(key: User.v20240207.phoneNumber)
     var phoneNumber: String?
     
@@ -56,6 +59,7 @@ final class User: Model, Content {
         self.password = password
         self.userType = userType
         self.phoneNumber = phoneNumber
+        self.firstConnection = true
     }
     
     final class Public: Content {
@@ -65,16 +69,19 @@ final class User: Model, Content {
         var email: String
         var username: String
         var userType: UserType
+        var firstConnection: Bool
         
         init(id: UUID?,
              firstName: String, lastName: String,
-             email: String, username: String, userType: UserType = .client) {
+             email: String, username: String,
+             userType: UserType = .client, firstConnection: Bool) {
             self.id = id
             self.firstName = firstName
             self.lastName = lastName
             self.email = email
             self.username = username
             self.userType = userType
+            self.firstConnection = firstConnection
         }
     }
 }
@@ -84,7 +91,7 @@ extension User {
         User.Public(id: id,
                     firstName: firstName, lastName: lastName,
                     email: email, username: username,
-                    userType: userType)
+                    userType: userType, firstConnection: firstConnection)
     }
 }
 
