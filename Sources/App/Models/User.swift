@@ -124,3 +124,12 @@ extension User: ModelAuthenticatable {
         try Bcrypt.verify(password, created: self.password)
     }
 }
+
+struct PasswordChangeRequest: Content {
+    let currentPassword: String
+    let newPassword: String
+}
+
+struct PasswordChangeResponse: Content {
+    let message: String
+}

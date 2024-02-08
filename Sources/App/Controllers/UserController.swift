@@ -29,7 +29,8 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", use: getUser)
         tokenAuthGroup.get(":userID", "modules", use: getModules)
         // Update
-        tokenAuthGroup.get(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
+        tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
+        tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
     }
     
     // MARK: - Create
@@ -103,9 +104,43 @@ struct UserController: RouteCollection {
         User
             .find(req.parameters.get("userID"), on: req.db)
             .unwrap(or: Abort(.notFound))
-            .map { user in
+            .flatMap { user in
                 user.firstConnection = false
-                return user.convertToPublic()
+                return user
+                    .save(on: req.db)
+                    .map { user.convertToPublic() }
+            }
+    }
+    
+    func changePassword(req: Request) throws -> EventLoopFuture<PasswordChangeResponse> {
+        let user = try req.auth.require(User.self)
+        let userId = try req.parameters.require("userID", as: UUID.self)
+        
+        guard user.id == userId else {
+            throw Abort(.forbidden, reason: "Unauthorized access")
+        }
+        
+        // Decode the request body containing the new password
+        let changeRequest = try req.content.decode(PasswordChangeRequest.self)
+        
+        // Verify that the current password matches the one stored in the database
+        let isCurrentPasswordValid = try Bcrypt.verify(changeRequest.currentPassword, created: user.password)
+        guard isCurrentPasswordValid else {
+            throw Abort(.unauthorized, reason: "Invalid current password")
+        }
+        
+        // Hash the new password
+        let hashedNewPassword = try Bcrypt.hash(changeRequest.newPassword)
+        
+        // Update the user's password in the database
+        return User
+            .find(userId, on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user in
+                user.password = hashedNewPassword
+                return user
+                    .save(on: req.db)
+                    .transform(to: PasswordChangeResponse(message: "Password changed successfully"))
             }
     }
     
