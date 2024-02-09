@@ -125,6 +125,7 @@ struct UserController: RouteCollection {
         
         // Verify that the current password matches the one stored in the database
         let isCurrentPasswordValid = try Bcrypt.verify(changeRequest.currentPassword, created: user.password)
+        // TODO: Add more verification on password
         guard isCurrentPasswordValid else {
             throw Abort(.unauthorized, reason: "Invalid current password")
         }
@@ -146,7 +147,7 @@ struct UserController: RouteCollection {
     
     // MARK: - Delete
     // MARK: - Login
-    func login(_ req: Request) throws -> EventLoopFuture<Token> {
+    func login(req: Request) throws -> EventLoopFuture<Token> {
         let user = try req.auth.require(User.self)
         let token = try Token.generate(for: user)
         return token.save(on: req.db).map { token }
