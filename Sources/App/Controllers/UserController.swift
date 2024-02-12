@@ -12,7 +12,7 @@ import Vapor
 struct UserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let users = routes.grouped("api", "users")
-        users.post(use: create)
+//        users.post(use: create)
         users.delete(":tokenID", "logout", use: logout)
         // Basic Auth
         let basicAuthMiddleware = User.authenticator()
@@ -24,6 +24,7 @@ struct UserController: RouteCollection {
         let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthGroup = users.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
+        tokenAuthGroup.post(use: create)
         tokenAuthGroup.post(":userID", "modules", ":moduleID", use: addModule)
         // Read
         tokenAuthGroup.get(use: getAll)
@@ -35,14 +36,33 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Create
+//    func create(req: Request) throws -> EventLoopFuture<User.Public> {
+//        let user = try req.content.decode(User.self)
+//        
+//        guard !user.password.isEmpty else {
+//            throw Abort(.badRequest, reason: "Password cannot be empty")
+//        }
+//        
+//        guard user.userType == .admin else {
+//            throw Abort(.badRequest, reason: "User should be admin to create another user")
+//        }
+//        
+//        user.password = try Bcrypt.hash(user.password)
+//
+//        return user
+//            .save(on: req.db)
+//            .map { user.convertToPublic() }
+//    }
+    
     func create(req: Request) throws -> EventLoopFuture<User.Public> {
         let user = try req.content.decode(User.self)
+        let adminUser = try req.auth.require(User.self)
         
         guard !user.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
-        guard user.userType == .admin else {
+        guard adminUser.userType == .admin else {
             throw Abort(.badRequest, reason: "User should be admin to create another user")
         }
         
@@ -52,6 +72,7 @@ struct UserController: RouteCollection {
             .save(on: req.db)
             .map { user.convertToPublic() }
     }
+    
     
     func addModule(req: Request) throws -> EventLoopFuture<Module> {
         let userQuery = User
@@ -157,6 +178,7 @@ struct UserController: RouteCollection {
             .map { token }
     }
     
+    // TODO: Place this method in Token Controller
     func logout(req: Request) throws -> EventLoopFuture<HTTPStatus> {
         Token
             .find(req.parameters.get("tokenID"), on: req.db)
