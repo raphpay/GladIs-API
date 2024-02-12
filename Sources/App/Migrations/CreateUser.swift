@@ -21,7 +21,7 @@ struct CreateUser: Migration {
                     .id()
                     .field(User.v20240207.firstName, .string, .required)
                     .field(User.v20240207.lastName, .string, .required)
-                    .field(User.v20240207.phoneNumber, .string)
+                    .field(User.v20240207.phoneNumber, .string, .required)
                     .field(User.v20240207.companyName, .string, .required)
                     .field(User.v20240207.email, .string, .required)
                     .field(User.v20240207.products, .string)

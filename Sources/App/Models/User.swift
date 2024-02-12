@@ -20,8 +20,8 @@ final class User: Model, Content {
     @Field(key: User.v20240207.lastName)
     var lastName: String
     
-    @OptionalField(key: User.v20240207.phoneNumber)
-    var phoneNumber: String?
+    @Field(key: User.v20240207.phoneNumber)
+    var phoneNumber: String
     
     @Field(key: User.v20240207.companyName)
     var companyName: String
@@ -61,7 +61,7 @@ final class User: Model, Content {
     init() {}
     
     init(id: UUID? = nil,
-         firstName: String, lastName: String, phoneNumber: String? = "",
+         firstName: String, lastName: String, phoneNumber: String,
          companyName: String, email: String, products: String? = nil,
          numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil, salesAmount: Double? = nil,
          username: String, password: String,
@@ -88,22 +88,38 @@ final class User: Model, Content {
         var id: UUID?
         var firstName: String
         var lastName: String
+        var phoneNumber: String
+        var companyName: String
         var email: String
+        var products: String?
+        var numberOfEmployees: Int?
+        var numberOfUsers: Int?
+        var salesAmount: Double?
         var username: String
-        var userType: UserType
         var firstConnection: Bool
+        var userType: UserType
         
         init(id: UUID?,
              firstName: String, lastName: String,
-             email: String, username: String,
-             userType: UserType = .client, firstConnection: Bool) {
+             phoneNumber: String, companyName: String,
+             email: String, products: String? = nil,
+             numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
+             salesAmount: Double? = nil,
+             username: String, firstConnection: Bool,
+             userType: UserType = .client) {
             self.id = id
             self.firstName = firstName
             self.lastName = lastName
+            self.phoneNumber = phoneNumber
+            self.companyName = companyName
             self.email = email
+            self.products = products
+            self.numberOfEmployees = numberOfEmployees
+            self.numberOfUsers = numberOfUsers
+            self.salesAmount = salesAmount
             self.username = username
-            self.userType = userType
             self.firstConnection = firstConnection
+            self.userType = userType
         }
     }
 }
@@ -139,8 +155,11 @@ extension User {
     func convertToPublic() -> User.Public {
         User.Public(id: id,
                     firstName: firstName, lastName: lastName,
-                    email: email, username: username,
-                    userType: userType, firstConnection: firstConnection)
+                    phoneNumber: phoneNumber, companyName: companyName,
+                    email: email, products: products,
+                    numberOfEmployees: numberOfEmployees, numberOfUsers: numberOfUsers,
+                    salesAmount: salesAmount, username: username,
+                    firstConnection: firstConnection, userType: userType)
     }
 }
 
@@ -186,7 +205,7 @@ struct PasswordChangeResponse: Content {
 struct UserCreateData: Content {
     let firstName: String
     let lastName: String
-    let phoneNumber: String?
+    let phoneNumber: String
     let companyName: String
     let email: String
     let products: String?

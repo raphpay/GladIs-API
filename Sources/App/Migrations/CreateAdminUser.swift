@@ -18,8 +18,10 @@ struct CreateAdminUser: Migration {
         }
         
         let user = User(firstName: "Admin", lastName: "Admin",
-                        companyName: "Administration", email: "admin@admin.com",
-                        username: "admin.admin", password: passwordHash, firstConnection: true)
+                        phoneNumber: "0112123456", companyName: "Administration",
+                        email: "admin@admin.com",
+                        username: "admin.admin", password: passwordHash,
+                        firstConnection: true)
         
         return user.save(on: database)
     }
