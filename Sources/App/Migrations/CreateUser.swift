@@ -21,11 +21,14 @@ struct CreateUser: Migration {
                     .id()
                     .field(User.v20240207.firstName, .string, .required)
                     .field(User.v20240207.lastName, .string, .required)
-                    .field(User.v20240207.email, .string, .required)
-                    .field(User.v20240207.username, .string, .required)
-                    .field(User.v20240207.password, .string, .required)
                     .field(User.v20240207.phoneNumber, .string)
+                    .field(User.v20240207.companyName, .string, .required)
+                    .field(User.v20240207.email, .string, .required)
                     .field(User.v20240207.products, .string)
+                    .field(User.v20240207.numberOfEmployees, .int64)
+                    .field(User.v20240207.numberOfUsers, .int64)
+                    .field(User.v20240207.salesAmount, .double)
+                    .field(User.v20240207.password, .string, .required)
                     .field("userType", userType, .required)
                     .unique(on: User.v20240207.username)
                     .create()
@@ -37,25 +40,5 @@ struct CreateUser: Migration {
         database
             .schema(User.v20240207.schemaName)
             .delete()
-    }
-}
-
-extension User {
-    enum v20240207 {
-        static let schemaName = "users"
-        static let id = FieldKey(stringLiteral: "id")
-        static let firstName = FieldKey(stringLiteral: "firstName")
-        static let lastName = FieldKey(stringLiteral: "lastName")
-        static let email = FieldKey(stringLiteral: "email")
-        static let username = FieldKey(stringLiteral: "username")
-        static let password = FieldKey(stringLiteral: "password")
-        static let firstConnection = FieldKey(stringLiteral: "firstConnection")
-        static let phoneNumber = FieldKey(stringLiteral: "phoneNumber")
-        static let products = FieldKey(stringLiteral: "products")
-        static let modules = FieldKey(stringLiteral: "modules")
-        static let userType = "userType"
-        static let admin = "admin"
-        static let standard = "standard"
-        static let restricted = "restricted"
     }
 }

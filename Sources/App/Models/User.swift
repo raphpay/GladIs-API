@@ -20,8 +20,26 @@ final class User: Model, Content {
     @Field(key: User.v20240207.lastName)
     var lastName: String
     
+    @OptionalField(key: User.v20240207.phoneNumber)
+    var phoneNumber: String?
+    
+    @Field(key: User.v20240207.companyName)
+    var companyName: String
+    
     @Field(key: User.v20240207.email)
     var email: String
+    
+    @OptionalField(key: User.v20240207.products)
+    var products: String?
+    
+    @OptionalField(key: User.v20240207.numberOfEmployees)
+    var numberOfEmployees: Int?
+    
+    @OptionalField(key: User.v20240207.numberOfUsers)
+    var numberOfUsers: Int?
+    
+    @OptionalField(key: User.v20240207.salesAmount)
+    var salesAmount: Double?
     
     @Field(key: User.v20240207.username)
     var username: String
@@ -31,9 +49,6 @@ final class User: Model, Content {
     
     @Field(key: User.v20240207.firstConnection)
     var firstConnection: Bool
-    
-    @OptionalField(key: User.v20240207.phoneNumber)
-    var phoneNumber: String?
     
     @Enum(key: "userType")
     var userType: UserType
@@ -46,22 +61,29 @@ final class User: Model, Content {
     init() {}
     
     init(id: UUID? = nil,
-         firstName: String, lastName: String,
-         email: String, username: String,
-         password: String, userType: UserType = .client,
-         phoneNumber: String = ""
+         firstName: String, lastName: String, phoneNumber: String? = "",
+         companyName: String, email: String, products: String? = nil,
+         numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil, salesAmount: Double? = nil,
+         username: String, password: String,
+         firstConnection: Bool, userType: UserType = .client
     ) {
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
+        self.phoneNumber = phoneNumber
+        self.companyName = companyName
         self.email = email
+        self.products = products
+        self.numberOfEmployees = numberOfEmployees
+        self.numberOfUsers = numberOfUsers
+        self.salesAmount = salesAmount
         self.username = username
         self.password = password
+        self.firstConnection = firstConnection
         self.userType = userType
-        self.phoneNumber = phoneNumber
-        self.firstConnection = true
     }
     
+    // TODO: Update this
     final class Public: Content {
         var id: UUID?
         var firstName: String
@@ -83,6 +105,33 @@ final class User: Model, Content {
             self.userType = userType
             self.firstConnection = firstConnection
         }
+    }
+}
+
+
+extension User {
+    enum v20240207 {
+        static let schemaName = "users"
+        static let id = FieldKey(stringLiteral: "id")
+        static let firstName = FieldKey(stringLiteral: "firstName")
+        static let lastName = FieldKey(stringLiteral: "lastName")
+        static let phoneNumber = FieldKey(stringLiteral: "phoneNumber")
+        static let companyName = FieldKey(stringLiteral: "companyName")
+        static let email = FieldKey(stringLiteral: "email")
+        static let firstConnection = FieldKey(stringLiteral: "firstConnection")
+        static let products = FieldKey(stringLiteral: "products")
+        static let modules = FieldKey(stringLiteral: "modules")
+        static let numberOfEmployees = FieldKey(stringLiteral: "numberOfEmployees")
+        static let numberOfUsers = FieldKey(stringLiteral: "numberOfUsers")
+        static let salesAmount = FieldKey(stringLiteral: "salesAmount")
+        
+        static let username = FieldKey(stringLiteral: "username")
+        static let password = FieldKey(stringLiteral: "password")
+        
+        static let userType = "userType"
+        static let admin = "admin"
+        static let standard = "standard"
+        static let restricted = "restricted"
     }
 }
 
@@ -132,4 +181,18 @@ struct PasswordChangeRequest: Content {
 
 struct PasswordChangeResponse: Content {
     let message: String
+}
+
+struct UserCreateData: Content {
+    let firstName: String
+    let lastName: String
+    let phoneNumber: String?
+    let companyName: String
+    let email: String
+    let products: String?
+    let numberOfEmployees: Int?
+    let numberOfUsers: Int?
+    let salesAmount: Double?
+    let password: String
+    let userType: UserType
 }

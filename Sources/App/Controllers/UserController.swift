@@ -12,7 +12,7 @@ import Vapor
 struct UserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let users = routes.grouped("api", "users")
-//        users.post(use: create)
+        users.post("noToken", use: createWithoutToken)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -30,29 +30,36 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Create
-//    func create(req: Request) throws -> EventLoopFuture<User.Public> {
-//        let user = try req.content.decode(User.self)
-//        
-//        guard !user.password.isEmpty else {
-//            throw Abort(.badRequest, reason: "Password cannot be empty")
-//        }
-//        
-//        guard user.userType == .admin else {
-//            throw Abort(.badRequest, reason: "User should be admin to create another user")
-//        }
-//        
-//        user.password = try Bcrypt.hash(user.password)
-//
-//        return user
-//            .save(on: req.db)
-//            .map { user.convertToPublic() }
-//    }
+    func createWithoutToken(req: Request) throws -> EventLoopFuture<User.Public> {
+        let userData = try req.content.decode(UserCreateData.self)
+        
+        guard !userData.password.isEmpty else {
+            throw Abort(.badRequest, reason: "Password cannot be empty")
+        }
+        
+        let password = try Bcrypt.hash(userData.password)
+        
+        return User
+            .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
+            .flatMap { username in
+                let user = User(firstName: userData.firstName, lastName: userData.lastName, phoneNumber: userData.phoneNumber,
+                                companyName: userData.companyName, email: userData.email, products: userData.products,
+                                numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
+                                salesAmount: userData.salesAmount,
+                                username: username, password: password,
+                                firstConnection: true, userType: userData.userType)
+                
+                return user
+                    .save(on: req.db)
+                    .map { user.convertToPublic() }
+            }
+    }
     
     func create(req: Request) throws -> EventLoopFuture<User.Public> {
-        let user = try req.content.decode(User.self)
+        let userData = try req.content.decode(UserCreateData.self)
         let adminUser = try req.auth.require(User.self)
         
-        guard !user.password.isEmpty else {
+        guard !userData.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
@@ -60,11 +67,22 @@ struct UserController: RouteCollection {
             throw Abort(.badRequest, reason: "User should be admin to create another user")
         }
         
-        user.password = try Bcrypt.hash(user.password)
-
-        return user
-            .save(on: req.db)
-            .map { user.convertToPublic() }
+        let password = try Bcrypt.hash(userData.password)
+        
+        return User
+            .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
+            .flatMap { username in
+                let user = User(firstName: userData.firstName, lastName: userData.lastName, phoneNumber: userData.phoneNumber,
+                                companyName: userData.companyName, email: userData.email, products: userData.products,
+                                numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
+                                salesAmount: userData.salesAmount,
+                                username: username, password: password,
+                                firstConnection: true, userType: userData.userType)
+                
+                return user
+                    .save(on: req.db)
+                    .map { user.convertToPublic() }
+            }
     }
     
     

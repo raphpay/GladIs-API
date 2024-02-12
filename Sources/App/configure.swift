@@ -16,6 +16,8 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateModule())
     app.migrations.add(CreateModuleUserPivot())
     app.migrations.add(CreateToken())
+    app.migrations.add(CreatePendingUser())
+    app.migrations.add(CreateModulePendingUserPivot())
     
     switch app.environment {
         case .development:
