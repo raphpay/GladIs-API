@@ -13,12 +13,6 @@ struct UserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let users = routes.grouped("api", "users")
 //        users.post(use: create)
-        users.delete(":tokenID", "logout", use: logout)
-        // Basic Auth
-        let basicAuthMiddleware = User.authenticator()
-        let basicAuthGroup = users.grouped(basicAuthMiddleware)
-        // Login
-        basicAuthGroup.post("login", use: login)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -168,25 +162,4 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Delete
-    // MARK: - Login
-    func login(req: Request) throws -> EventLoopFuture<Token> {
-        let user = try req.auth.require(User.self)
-        let token = try Token.generate(for: user)
-        
-        return token
-            .save(on: req.db)
-            .map { token }
-    }
-    
-    // TODO: Place this method in Token Controller
-    func logout(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        Token
-            .find(req.parameters.get("tokenID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { token in
-                token
-                    .delete(force: true, on: req.db)
-                    .transform(to: .noContent)
-            }
-    }
 }
