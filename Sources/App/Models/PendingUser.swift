@@ -47,7 +47,7 @@ final class PendingUser: Model, Content {
     var modules: [Module]
     
     @Enum(key: PendingUser.v20240207.statusEnum)
-    var status: PendingUser.Status
+    var status: PendingUser.StatusEnum
 
     init() { }
 
@@ -55,7 +55,7 @@ final class PendingUser: Model, Content {
          phoneNumber: String, companyName: String,
          email: String, products: String? = nil,
          numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
-        salesAmount: Double? = nil, status: PendingUser.Status = .pending) {
+        salesAmount: Double? = nil, status: PendingUser.StatusEnum = .pending) {
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
@@ -92,8 +92,12 @@ extension PendingUser {
         static let rejected = "rejected"
     }
     
-    enum Status: String, Codable {
+    enum StatusEnum: String, Codable {
         case pending, inReview, accepted, rejected
+    }
+    
+    final class Status: Codable {
+        var type: StatusEnum
     }
 }
 

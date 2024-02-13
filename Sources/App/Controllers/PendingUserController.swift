@@ -14,11 +14,13 @@ struct PendingUserController: RouteCollection {
         pendingUsers.post(use: create)
         pendingUsers.post(":pendingUserID", "modules", ":moduleID", use: addModule)
         pendingUsers.get(":pendingUserID", "modules", use: getModules)
-//        // Token Protected
+        //        // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthGroup = pendingUsers.grouped(tokenAuthMiddleware, guardAuthMiddleware)
-//        // Read
+        // Post
+        tokenAuthGroup.post(":pendingUserID", "convertToUser", use: convertToUser)
+        // Read
         tokenAuthGroup.get(use: getAll)
         tokenAuthGroup.get(":pendingUserID", use: getAll)
         // Update
@@ -51,6 +53,25 @@ struct PendingUserController: RouteCollection {
                     .$modules
                     .attach(module, on: req.db)
                     .map { module }
+            }
+    }
+    
+    func convertToUser(req: Request) throws -> EventLoopFuture<User.Public> {
+        let user = try req.auth.require(User.self)
+        
+        guard user.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin to create a user from pending user")
+        }
+        
+        return PendingUser
+            .find(req.parameters.get("pendingUserID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { pendingUser in
+                let user = pendingUser.convertToUser()
+                
+                return user
+                    .save(on: req.db)
+                    .map { user.convertToPublic() }
             }
     }
     
@@ -88,7 +109,7 @@ struct PendingUserController: RouteCollection {
         return PendingUser.find(req.parameters.get("pendingUserID"), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { pendingUser in
-                pendingUser.status = newStatus
+                pendingUser.status = newStatus.type
                 return pendingUser
                     .save(on: req.db)
                     .map { pendingUser }
