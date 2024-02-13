@@ -12,6 +12,8 @@ struct PendingUserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let pendingUsers = routes.grouped("api", "pendingUsers")
         pendingUsers.post(use: create)
+        pendingUsers.post(":pendingUserID", "modules", ":moduleID", use: addModule)
+        pendingUsers.get(":pendingUserID", "modules", use: getModules)
 //        // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -34,6 +36,24 @@ struct PendingUserController: RouteCollection {
             .map { user }
     }
     
+    func addModule(req: Request) throws -> EventLoopFuture<Module> {
+        let pendingUserQuery = PendingUser
+            .find(req.parameters.get("pendingUserID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+        
+        let moduleQuery = Module
+            .find(req.parameters.get("moduleID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+        
+        return pendingUserQuery.and(moduleQuery)
+            .flatMap { user, module in
+                user
+                    .$modules
+                    .attach(module, on: req.db)
+                    .map { module }
+            }
+    }
+    
     // MARK: - READ
     func getAll(req: Request) throws -> EventLoopFuture<[PendingUser]> {
         PendingUser
@@ -47,6 +67,18 @@ struct PendingUserController: RouteCollection {
             .unwrap(or: Abort(.notFound))
             .map { pendingUser in
                 return pendingUser
+            }
+    }
+    
+    func getModules(req: Request) throws -> EventLoopFuture<[Module]> {
+        PendingUser
+            .find(req.parameters.get("pendingUserID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user in
+                user
+                    .$modules
+                    .query(on: req.db)
+                    .all()
             }
     }
     

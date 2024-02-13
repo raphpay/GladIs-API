@@ -5,8 +5,6 @@
 //  Created by Raphaël Payet on 12/02/2024.
 //
 
-import Foundation
-
 import Vapor
 import Fluent
 
@@ -53,11 +51,12 @@ final class PendingUser: Model, Content {
 
     init() { }
 
+    // TODO: Add modules
     init(id: UUID = UUID(), firstName: String, lastName: String,
          phoneNumber: String, companyName: String,
          email: String, products: String? = nil,
          numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
-         salesAmount: Double? = nil, status: PendingUser.Status = .pending) {
+        salesAmount: Double? = nil, status: PendingUser.Status = .pending) {
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
