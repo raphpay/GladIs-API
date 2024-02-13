@@ -68,10 +68,13 @@ struct PendingUserController: RouteCollection {
             .unwrap(or: Abort(.notFound))
             .flatMap { pendingUser in
                 let user = pendingUser.convertToUser()
-                
-                return user
-                    .save(on: req.db)
-                    .map { user.convertToPublic() }
+                return User
+                    .generateUniqueUsername(firstName: user.firstName, lastName: user.lastName, on: req)
+                    .flatMap { username in
+                        user.username = username
+                        return user.save(on: req.db)
+                            .map { user.convertToPublic() }
+                    }
             }
     }
     
