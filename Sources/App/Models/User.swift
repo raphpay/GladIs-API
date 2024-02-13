@@ -83,7 +83,6 @@ final class User: Model, Content {
         self.userType = userType
     }
     
-    // TODO: Update this with modules
     final class Public: Content {
         var id: UUID?
         var firstName: String

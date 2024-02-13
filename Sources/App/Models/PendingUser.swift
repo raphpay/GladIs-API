@@ -51,7 +51,6 @@ final class PendingUser: Model, Content {
 
     init() { }
 
-    // TODO: Add modules
     init(id: UUID = UUID(), firstName: String, lastName: String,
          phoneNumber: String, companyName: String,
          email: String, products: String? = nil,
