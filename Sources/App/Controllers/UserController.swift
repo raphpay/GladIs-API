@@ -27,6 +27,9 @@ struct UserController: RouteCollection {
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
+        // Delete
+        tokenAuthGroup.delete(use: remove)
+        tokenAuthGroup.delete("removeAll", use: removeAll)
     }
     
     // MARK: - Create
@@ -37,6 +40,11 @@ struct UserController: RouteCollection {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
+        do {
+            try PasswordValidation().validatePassword(userData.password)
+        } catch {
+            throw error
+        }
         let password = try Bcrypt.hash(userData.password)
         
         return User
@@ -67,6 +75,11 @@ struct UserController: RouteCollection {
             throw Abort(.badRequest, reason: "User should be admin to create another user")
         }
         
+        do {
+            try PasswordValidation().validatePassword(userData.password)
+        } catch {
+            throw error
+        }
         let password = try Bcrypt.hash(userData.password)
         
         return User
@@ -159,9 +172,14 @@ struct UserController: RouteCollection {
         
         // Verify that the current password matches the one stored in the database
         let isCurrentPasswordValid = try Bcrypt.verify(changeRequest.currentPassword, created: user.password)
-        // TODO: Add more verification on password
         guard isCurrentPasswordValid else {
             throw Abort(.unauthorized, reason: "Invalid current password")
+        }
+        
+        do {
+            try PasswordValidation().validatePassword(changeRequest.newPassword)
+        } catch {
+            throw error
         }
         
         // Hash the new password
@@ -180,4 +198,25 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Delete
+    func remove(req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        User
+            .find(req.parameters.get("userID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user in
+                user
+                    .delete(force: true, on: req.db)
+                    .transform(to: .noContent)
+            }
+    }
+    
+    func removeAll(req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        User
+            .query(on: req.db)
+            .all()
+            .flatMap { user in
+                user
+                    .delete(force: true, on: req.db)
+                    .transform(to: .noContent)
+            }
+    }
 }
