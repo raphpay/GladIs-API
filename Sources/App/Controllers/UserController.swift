@@ -12,41 +12,79 @@ import Vapor
 struct UserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let users = routes.grouped("api", "users")
-        users.post(use: create)
-        // Basic Auth
-        let basicAuthMiddleware = User.authenticator()
-        let basicAuthGroup = users.grouped(basicAuthMiddleware)
-        // Login
-        basicAuthGroup.post("login", use: login)
+        users.post("noToken", use: createWithoutToken)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthGroup = users.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
+        tokenAuthGroup.post(use: create)
         tokenAuthGroup.post(":userID", "modules", ":moduleID", use: addModule)
         // Read
         tokenAuthGroup.get(use: getAll)
+        tokenAuthGroup.get(":userID", use: getUser)
         tokenAuthGroup.get(":userID", "modules", use: getModules)
+        // Update
+        tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
+        tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
     }
     
     // MARK: - Create
-    func create(req: Request) throws -> EventLoopFuture<User.Public> {
-        let user = try req.content.decode(User.self)
+    func createWithoutToken(req: Request) throws -> EventLoopFuture<User.Public> {
+        let userData = try req.content.decode(UserCreateData.self)
         
-        guard !user.password.isEmpty else {
+        guard !userData.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
-        guard user.userType == .admin else {
+        let password = try Bcrypt.hash(userData.password)
+        
+        return User
+            .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
+            .flatMap { username in
+                let user = User(firstName: userData.firstName, lastName: userData.lastName, phoneNumber: userData.phoneNumber,
+                                companyName: userData.companyName, email: userData.email, products: userData.products,
+                                numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
+                                salesAmount: userData.salesAmount,
+                                username: username, password: password,
+                                firstConnection: true, userType: userData.userType)
+                
+                return user
+                    .save(on: req.db)
+                    .map { user.convertToPublic() }
+            }
+    }
+    
+    func create(req: Request) throws -> EventLoopFuture<User.Public> {
+        let userData = try req.content.decode(UserCreateData.self)
+        let adminUser = try req.auth.require(User.self)
+        
+        guard !userData.password.isEmpty else {
+            throw Abort(.badRequest, reason: "Password cannot be empty")
+        }
+        
+        guard adminUser.userType == .admin else {
             throw Abort(.badRequest, reason: "User should be admin to create another user")
         }
         
-        user.password = try Bcrypt.hash(user.password)
-
-        return user
-            .save(on: req.db)
-            .map { user.convertToPublic() }
+        let password = try Bcrypt.hash(userData.password)
+        
+        return User
+            .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
+            .flatMap { username in
+                let user = User(firstName: userData.firstName, lastName: userData.lastName, phoneNumber: userData.phoneNumber,
+                                companyName: userData.companyName, email: userData.email, products: userData.products,
+                                numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
+                                salesAmount: userData.salesAmount,
+                                username: username, password: password,
+                                firstConnection: true, userType: userData.userType)
+                
+                return user
+                    .save(on: req.db)
+                    .map { user.convertToPublic() }
+            }
     }
+    
     
     func addModule(req: Request) throws -> EventLoopFuture<Module> {
         let userQuery = User
@@ -74,6 +112,15 @@ struct UserController: RouteCollection {
             .convertToPublic()
     }
     
+    func getUser(req: Request) throws -> EventLoopFuture<User.Public> {
+        User
+            .find(req.parameters.get("userID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .map { user in
+                return user.convertToPublic()
+            }
+    }
+    
     func getModules(req: Request) throws -> EventLoopFuture<[Module]> {
         User
             .find(req.parameters.get("userID"), on: req.db)
@@ -87,11 +134,50 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Update
-    // MARK: - Delete
-    // MARK: - Login
-    func login(_ req: Request) throws -> EventLoopFuture<Token> {
-        let user = try req.auth.require(User.self)
-        let token = try Token.generate(for: user)
-        return token.save(on: req.db).map { token }
+    func setUserFirstConnectionToFalse(req: Request) throws -> EventLoopFuture<User.Public> {
+        User
+            .find(req.parameters.get("userID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user in
+                user.firstConnection = false
+                return user
+                    .save(on: req.db)
+                    .map { user.convertToPublic() }
+            }
     }
+    
+    func changePassword(req: Request) throws -> EventLoopFuture<PasswordChangeResponse> {
+        let user = try req.auth.require(User.self)
+        let userId = try req.parameters.require("userID", as: UUID.self)
+        
+        guard user.id == userId else {
+            throw Abort(.forbidden, reason: "Unauthorized access")
+        }
+        
+        // Decode the request body containing the new password
+        let changeRequest = try req.content.decode(PasswordChangeRequest.self)
+        
+        // Verify that the current password matches the one stored in the database
+        let isCurrentPasswordValid = try Bcrypt.verify(changeRequest.currentPassword, created: user.password)
+        // TODO: Add more verification on password
+        guard isCurrentPasswordValid else {
+            throw Abort(.unauthorized, reason: "Invalid current password")
+        }
+        
+        // Hash the new password
+        let hashedNewPassword = try Bcrypt.hash(changeRequest.newPassword)
+        
+        // Update the user's password in the database
+        return User
+            .find(userId, on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user in
+                user.password = hashedNewPassword
+                return user
+                    .save(on: req.db)
+                    .transform(to: PasswordChangeResponse(message: "Password changed successfully"))
+            }
+    }
+    
+    // MARK: - Delete
 }

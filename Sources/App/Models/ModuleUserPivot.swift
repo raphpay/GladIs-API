@@ -28,3 +28,11 @@ final class ModuleUserPivot: Model, Content {
         self.$user.id = try user.requireID()
     }
 }
+
+extension ModuleUserPivot {
+    enum v20240207 {
+        static let schemaName = "module-user-pivot"
+        static let moduleID = FieldKey(stringLiteral: "moduleID")
+        static let userID = FieldKey(stringLiteral: "userID")
+    }
+}
