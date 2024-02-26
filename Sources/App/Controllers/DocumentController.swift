@@ -15,11 +15,13 @@ struct DocumentController: RouteCollection {
         documents.post(use: upload)
         // Read
         documents.get(use: getAllDocuments)
-        documents.get("single", use: getPdf)
-        documents.get("directory", use: getDocumentAtDirectory)
+        documents.get(":documentID", use: getDocument)
+        documents.get("download", ":documentID", use: dowloadDocument)
+        documents.post("getDocumentsAtPath", use: getDocumentsAtPath)
         // Update
         // Delete
         documents.delete(":documentID", use: remove)
+        documents.delete("all", use: removeAll)
     }
     
     
@@ -51,42 +53,44 @@ struct DocumentController: RouteCollection {
     }
     
     // MARK: - READ
-    func getPdf(req: Request) throws -> EventLoopFuture<Response> {
-        let document = try req.content.decode(Document.Input.self)
-        let filePath = req.application.directory.publicDirectory + document.path + document.name
-        
-        if !FileManager.default.fileExists(atPath: filePath) {
-            throw Abort(.notFound, reason: "File not found at path: \(filePath)")
-        }
-        
-        let fileURL = URL(fileURLWithPath: filePath)
-        let fileData = try Data(contentsOf: fileURL)
-        
-        let response = Response(body: .init(data: fileData))
-        response.headers.contentType = .pdf
-        
-        return req.eventLoop.future(response)
-    }
-    
     func getAllDocuments(req: Request) throws -> EventLoopFuture<[Document]> {
         Document
             .query(on: req.db)
             .all()
     }
     
-    func getDocumentAtDirectory(req: Request) throws -> EventLoopFuture<[Document]> {
-        struct DirectoryInput: Codable {
-            var path: String
+    func getDocumentsAtPath(req: Request) async throws -> [Document] {
+        struct Path: Codable {
+            var value: String
         }
         
-        let directory = try req.content.decode(DirectoryInput.self)
+        let path = try req.content.decode(Path.self)
         
-        return Document
+        return try await Document
             .query(on: req.db)
-            .filter(\.$path == directory.path)
+            .filter(\.$path == path.value)
             .all()
     }
     
+    func getDocument(req: Request) async throws -> Document {
+        guard let model = try await Document
+            .find(req.parameters.get("documentID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return model
+    }
+    
+    func dowloadDocument(req: Request) async throws -> Response {
+        let upload = try await getDocument(req: req)
+        let filePath = req.application.directory.publicDirectory + upload.path + upload.name
+        
+        if !FileManager.default.fileExists(atPath: filePath) {
+            throw Abort(.notFound, reason: "File not found at \(filePath)")
+        }
+
+        return req.fileio.streamFile(at: filePath)
+    }
     
     // MARK: - Update
     // MARK: - Delete
@@ -96,6 +100,17 @@ struct DocumentController: RouteCollection {
             .unwrap(or: Abort(.notFound))
             .flatMap { document in
                 document
+                    .delete(force: true, on: req.db)
+                    .transform(to: .noContent)
+            }
+    }
+    
+    func removeAll(req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
+        Document
+            .query(on: req.db)
+            .all()
+            .flatMap { doc in
+                return doc
                     .delete(force: true, on: req.db)
                     .transform(to: .noContent)
             }
