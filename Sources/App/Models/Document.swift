@@ -42,7 +42,7 @@ final class Document: Model, Content {
 }
 
 struct PDFEntity : Codable {
-    var file : File
+    var dataString: String
 }
 
 extension Document {

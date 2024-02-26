@@ -41,8 +41,10 @@ struct DocumentController: RouteCollection {
             }
         }
         
+        let file = File(data: pdfEntity.dataString, filename: fileName)
+        
         return req.fileio
-            .writeFile(pdfEntity.file.data, at: uploadDirectory + fileName)
+            .writeFile(file.data, at: uploadDirectory + fileName)
             .flatMapThrowing {
                 let document = Document(name: document.name + ".pdf", path: document.path)
                 return document
