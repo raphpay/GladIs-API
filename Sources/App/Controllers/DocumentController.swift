@@ -21,7 +21,6 @@ struct DocumentController: RouteCollection {
         // Update
         // Delete
         documents.delete(":documentID", use: remove)
-        documents.delete("all", use: removeAll)
     }
     
     
@@ -81,8 +80,8 @@ struct DocumentController: RouteCollection {
     }
     
     func dowloadDocument(req: Request) async throws -> Response {
-        let upload = try await getDocument(req: req)
-        let filePath = req.application.directory.publicDirectory + upload.path + upload.name
+        let document = try await getDocument(req: req)
+        let filePath = req.application.directory.publicDirectory + document.path + document.name
         
         if !FileManager.default.fileExists(atPath: filePath) {
             throw Abort(.notFound, reason: "File not found at \(filePath)")
@@ -93,29 +92,21 @@ struct DocumentController: RouteCollection {
     
     // MARK: - Update
     // MARK: - Delete
-    func remove(req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-        Document
-            .find(req.parameters.get("documentID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { document in
-                document
-                    .delete(force: true, on: req.db)
-                    .transform(to: .noContent)
-            }
+    func remove(req: Request) async throws -> HTTPResponseStatus {
+        let document = try await getDocument(req: req)
+        let filePath = req.application.directory.publicDirectory + document.path + document.name
+        
+        if FileManager.default.fileExists(atPath: filePath) {
+            try FileManager.default.removeItem(atPath: filePath)
+        }
+        
+        do {
+            try await document.delete(force: true, on: req.db)
+            return .noContent
+        } catch let error {
+            throw Abort(.badRequest, reason: error.localizedDescription)
+        }
     }
-    
-    func removeAll(req: Request) throws -> EventLoopFuture<HTTPResponseStatus> {
-        Document
-            .query(on: req.db)
-            .all()
-            .flatMap { doc in
-                return doc
-                    .delete(force: true, on: req.db)
-                    .transform(to: .noContent)
-            }
-    }
-    
-    // TODO: Write a method to delete pdf and its related document
 }
 
 
