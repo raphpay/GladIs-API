@@ -28,7 +28,6 @@ struct DocumentController: RouteCollection {
     // MARK: - CREATE
     func upload(req: Request) throws -> EventLoopFuture<Document> {
         let document = try req.content.decode(Document.Input.self)
-        let pdfEntity = try req.content.decode(PDFEntity.self)
 
         let uploadDirectory = req.application.directory.publicDirectory + document.path
         let fileName = document.name + ".pdf"
@@ -41,10 +40,8 @@ struct DocumentController: RouteCollection {
             }
         }
         
-        let file = File(data: pdfEntity.dataString, filename: fileName)
-        
         return req.fileio
-            .writeFile(file.data, at: uploadDirectory + fileName)
+            .writeFile(document.file.data, at: uploadDirectory + fileName)
             .flatMapThrowing {
                 let document = Document(name: document.name + ".pdf", path: document.path)
                 return document

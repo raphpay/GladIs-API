@@ -32,17 +32,15 @@ final class Document: Model, Content {
         var id: UUID?
         var name: String
         var path: String
+        var file : File
         
-        init(id: UUID? = nil, name: String, path: String) {
+        init(id: UUID? = nil, name: String, path: String, file: File) {
             self.id = id
             self.name = name
             self.path = path
+            self.file = file
         }
     }
-}
-
-struct PDFEntity : Codable {
-    var dataString: String
 }
 
 extension Document {
