@@ -15,7 +15,7 @@ struct DocumentActivityLogController: RouteCollection {
         logs.post("user", ":actorID", "document", ":documentID", use: create)
         // Read
         logs.get(use: getAll)
-        logs.get("clientID", use: getLogsForClient)
+        logs.get(":clientID", use: getLogsForClient)
         // Delete
         logs.delete(use: removeAll)
     }
