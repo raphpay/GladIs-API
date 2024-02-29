@@ -20,6 +20,8 @@ struct TechnicalDocumentationTabController: RouteCollection {
         tokenAuthGroup.post(use: create)
         // Read
         tokenAuthGroup.get(use: getAll)
+        // Delete
+        tokenAuthGroup.delete(":tabID", use: remove)
     }
     
     // MARK: - CREATE
@@ -42,5 +44,14 @@ struct TechnicalDocumentationTabController: RouteCollection {
         try await TechnicalDocumentationTab
             .query(on: req.db)
             .all()
+    }
+    
+    // MARK: - DELETE
+    func remove(req: Request) async throws -> HTTPResponseStatus {
+        guard let tab = try await TechnicalDocumentationTab.find(req.parameters.get("tabID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        try await tab.delete(force: true, on: req.db)
+        return .noContent
     }
 }

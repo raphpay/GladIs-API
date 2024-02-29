@@ -20,10 +20,12 @@ struct UserController: RouteCollection {
         // Create
         tokenAuthGroup.post(use: create)
         tokenAuthGroup.post(":userID", "modules", ":moduleID", use: addModule)
+        tokenAuthGroup.post(":userID", "technicalDocumentationTabs", ":tabID", use: addTechnicalDocTab)
         // Read
         tokenAuthGroup.get(use: getAll)
         tokenAuthGroup.get(":userID", use: getUser)
         tokenAuthGroup.get(":userID", "modules", use: getModules)
+        tokenAuthGroup.get(":userID", "technicalDocumentationTabs", use: getTechnicalDocumentationTabs)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
@@ -117,6 +119,24 @@ struct UserController: RouteCollection {
             }
     }
     
+    func addTechnicalDocTab(req: Request) throws -> EventLoopFuture<TechnicalDocumentationTab> {
+        let userQuery = User
+            .find(req.parameters.get("userID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+        
+        let tabQuery = TechnicalDocumentationTab
+            .find(req.parameters.get("tabID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+        
+        return userQuery.and(tabQuery)
+            .flatMap { user, tab in
+                user
+                    .$technicalDocumentationTabs
+                    .attach(tab, on: req.db)
+                    .map { tab }
+            }
+    }
+    
     // MARK: - Read
     func getAll(req: Request) throws -> EventLoopFuture<[User.Public]> {
         User
@@ -141,6 +161,18 @@ struct UserController: RouteCollection {
             .flatMap { user in
                 user
                     .$modules
+                    .query(on: req.db)
+                    .all()
+            }
+    }
+    
+    func getTechnicalDocumentationTabs(req: Request) throws -> EventLoopFuture<[TechnicalDocumentationTab]> {
+        User
+            .find(req.parameters.get("userID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user in
+                user
+                    .$technicalDocumentationTabs
                     .query(on: req.db)
                     .all()
             }
