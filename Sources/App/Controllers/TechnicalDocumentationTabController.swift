@@ -33,7 +33,7 @@ struct TechnicalDocumentationTabController: RouteCollection {
             throw Abort(.badRequest, reason: "User should be admin to create another user")
         }
         
-        let technicalDocTab = TechnicalDocumentationTab(name: tabData.name)
+        let technicalDocTab = TechnicalDocumentationTab(name: tabData.name, area: tabData.area)
         
         try await technicalDocTab.save(on: req.db)
         return technicalDocTab

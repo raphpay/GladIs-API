@@ -17,20 +17,26 @@ final class TechnicalDocumentationTab: Model, Content {
     @Field(key: TechnicalDocumentationTab.v20240207.name)
     var name: String
     
+    @Field(key: TechnicalDocumentationTab.v20240207.area)
+    var area: String
+    
     init() {}
     
-    init(id: UUID? = nil, name: String) {
+    init(id: UUID? = nil, name: String, area: String) {
         self.id = id
         self.name = name
+        self.area = area
     }
     
     final class Input: Content {
         var id: UUID?
         var name: String
+        var area: String
         
-        init(id: UUID? = nil, name: String) {
+        init(id: UUID? = nil, name: String, area: String) {
             self.id = id
             self.name = name
+            self.area = area
         }
     }
 }
@@ -40,5 +46,6 @@ extension TechnicalDocumentationTab {
         static let schemaName = "technicalDocumentationTabs"
         static let id = FieldKey(stringLiteral: "id")
         static let name = FieldKey(stringLiteral: "name")
+        static let area = FieldKey(stringLiteral: "area")
     }
 }

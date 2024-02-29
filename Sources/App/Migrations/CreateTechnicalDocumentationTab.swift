@@ -12,6 +12,7 @@ struct CreateTechnicalDocumentationTab: Migration {
         database.schema(TechnicalDocumentationTab.v20240207.schemaName)
             .id()
             .field(TechnicalDocumentationTab.v20240207.name, .string, .required)
+            .field(TechnicalDocumentationTab.v20240207.area, .string, .required)
             .create()
     }
 
