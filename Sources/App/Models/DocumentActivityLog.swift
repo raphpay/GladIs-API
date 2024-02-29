@@ -32,8 +32,6 @@ final class DocumentActivityLog: Model, Content {
     @Enum(key: DocumentActivityLog.v20240207.actionEnum)
     var action: DocumentActivityLog.ActionEnum
     
-    // TODO: Add related doc id and client id
-    
     init() {}
     
     init(id: UUID? = nil, name: String, actorUsername: String,
