@@ -16,4 +16,5 @@ func routes(_ app: Application) throws {
     try app.register(collection: PendingUserController())
     try app.register(collection: DocumentController())
     try app.register(collection: TechnicalDocumentationTabController())
+    try app.register(collection: DocumentActivityLogController())
 }
