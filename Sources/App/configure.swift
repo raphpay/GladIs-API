@@ -20,6 +20,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreatePendingUser())
     app.migrations.add(CreateModulePendingUserPivot())
     app.migrations.add(CreateDocument())
+    app.migrations.add(CreateTechnicalDocumentationTab())
     
     switch app.environment {
         case .development:
