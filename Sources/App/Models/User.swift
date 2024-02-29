@@ -58,6 +58,11 @@ final class User: Model, Content {
               to: \.$module)
     var modules: [Module]
     
+    @Siblings(through: UserTabPivot.self,
+              from: \.$user,
+              to: \.$technicalDocumentationTab)
+    var technicalDocumentationTabs: [TechnicalDocumentationTab]
+    
     init() {}
     
     init(id: UUID? = nil,
@@ -136,6 +141,7 @@ extension User {
         static let firstConnection = FieldKey(stringLiteral: "firstConnection")
         static let products = FieldKey(stringLiteral: "products")
         static let modules = FieldKey(stringLiteral: "modules")
+        static let technicalDocumentationTabs = FieldKey(stringLiteral: "technicalDocumentationTabs")
         static let numberOfEmployees = FieldKey(stringLiteral: "numberOfEmployees")
         static let numberOfUsers = FieldKey(stringLiteral: "numberOfUsers")
         static let salesAmount = FieldKey(stringLiteral: "salesAmount")
