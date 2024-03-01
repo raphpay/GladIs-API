@@ -11,6 +11,7 @@ import Vapor
 struct DocumentController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let documents = routes.grouped("api", "documents")
+        // TODO: Handle tokens
         // Create
         documents.post(use: upload)
         // Read
