@@ -11,14 +11,16 @@ import Vapor
 struct DocumentActivityLogController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let logs = routes.grouped("api", "documentActivityLogs")
-        // TODO: Handle tokens
+        let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthGroup = logs.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
-        logs.post(use: create)
+        tokenAuthGroup.post(use: create)
         // Read
-        logs.get(use: getAll)
-        logs.get(":clientID", use: getLogsForClient)
+        tokenAuthGroup.get(use: getAll)
+        tokenAuthGroup.get(":clientID", use: getLogsForClient)
         // Delete
-        logs.delete(use: removeAll)
+        tokenAuthGroup.delete(use: removeAll)
     }
     
     
@@ -65,6 +67,12 @@ struct DocumentActivityLogController: RouteCollection {
     
     // MARK: - DELETE
     func removeAll(req: Request) async throws -> HTTPResponseStatus {
+        let adminUser = try req.auth.require(User.self)
+        
+        guard adminUser.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin to delete document logs")
+        }
+        
         try await DocumentActivityLog
             .query(on: req.db)
             .all()
