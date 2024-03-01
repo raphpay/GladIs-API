@@ -23,6 +23,9 @@ final class DocumentActivityLog: Model, Content {
     @Field(key: DocumentActivityLog.v20240207.actionDate)
     var actionDate: Date
     
+    @Field(key: DocumentActivityLog.v20240207.actorIsAdmin)
+    var actorIsAdmin: Bool
+    
     @Parent(key: DocumentActivityLog.v20240207.documentID)
     var document: Document
     
@@ -35,13 +38,14 @@ final class DocumentActivityLog: Model, Content {
     init() {}
     
     init(id: UUID? = nil, name: String, actorUsername: String,
-         action: DocumentActivityLog.ActionEnum, actionDate: Date,
+         action: DocumentActivityLog.ActionEnum, actionDate: Date, actorIsAdmin: Bool,
          documentID: Document.IDValue, clientID: User.IDValue) {
         self.id = id
         self.name = name
         self.actorUsername = actorUsername
         self.action = action
         self.actionDate = actionDate
+        self.actorIsAdmin = actorIsAdmin
         self.$document.id = documentID
         self.$client.id = clientID
     }
@@ -49,13 +53,17 @@ final class DocumentActivityLog: Model, Content {
     final class Input: Content {
         var id: UUID?
         var action: DocumentActivityLog.ActionEnum
+        var actorIsAdmin: Bool
+        var actorID: UUID
         var documentID: UUID
         var clientID: UUID
         
         init(id: UUID? = nil, action: DocumentActivityLog.ActionEnum,
-             clientID: UUID, documentID: UUID) {
+             actorIsAdmin: Bool, actorID: UUID, clientID: UUID, documentID: UUID) {
             self.id = id
             self.action = action
+            self.actorIsAdmin = actorIsAdmin
+            self.actorID = actorID
             self.clientID = clientID
             self.documentID = documentID
         }
@@ -69,6 +77,7 @@ extension DocumentActivityLog {
         static let name = FieldKey(stringLiteral: "name")
         static let actorUsername = FieldKey(stringLiteral: "actorUsername")
         static let actionDate = FieldKey(stringLiteral: "actionDate")
+        static let actorIsAdmin = FieldKey(stringLiteral: "actorIsAdmin")
         static let documentID = FieldKey(stringLiteral: "documentID")
         static let clientID = FieldKey(stringLiteral: "clientID")
         

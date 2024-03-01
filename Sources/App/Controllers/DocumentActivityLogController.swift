@@ -11,13 +11,16 @@ import Vapor
 struct DocumentActivityLogController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let logs = routes.grouped("api", "documentActivityLogs")
+        let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthGroup = logs.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
-        logs.post("user", ":actorID", "document", ":documentID", use: create)
+        tokenAuthGroup.post(use: create)
         // Read
-        logs.get(use: getAll)
-        logs.get(":clientID", use: getLogsForClient)
+        tokenAuthGroup.get(use: getAll)
+        tokenAuthGroup.get(":clientID", use: getLogsForClient)
         // Delete
-        logs.delete(use: removeAll)
+        tokenAuthGroup.delete(use: removeAll)
     }
     
     
@@ -29,7 +32,7 @@ struct DocumentActivityLogController: RouteCollection {
             throw Abort(.notFound, reason: "Document not found")
         }
         
-        guard let userQuery = try await User.find(req.parameters.get("actorID"), on: req.db) else {
+        guard let userQuery = try await User.find(logInput.actorID, on: req.db) else {
             throw Abort(.notFound, reason: "User not found")
         }
         
@@ -38,6 +41,7 @@ struct DocumentActivityLogController: RouteCollection {
                                       actorUsername: userQuery.username,
                                       action: logInput.action,
                                       actionDate: Date.now,
+                                      actorIsAdmin: logInput.actorIsAdmin,
                                       documentID: docID,
                                       clientID: logInput.clientID)
         try await log.save(on: req.db)
@@ -63,6 +67,12 @@ struct DocumentActivityLogController: RouteCollection {
     
     // MARK: - DELETE
     func removeAll(req: Request) async throws -> HTTPResponseStatus {
+        let adminUser = try req.auth.require(User.self)
+        
+        guard adminUser.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin to delete document logs")
+        }
+        
         try await DocumentActivityLog
             .query(on: req.db)
             .all()

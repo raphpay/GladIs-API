@@ -14,7 +14,7 @@ struct PendingUserController: RouteCollection {
         pendingUsers.post(use: create)
         pendingUsers.post(":pendingUserID", "modules", ":moduleID", use: addModule)
         pendingUsers.get(":pendingUserID", "modules", use: getModules)
-        //        // Token Protected
+        // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthGroup = pendingUsers.grouped(tokenAuthMiddleware, guardAuthMiddleware)
