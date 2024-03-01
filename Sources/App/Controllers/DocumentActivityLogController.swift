@@ -11,8 +11,9 @@ import Vapor
 struct DocumentActivityLogController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let logs = routes.grouped("api", "documentActivityLogs")
+        // TODO: Handle tokens
         // Create
-        logs.post("user", ":actorID", "document", ":documentID", use: create)
+        logs.post(use: create)
         // Read
         logs.get(use: getAll)
         logs.get(":clientID", use: getLogsForClient)
@@ -29,7 +30,7 @@ struct DocumentActivityLogController: RouteCollection {
             throw Abort(.notFound, reason: "Document not found")
         }
         
-        guard let userQuery = try await User.find(req.parameters.get("actorID"), on: req.db) else {
+        guard let userQuery = try await User.find(logInput.actorID, on: req.db) else {
             throw Abort(.notFound, reason: "User not found")
         }
         
@@ -38,6 +39,7 @@ struct DocumentActivityLogController: RouteCollection {
                                       actorUsername: userQuery.username,
                                       action: logInput.action,
                                       actionDate: Date.now,
+                                      actorIsAdmin: logInput.actorIsAdmin,
                                       documentID: docID,
                                       clientID: logInput.clientID)
         try await log.save(on: req.db)
