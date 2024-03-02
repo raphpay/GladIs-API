@@ -80,18 +80,15 @@ struct PendingUserController: RouteCollection {
     
     // MARK: - READ
     func getAll(req: Request) throws -> EventLoopFuture<[PendingUser]> {
-        PendingUser
+        let authUser = try req.auth.require(User.self)
+        
+        guard authUser.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin for this action")
+        }
+        
+        return PendingUser
             .query(on: req.db)
             .all()
-    }
-    
-    func getByID(req: Request) throws -> EventLoopFuture<PendingUser> {
-        PendingUser
-            .find(req.parameters.get("pendingUserID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .map { pendingUser in
-                return pendingUser
-            }
     }
     
     func getModules(req: Request) throws -> EventLoopFuture<[Module]> {
@@ -108,6 +105,12 @@ struct PendingUserController: RouteCollection {
     
     // MARK: - UPDATE
     func updateStatus(req: Request) throws -> EventLoopFuture<PendingUser> {
+        let user = try req.auth.require(User.self)
+        
+        guard user.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin to complete this action")
+        }
+        
         let newStatus = try req.content.decode(PendingUser.Status.self)
         return PendingUser.find(req.parameters.get("pendingUserID"), on: req.db)
             .unwrap(or: Abort(.notFound))
@@ -121,7 +124,13 @@ struct PendingUserController: RouteCollection {
     
     // MARK: - DELETE
     func remove(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        PendingUser
+        let user = try req.auth.require(User.self)
+        
+        guard user.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin to create a user from pending user")
+        }
+        
+        return PendingUser
             .find(req.parameters.get("pendingUserID"), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { pendingUser in
