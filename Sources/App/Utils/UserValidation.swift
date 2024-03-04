@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  UserValidation.swift
 //  
 //
 //  Created by Raphaël Payet on 04/03/2024.
@@ -39,6 +39,54 @@ extension ValidatorResults {
             "email.invalid"
         }
     }
+    
+    struct NumberOfEmployees: ValidatorResult {
+        let isValid: Bool
+        
+        var isFailure: Bool {
+            !isValid
+        }
+        
+        var successDescription: String? {
+            "numberOfEmployees.valid"
+        }
+        
+        var failureDescription: String? {
+            "numberOfEmployees.invalid"
+        }
+    }
+    
+    struct NumberOfUsers: ValidatorResult {
+        let isValid: Bool
+        
+        var isFailure: Bool {
+            !isValid
+        }
+        
+        var successDescription: String? {
+            "numberOfUsers.valid"
+        }
+        
+        var failureDescription: String? {
+            "numberOfUsers.invalid"
+        }
+    }
+    
+    struct SalesAmount: ValidatorResult {
+        let isValid: Bool
+        
+        var isFailure: Bool {
+            !isValid
+        }
+        
+        var successDescription: String? {
+            "salesAmount.valid"
+        }
+        
+        var failureDescription: String? {
+            "salesAmount.invalid"
+        }
+    }
 }
 
 extension Validator where T == String {
@@ -65,6 +113,35 @@ extension Validator where T == String {
     }
 }
 
+extension Validator where T == Int {
+    static var numberOfEmployees: Validator<T> {
+        .init { input in
+            guard input > 0 else {
+                return ValidatorResults.NumberOfEmployees(isValid: false)
+            }
+            return ValidatorResults.NumberOfEmployees(isValid: true)
+        }
+    }
+    
+    static var numberOfUsers: Validator<T> {
+        .init { input in
+            guard input > 0 else {
+                return ValidatorResults.NumberOfUsers(isValid: false)
+            }
+            return ValidatorResults.NumberOfUsers(isValid: true)
+        }
+    }
+    
+    static var salesAmount: Validator<T> {
+        .init { input in
+            guard input >= 0 else {
+                return ValidatorResults.SalesAmount(isValid: false)
+            }
+            return ValidatorResults.SalesAmount(isValid: true)
+        }
+    }
+}
+
 extension UserCreateData: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("email", as: String.self, is: .customEmail)
@@ -76,6 +153,8 @@ extension PendingUser: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("email", as: String.self, is: .customEmail)
         validations.add("phoneNumber", as: String.self, is: .frenchPhoneNumber)
-        // TODO: Add employee, sales number and potential users
+        validations.add("numberOfEmployees", as: Int.self, is: .numberOfEmployees)
+        validations.add("numberOfUsers", as: Int.self, is: .numberOfUsers)
+        validations.add("salesAmount", as: Int.self, is: .salesAmount)
     }
 }
