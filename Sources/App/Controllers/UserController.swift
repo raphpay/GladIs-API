@@ -66,6 +66,7 @@ struct UserController: RouteCollection {
     }
     
     func create(req: Request) throws -> EventLoopFuture<User.Public> {
+        try UserCreateData.validate(content: req)
         let userData = try req.content.decode(UserCreateData.self)
         let adminUser = try req.auth.require(User.self)
         

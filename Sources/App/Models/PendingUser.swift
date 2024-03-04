@@ -100,4 +100,3 @@ extension PendingUser {
         var type: StatusEnum
     }
 }
-
