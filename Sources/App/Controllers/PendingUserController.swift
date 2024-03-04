@@ -58,6 +58,7 @@ struct PendingUserController: RouteCollection {
     }
     
     func convertToUser(req: Request) throws -> EventLoopFuture<User.Public> {
+        try PendingUser.validate(content: req)
         let user = try req.auth.require(User.self)
         
         guard user.userType == .admin else {
