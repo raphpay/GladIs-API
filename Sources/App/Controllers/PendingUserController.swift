@@ -31,6 +31,7 @@ struct PendingUserController: RouteCollection {
     
     // MARK: - CREATE
     func create(req: Request) throws -> EventLoopFuture<PendingUser> {
+        try PendingUser.validate(content: req)
         let user = try req.content.decode(PendingUser.self)
         
         return user
