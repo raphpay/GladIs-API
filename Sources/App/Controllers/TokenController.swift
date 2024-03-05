@@ -20,6 +20,11 @@ struct TokenController: RouteCollection {
         let basicAuthGroup = tokens.grouped(basicAuthMiddleware)
         // Login
         basicAuthGroup.post("login", use: login)
+        // Bearer authentication
+        let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthGroup = tokens.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     // MARK: - READ
@@ -71,5 +76,20 @@ struct TokenController: RouteCollection {
                     .delete(force: true, on: req.db)
                     .transform(to: .noContent)
             }
+    }
+    
+    // MARK: - Delete
+    func removeAll(req: Request) async throws -> HTTPResponseStatus {
+        let authUser = try req.auth.require(User.self)
+        
+        guard authUser.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin to delete tokens")
+        }
+        
+        try await Token.query(on: req.db)
+            .all()
+            .delete(force: true, on: req.db)
+        
+        return .noContent
     }
 }
