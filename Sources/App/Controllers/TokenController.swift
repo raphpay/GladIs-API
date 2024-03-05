@@ -14,7 +14,7 @@ struct TokenController: RouteCollection {
         let tokens = routes.grouped("api", "tokens")
         tokens.get(":tokenID", use: getTokenByID)
         tokens.get(use: getTokens)
-        tokens.delete(":tokenID", "logout", use: logout)
+        tokens.delete(":tokenID", use: logout)
         // Basic Auth
         let basicAuthMiddleware = User.authenticator()
         let basicAuthGroup = tokens.grouped(basicAuthMiddleware)
