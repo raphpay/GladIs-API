@@ -27,6 +27,7 @@ struct PendingUserController: RouteCollection {
         tokenAuthGroup.put(":pendingUserID", "status", use: updateStatus)
         // Delete
         tokenAuthGroup.delete(":pendingUserID", use: remove)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     // MARK: - CREATE
@@ -141,4 +142,20 @@ struct PendingUserController: RouteCollection {
                     .transform(to: .noContent)
             }
     }
+    
+    func removeAll(req: Request) async throws -> HTTPResponseStatus {
+        let authUser = try req.auth.require(User.self)
+        
+        guard authUser.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin to create a user from pending user")
+        }
+        
+        try await PendingUser
+            .query(on: req.db)
+            .all()
+            .delete(on: req.db)
+        
+        return .noContent
+    }
+    
 }
