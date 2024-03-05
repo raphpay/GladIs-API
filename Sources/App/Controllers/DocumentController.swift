@@ -22,6 +22,11 @@ struct DocumentController: RouteCollection {
         // Update
         // Delete
         documents.delete(":documentID", use: remove)
+        // Token Protected
+        let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthGroup = documents.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     
@@ -30,7 +35,7 @@ struct DocumentController: RouteCollection {
         let document = try req.content.decode(Document.Input.self)
 
         let uploadDirectory = req.application.directory.publicDirectory + document.path
-        let fileName = document.name + ".pdf"
+        let fileName = document.file.filename
         
         if !FileManager.default.fileExists(atPath: uploadDirectory) {
             do {
@@ -43,7 +48,7 @@ struct DocumentController: RouteCollection {
         return req.fileio
             .writeFile(document.file.data, at: uploadDirectory + fileName)
             .flatMapThrowing {
-                let document = Document(name: document.name + ".pdf", path: document.path)
+                let document = Document(name: fileName, path: document.path)
                 return document
                     .save(on: req.db)
                     .map { document }
@@ -107,6 +112,21 @@ struct DocumentController: RouteCollection {
         } catch let error {
             throw Abort(.badRequest, reason: error.localizedDescription)
         }
+    }
+    
+    func removeAll(req: Request) async throws -> HTTPResponseStatus {
+        let authUser = try req.auth.require(User.self)
+        
+        guard authUser.userType == .admin else {
+            throw Abort(.badRequest, reason: "User should be admin for this action")
+        }
+        
+        try await Document
+            .query(on: req.db)
+            .all()
+            .delete(force: true, on: req.db)
+        
+        return .noContent
     }
 }
 
