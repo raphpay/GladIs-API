@@ -23,11 +23,20 @@ final class User: Model, Content {
     @Field(key: User.v20240207.phoneNumber)
     var phoneNumber: String
     
-    @Field(key: User.v20240207.companyName)
-    var companyName: String
-    
     @Field(key: User.v20240207.email)
     var email: String
+    
+    @Field(key: User.v20240207.username)
+    var username: String
+    
+    @Field(key: User.v20240207.password)
+    var password: String
+    
+    @Field(key: User.v20240207.firstConnection)
+    var firstConnection: Bool
+    
+    @OptionalField(key: User.v20240207.companyName)
+    var companyName: String?
     
     @OptionalField(key: User.v20240207.products)
     var products: String?
@@ -41,14 +50,11 @@ final class User: Model, Content {
     @OptionalField(key: User.v20240207.salesAmount)
     var salesAmount: Double?
     
-    @Field(key: User.v20240207.username)
-    var username: String
+    @OptionalField(key: User.v20240207.employeesIDs)
+    var employeesIDs: [String]?
     
-    @Field(key: User.v20240207.password)
-    var password: String
-    
-    @Field(key: User.v20240207.firstConnection)
-    var firstConnection: Bool
+    @OptionalField(key: User.v20240207.managerID)
+    var managerID: String?
     
     @Enum(key: "userType")
     var userType: UserType
@@ -67,63 +73,75 @@ final class User: Model, Content {
     
     init(id: UUID? = nil,
          firstName: String, lastName: String, phoneNumber: String,
-         companyName: String, email: String, products: String? = nil,
-         numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil, salesAmount: Double? = nil,
-         username: String, password: String,
-         firstConnection: Bool, userType: UserType = .client
-    ) {
+         username: String, password: String, email: String, firstConnection: Bool,
+         userType: UserType,
+         companyName: String? = nil, products: String? = nil,
+         numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
+         salesAmount: Double? = nil, employeesIDs: [String]? = nil, managerID: String? = nil) {
+        // Required
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
         self.phoneNumber = phoneNumber
-        self.companyName = companyName
         self.email = email
-        self.products = products
-        self.numberOfEmployees = numberOfEmployees
-        self.numberOfUsers = numberOfUsers
-        self.salesAmount = salesAmount
         self.username = username
         self.password = password
         self.firstConnection = firstConnection
         self.userType = userType
+        // Optional
+        self.companyName = companyName
+        self.products = products
+        self.numberOfEmployees = numberOfEmployees
+        self.numberOfUsers = numberOfUsers
+        self.salesAmount = salesAmount
+        self.employeesIDs = employeesIDs
+        self.managerID = managerID
     }
     
     final class Public: Content {
+        // Required
         var id: UUID?
         var firstName: String
         var lastName: String
         var phoneNumber: String
-        var companyName: String
         var email: String
+        var username: String
+        var firstConnection: Bool
+        var userType: UserType
+        // Optional
+        var companyName: String?
         var products: String?
         var numberOfEmployees: Int?
         var numberOfUsers: Int?
         var salesAmount: Double?
-        var username: String
-        var firstConnection: Bool
-        var userType: UserType
+        var employeesIDs: [String]?
+        var managerID: String?
         
         init(id: UUID?,
              firstName: String, lastName: String,
-             phoneNumber: String, companyName: String,
-             email: String, products: String? = nil,
+             phoneNumber: String, email: String,
+             username: String, firstConnection: Bool, userType: UserType = .client,
+             products: String? = nil, companyName: String? = nil,
              numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
-             salesAmount: Double? = nil,
-             username: String, firstConnection: Bool,
-             userType: UserType = .client) {
+             salesAmount: Double? = nil, employeesIDs: [String]? = nil,
+             managerID: String? = nil) {
+            // Required
             self.id = id
             self.firstName = firstName
             self.lastName = lastName
             self.phoneNumber = phoneNumber
-            self.companyName = companyName
             self.email = email
+            self.username = username
+            self.firstConnection = firstConnection
+            self.userType = userType
+            // Optional
+            self.companyName = companyName
             self.products = products
             self.numberOfEmployees = numberOfEmployees
             self.numberOfUsers = numberOfUsers
             self.salesAmount = salesAmount
-            self.username = username
-            self.firstConnection = firstConnection
-            self.userType = userType
+            self.employeesIDs = employeesIDs
+            self.managerID = managerID
         }
     }
 }
@@ -145,26 +163,28 @@ extension User {
         static let numberOfEmployees = FieldKey(stringLiteral: "numberOfEmployees")
         static let numberOfUsers = FieldKey(stringLiteral: "numberOfUsers")
         static let salesAmount = FieldKey(stringLiteral: "salesAmount")
+        static let employeesIDs = FieldKey(stringLiteral: "employeesIDs")
+        static let managerID = FieldKey(stringLiteral: "managerID")
         
         static let username = FieldKey(stringLiteral: "username")
         static let password = FieldKey(stringLiteral: "password")
         
         static let userType = "userType"
         static let admin = "admin"
-        static let standard = "standard"
-        static let restricted = "restricted"
+        static let client = "client"
+        static let employee = "employee"
     }
 }
 
 extension User {
     func convertToPublic() -> User.Public {
         User.Public(id: id,
-                    firstName: firstName, lastName: lastName,
-                    phoneNumber: phoneNumber, companyName: companyName,
-                    email: email, products: products,
-                    numberOfEmployees: numberOfEmployees, numberOfUsers: numberOfUsers,
-                    salesAmount: salesAmount, username: username,
-                    firstConnection: firstConnection, userType: userType)
+                    firstName: firstName, lastName: lastName, phoneNumber: phoneNumber, email: email,
+                    username: username, firstConnection: firstConnection, userType: userType,
+                    products: products, companyName: companyName, numberOfEmployees: numberOfEmployees,
+                    numberOfUsers: numberOfUsers, salesAmount: salesAmount, employeesIDs: employeesIDs,
+                    managerID: managerID
+        )
     }
 }
 
@@ -208,15 +228,19 @@ struct PasswordChangeResponse: Content {
 }
 
 struct UserCreateData: Content {
+    // Required
     let firstName: String
     let lastName: String
     let phoneNumber: String
-    let companyName: String
     let email: String
+    let password: String
+    let userType: UserType
+    // Optional
+    let companyName: String?
     let products: String?
     let numberOfEmployees: Int?
     let numberOfUsers: Int?
     let salesAmount: Double?
-    let password: String
-    let userType: UserType
+    let employeesIDs: [String]?
+    let managerID: String?
 }

@@ -9,21 +9,13 @@ import Foundation
 
 extension PendingUser {
     func convertToUser() -> User {
-        let user = User(
-            firstName: self.firstName,
-            lastName: self.lastName,
-            phoneNumber: self.phoneNumber,
-            companyName: self.companyName,
-            email: self.email,
-            products: self.products,
-            numberOfEmployees: self.numberOfEmployees,
-            numberOfUsers: self.numberOfUsers,
-            salesAmount: self.salesAmount,
-            username: "",
-            password: "",
-            firstConnection: true,
-            userType: .client
-        )
+        let user = User(firstName: self.firstName, lastName: self.lastName,
+                        phoneNumber: self.phoneNumber,
+                        username: "", password: "",
+                        email: self.email, firstConnection: true, userType: .client,
+                        companyName: self.companyName, products: self.products,
+                        numberOfEmployees: self.numberOfEmployees, numberOfUsers: self.numberOfUsers,
+                        salesAmount: self.salesAmount)
         // TODO: Get the modules right after
         // TODO: Generate and send a password
         return user

@@ -8,5 +8,5 @@
 import Foundation
 
 enum UserType: String, Codable {
-    case client, admin, premium
+    case employee, admin, client
 }

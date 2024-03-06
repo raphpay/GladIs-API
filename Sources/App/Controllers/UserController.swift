@@ -29,6 +29,8 @@ struct UserController: RouteCollection {
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
+        tokenAuthGroup.put("addEmployee", ":clientID", ":employeeID", use: linkClientToEmployee)
+        tokenAuthGroup.put("addManager", ":employeeID", ":clientID", use: linkEmployeeToClient)
         // Delete
         tokenAuthGroup.delete(use: remove)
         tokenAuthGroup.delete("removeAll", use: removeAll)
@@ -52,12 +54,13 @@ struct UserController: RouteCollection {
         return User
             .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
             .flatMap { username in
-                let user = User(firstName: userData.firstName, lastName: userData.lastName, phoneNumber: userData.phoneNumber,
-                                companyName: userData.companyName, email: userData.email, products: userData.products,
+                let user = User(firstName: userData.firstName, lastName: userData.lastName,
+                                phoneNumber: userData.phoneNumber, username: username, password: password,
+                                email: userData.email, firstConnection: true, userType: userData.userType,
+                                companyName: userData.companyName, products: userData.products,
                                 numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
-                                salesAmount: userData.salesAmount,
-                                username: username, password: password,
-                                firstConnection: true, userType: userData.userType)
+                                salesAmount: userData.salesAmount, employeesIDs: userData.employeesIDs,
+                                managerID: userData.managerID)
                 
                 return user
                     .save(on: req.db)
@@ -85,19 +88,24 @@ struct UserController: RouteCollection {
         }
         let password = try Bcrypt.hash(userData.password)
         
+        
         return User
             .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
             .flatMap { username in
-                let user = User(firstName: userData.firstName, lastName: userData.lastName, phoneNumber: userData.phoneNumber,
-                                companyName: userData.companyName, email: userData.email, products: userData.products,
-                                numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
-                                salesAmount: userData.salesAmount,
-                                username: username, password: password,
-                                firstConnection: true, userType: userData.userType)
-                
-                return user
-                    .save(on: req.db)
-                    .map { user.convertToPublic() }
+                return User.verifyUniqueEmail(userData.email, on: req)
+                    .flatMap { uniqueEmail in
+                        let user = User(firstName: userData.firstName, lastName: userData.lastName,
+                                        phoneNumber: userData.phoneNumber, username: username, password: password,
+                                        email: userData.email, firstConnection: true, userType: userData.userType,
+                                        companyName: userData.companyName, products: userData.products,
+                                        numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
+                                        salesAmount: userData.salesAmount, employeesIDs: userData.employeesIDs,
+                                        managerID: userData.managerID)
+                        
+                        return user
+                            .save(on: req.db)
+                            .map { user.convertToPublic() }
+                    }
             }
     }
     
@@ -227,6 +235,43 @@ struct UserController: RouteCollection {
                 return user
                     .save(on: req.db)
                     .transform(to: PasswordChangeResponse(message: "Password changed successfully"))
+            }
+    }
+    
+    func linkClientToEmployee(req: Request) throws -> EventLoopFuture<User.Public> {
+        guard let employeeID = req.parameters.get("employeeID") else {
+            throw Abort(.badRequest, reason: "Employee ID is missing in parameters")
+        }
+        
+        return User
+            .find(req.parameters.get("clientID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user in
+                if user.employeesIDs == nil {
+                    user.employeesIDs = [employeeID]
+                } else {
+                    user.employeesIDs?.append(employeeID)
+                }
+                
+                return user
+                    .save(on: req.db)
+                    .map { user.convertToPublic() }
+            }
+    }
+    
+    func linkEmployeeToClient(req: Request) throws -> EventLoopFuture<User.Public> {
+        guard let clientID = req.parameters.get("clientID") else {
+            throw Abort(.badRequest, reason: "Client ID is missing in parameters")
+        }
+        
+        return User
+            .find(req.parameters.get("employeeID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user in
+                user.managerID = clientID
+                
+                return user.save(on: req.db)
+                    .map { user.convertToPublic() }
             }
     }
     
