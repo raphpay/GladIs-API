@@ -48,6 +48,9 @@ final class PendingUser: Model, Content {
     
     @Enum(key: PendingUser.v20240207.statusEnum)
     var status: PendingUser.StatusEnum
+    
+    @Children(for: \.$pendingUser)
+    var potentialEmployees: [PotentialEmployee]
 
     init() { }
 

@@ -14,6 +14,7 @@ struct PendingUserController: RouteCollection {
         pendingUsers.post(use: create)
         pendingUsers.post(":pendingUserID", "modules", ":moduleID", use: addModule)
         pendingUsers.get(":pendingUserID", "modules", use: getModules)
+        pendingUsers.put(":pendingUserID", "employees", use: addEmployees)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -23,6 +24,7 @@ struct PendingUserController: RouteCollection {
         // Read
         tokenAuthGroup.get(use: getAll)
         tokenAuthGroup.get(":pendingUserID", use: getAll)
+        tokenAuthGroup.get(":pendingUserID", "employees", use: getEmployees)
         // Update
         tokenAuthGroup.put(":pendingUserID", "status", use: updateStatus)
         // Delete
@@ -105,6 +107,19 @@ struct PendingUserController: RouteCollection {
             }
     }
     
+    func getEmployees(req: Request) async throws -> [PotentialEmployee] {
+        guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let employees = try await pendingUser.$potentialEmployees
+            .query(on: req.db)
+            .all()
+        
+        
+        return employees
+    }
+    
     // MARK: - UPDATE
     func updateStatus(req: Request) throws -> EventLoopFuture<PendingUser> {
         let user = try req.auth.require(User.self)
@@ -122,6 +137,20 @@ struct PendingUserController: RouteCollection {
                     .save(on: req.db)
                     .map { pendingUser }
         }
+    }
+    
+    func addEmployees(req: Request) throws -> EventLoopFuture<PendingUser> {
+        let employees = try req.content.decode([PotentialEmployee].self)
+        
+        return PendingUser
+            .find(req.parameters.get("pendingUserID"), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { pendingUser in
+                pendingUser.potentialEmployees = employees
+                return pendingUser
+                    .save(on: req.db)
+                    .map { pendingUser }
+            }
     }
     
     // MARK: - DELETE
