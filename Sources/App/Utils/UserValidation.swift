@@ -103,7 +103,7 @@ extension Validator where T == String {
     
     static var customEmail: Validator<T> {
         .init { input in
-            let regex = #"^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$"#
+            let regex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
             let isValid = NSPredicate(format: "SELF MATCHES %@", regex).evaluate(with: input)
             guard isValid else {
                 return ValidatorResults.CustomEmail(isValid: false)
