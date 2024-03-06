@@ -45,3 +45,20 @@ extension User {
             }
     }
 }
+
+extension User {
+    static func verifyUniqueEmail(_ email: String, on req: Request) -> EventLoopFuture<String> {
+        // Check if the email is unique
+        return User.query(on: req.db)
+            .filter(\.$email == email)
+            .first()
+            .flatMapThrowing { existingUser in
+                guard existingUser == nil else {
+                    // If a user with the email already exists, throw an error
+                    throw Abort(.badRequest, reason: "Email already exists")
+                }
+                // If the email is unique, return it
+                return email
+            }
+    }
+}

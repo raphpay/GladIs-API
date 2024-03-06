@@ -52,12 +52,13 @@ struct UserController: RouteCollection {
         return User
             .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
             .flatMap { username in
-                let user = User(firstName: userData.firstName, lastName: userData.lastName, phoneNumber: userData.phoneNumber,
-                                companyName: userData.companyName, email: userData.email, products: userData.products,
+                let user = User(firstName: userData.firstName, lastName: userData.lastName,
+                                phoneNumber: userData.phoneNumber, username: username, password: password,
+                                email: userData.email, firstConnection: true, userType: userData.userType,
+                                companyName: userData.companyName, products: userData.products,
                                 numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
-                                salesAmount: userData.salesAmount,
-                                username: username, password: password,
-                                firstConnection: true, userType: userData.userType)
+                                salesAmount: userData.salesAmount, employeesIDs: userData.employeesIDs,
+                                managerID: userData.managerID)
                 
                 return user
                     .save(on: req.db)
@@ -85,19 +86,24 @@ struct UserController: RouteCollection {
         }
         let password = try Bcrypt.hash(userData.password)
         
+        
         return User
             .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
             .flatMap { username in
-                let user = User(firstName: userData.firstName, lastName: userData.lastName, phoneNumber: userData.phoneNumber,
-                                companyName: userData.companyName, email: userData.email, products: userData.products,
-                                numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
-                                salesAmount: userData.salesAmount,
-                                username: username, password: password,
-                                firstConnection: true, userType: userData.userType)
-                
-                return user
-                    .save(on: req.db)
-                    .map { user.convertToPublic() }
+                return User.verifyUniqueEmail(userData.email, on: req)
+                    .flatMap { uniqueEmail in
+                        let user = User(firstName: userData.firstName, lastName: userData.lastName,
+                                        phoneNumber: userData.phoneNumber, username: username, password: password,
+                                        email: userData.email, firstConnection: true,
+                                        companyName: userData.companyName, products: userData.products,
+                                        numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
+                                        salesAmount: userData.salesAmount, employeesIDs: userData.employeesIDs,
+                                        managerID: userData.managerID)
+                        
+                        return user
+                            .save(on: req.db)
+                            .map { user.convertToPublic() }
+                    }
             }
     }
     
