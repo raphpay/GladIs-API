@@ -74,7 +74,7 @@ final class User: Model, Content {
     init(id: UUID? = nil,
          firstName: String, lastName: String, phoneNumber: String,
          username: String, password: String, email: String, firstConnection: Bool,
-         userType: UserType = .client,
+         userType: UserType,
          companyName: String? = nil, products: String? = nil,
          numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
          salesAmount: Double? = nil, employeesIDs: [String]? = nil, managerID: String? = nil) {
