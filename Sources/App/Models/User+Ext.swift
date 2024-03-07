@@ -8,6 +8,7 @@
 import Fluent
 import Vapor
 
+// TODO: Convert to aasync await
 extension User {
     static func generateUniqueUsername(firstName: String, lastName: String, on req: Request) -> EventLoopFuture<String> {
         // Combine first name and last name to generate the initial username

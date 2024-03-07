@@ -15,11 +15,15 @@ struct TokenController: RouteCollection {
         tokens.get(":tokenID", use: getTokenByID)
         tokens.get(use: getTokens)
         tokens.delete(":tokenID", use: logout)
-        // Basic Auth
+        // Basic Auth for User
         let basicAuthMiddleware = User.authenticator()
         let basicAuthGroup = tokens.grouped(basicAuthMiddleware)
         // Login
         basicAuthGroup.post("login", use: login)
+        // Basic Auth for AdminUser
+        let basicAuthAdminUserMiddleware = AdminUser.authenticator()
+        let basicAuthAdminUserGroup = tokens.grouped(basicAuthAdminUserMiddleware)
+        basicAuthAdminUserGroup.post("login", "admin", use: loginAdmin)
         // Bearer authentication
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -65,6 +69,26 @@ struct TokenController: RouteCollection {
                         .map { newToken }
                 }
             }
+    }
+    
+    func loginAdmin(req: Request) async throws -> Token {
+        let user = try req.auth.require(AdminUser.self)
+        let userID = try user.requireID()
+        
+        let token = try await Token.query(on: req.db)
+            .filter(\.$user.$id == userID)
+            .first()
+        
+        if let token = token {
+            // If a token exists, update its value
+            token.value = [UInt8].random(count: 16).base64
+            try await token.update(on: req.db)
+            return token
+        } else {
+            let newToken = try Token.generate(for: user)
+            try await newToken.save(on: req.db)
+            return newToken
+        }
     }
     
     func logout(req: Request) throws -> EventLoopFuture<HTTPStatus> {
