@@ -158,10 +158,3 @@ extension PendingUser: Validatable {
         validations.add("salesAmount", as: Int.self, is: .salesAmount)
     }
 }
-
-extension AdminUser.Input: Validatable {
-    static func validations(_ validations: inout Validations) {
-        validations.add("email", as: String.self, is: .customEmail)
-        validations.add("phoneNumber", as: String.self, is: .frenchPhoneNumber)
-    }
-}
