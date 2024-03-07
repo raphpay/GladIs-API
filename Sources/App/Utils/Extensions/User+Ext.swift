@@ -9,6 +9,22 @@ import Fluent
 import Vapor
 
 extension User {
+    static func generateUniqueUsername(firstName: String, lastName: String, on req: Request) async throws -> String {
+        // Combine first name and last name to generate the initial username
+        let initialUsername = "\(firstName.lowercased()).\(lastName.lowercased())"
+        
+        let user = try await User.query(on: req.db)
+            .filter(\.$username == initialUsername)
+            .first()
+        
+        guard user == nil else {
+            // If the initial username is not unique, generate a unique username with a suffix
+            return try await User.generateUniqueUsernameWithSuffix(initialUsername: initialUsername, suffix: 1, on: req)
+        }
+        
+        return initialUsername
+    }
+    
     static func generateUniqueUsername(firstName: String, lastName: String, on req: Request) -> EventLoopFuture<String> {
         // Combine first name and last name to generate the initial username
         let initialUsername = "\(firstName.lowercased()).\(lastName.lowercased())"
@@ -27,6 +43,21 @@ extension User {
             }
     }
     
+    private static func generateUniqueUsernameWithSuffix(initialUsername: String, suffix: Int, on req: Request) async throws -> String {
+        let uniqueUsername = "\(initialUsername)-\(suffix)"
+        
+        let user = try await User.query(on: req.db)
+            .filter(\.$username == initialUsername)
+            .first()
+        
+        guard user == nil else {
+            // If the unique username is still not unique, recursively generate a new one with an incremented suffix
+            return try await User.generateUniqueUsernameWithSuffix(initialUsername: initialUsername, suffix: suffix + 1, on: req)
+        }
+        
+        return uniqueUsername
+    }
+        
     // Generate a unique username with a suffix
     private static func generateUniqueUsernameWithSuffix(initialUsername: String, suffix: Int, on req: Request) -> EventLoopFuture<String> {
         let uniqueUsername = "\(initialUsername)-\(suffix)"
@@ -60,5 +91,35 @@ extension User {
                 // If the email is unique, return it
                 return email
             }
+    }
+}
+
+extension Employee {
+    static func generateUniqueUsername(firstName: String, lastName: String, req: Request) async throws -> String {
+        let initialUsername = "\(firstName.lowercased()).\(lastName.lowercased())"
+        
+        let employee = try await Employee.query(on: req.db)
+            .filter(\.$username == initialUsername)
+            .first()
+        
+        if employee == nil {
+            return initialUsername
+        } else {
+            return try await generateUniqueUsernameWithSuffix(initialUsername: initialUsername, suffix: 1, req: req)
+        }
+    }
+    
+    private static func generateUniqueUsernameWithSuffix(initialUsername: String, suffix: Int, req: Request) async throws -> String {
+        let uniqueUsername = "\(initialUsername)-\(suffix)"
+        
+        let employee = try await Employee.query(on: req.db)
+            .filter(\.$username == uniqueUsername)
+            .first()
+        
+        if employee == nil {
+            return uniqueUsername
+        } else {
+            return try await generateUniqueUsernameWithSuffix(initialUsername: initialUsername, suffix: suffix + 1, req: req)
+        }
     }
 }
