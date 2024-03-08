@@ -14,6 +14,7 @@ public func configure(_ app: Application) async throws {
     ), as: .mongo)
 
     app.migrations.add(CreateUser())
+    app.migrations.add(CreateAdminUser())
     app.migrations.add(CreateModule())
     app.migrations.add(CreateModuleUserPivot())
     app.migrations.add(CreateToken())
@@ -24,14 +25,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateUserTabPivot())
     app.migrations.add(CreateDocumentActivityLog())
     app.migrations.add(CreatePotentialEmployee())
-    
-    switch app.environment {
-        case .development:
-            app.migrations.add(CreateAdminUser())
-            app.databases.middleware.use(UserMiddleware(), on: .mongo)
-        default:
-            break
-    }
+    app.databases.middleware.use(UserMiddleware(), on: .mongo)
 
     // register routes
     try routes(app)

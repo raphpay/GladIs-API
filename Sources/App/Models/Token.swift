@@ -34,6 +34,11 @@ extension Token {
         let random = [UInt8].random(count: 16).base64
         return try Token(value: random, userID: user.requireID())
     }
+    
+    static func generate(for admin: AdminUser) throws -> Token {
+        let random = [UInt8].random(count: 16).base64
+        return try Token(value: random, userID: admin.requireID())
+    }
 }
 
 extension Token: ModelTokenAuthenticatable {
