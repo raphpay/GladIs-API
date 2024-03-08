@@ -26,9 +26,12 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", use: getUser)
         tokenAuthGroup.get(":userID", "modules", use: getModules)
         tokenAuthGroup.get(":userID", "technicalDocumentationTabs", use: getTechnicalDocumentationTabs)
+        tokenAuthGroup.get(":userID", "manager", use: getManager)
+        tokenAuthGroup.get(":userID", "employees", use: getEmployees)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
+        tokenAuthGroup.put(":userID", "addManager", ":managerID", use: addManager)
         // Delete
         tokenAuthGroup.delete(":userID", use: remove)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -153,6 +156,42 @@ struct UserController: RouteCollection {
             }
     }
     
+    func getManager(req: Request) async throws -> User.Public {
+        guard let employee = try await User.find(req.parameters.get("userID"), on: req.db),
+              let managerID = employee.managerID,
+              let manager = try await User.find(UUID(uuidString: managerID), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return manager.convertToPublic()
+    }
+    
+    func getEmployees(req: Request) async throws -> [User.Public] {
+        guard let manager = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        var employees: [User.Public] = []
+        if let employeesIDs = manager.employeesIDs {
+            for employeeID in employeesIDs {
+                guard let id = UUID(uuidString: employeeID) else {
+                    throw Abort(.notFound)
+                }
+                
+                guard let employee = try await User
+                    .query(on: req.db)
+                    .filter(\.$id == id)
+                    .first() else {
+                    throw Abort(.notFound)
+                }
+                
+                employees.append(employee.convertToPublic())
+            }
+        }
+        
+        return employees
+    }
+    
     // MARK: - Update
     func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
@@ -200,6 +239,27 @@ struct UserController: RouteCollection {
         try await user.save(on: req.db)
         
         return PasswordChangeResponse(message: "Password changed successfully")
+    }
+    
+    func addManager(req: Request) async throws -> User.Public {
+        guard let managerID = req.parameters.get("managerID"),
+              let employeeID = req.parameters.get("userID"),
+            let manager = try await User.find(UUID(uuidString: managerID), on: req.db),
+              let employee = try await User.find(UUID(uuidString: employeeID), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        if manager.employeesIDs != nil {
+            manager.employeesIDs?.append(employeeID)
+        } else {
+            manager.employeesIDs = [employeeID]
+        }
+        employee.managerID = managerID
+        
+        try await manager.save(on: req.db)
+        try await employee.save(on: req.db)
+        
+        return employee.convertToPublic()
     }
     
     // MARK: - Delete
