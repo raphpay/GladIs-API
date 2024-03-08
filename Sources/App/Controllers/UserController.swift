@@ -38,35 +38,40 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Create
-    func createWithoutToken(req: Request) async throws -> User.Public {
-        let input = try req.content.decode(User.Input.self)
+    func createWithoutToken(req: Request) throws -> EventLoopFuture<User.Public> {
+        let userData = try req.content.decode(UserCreateData.self)
         
-        guard !input.password.isEmpty else {
+        guard !userData.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
         do {
-            try PasswordValidation().validatePassword(input.password)
+            try PasswordValidation().validatePassword(userData.password)
         } catch {
             throw error
         }
-        let passwordHash = try Bcrypt.hash(input.password)
+        let password = try Bcrypt.hash(userData.password)
         
-        let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, req: req)
-        let user = User(firstName: input.firstName, lastName: input.lastName,
-                        phoneNumber: input.phoneNumber, username: username, password: passwordHash,
-                        email: input.email, firstConnection: true, userType: input.userType,
-                        companyName: input.companyName, products: input.products,
-                        numberOfEmployees: input.numberOfEmployees, numberOfUsers: input.numberOfUsers,
-                        salesAmount: input.salesAmount, employeesIDs: input.employeesIDs,
-                        managerID: input.managerID)
-        try await user.save(on: req.db)
-        return user.convertToPublic()
+        return User
+            .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
+            .flatMap { username in
+                let user = User(firstName: userData.firstName, lastName: userData.lastName,
+                                phoneNumber: userData.phoneNumber, username: username, password: password,
+                                email: userData.email, firstConnection: true, userType: userData.userType,
+                                companyName: userData.companyName, products: userData.products,
+                                numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
+                                salesAmount: userData.salesAmount, employeesIDs: userData.employeesIDs,
+                                managerID: userData.managerID)
+                
+                return user
+                    .save(on: req.db)
+                    .map { user.convertToPublic() }
+            }
     }
     
     func create(req: Request) throws -> EventLoopFuture<User.Public> {
-        try User.Input.validate(content: req)
-        let userData = try req.content.decode(User.Input.self)
+        try UserCreateData.validate(content: req)
+        let userData = try req.content.decode(UserCreateData.self)
         let adminUser = try req.auth.require(User.self)
         
         guard !userData.password.isEmpty else {

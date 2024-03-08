@@ -142,7 +142,7 @@ extension Validator where T == Int {
     }
 }
 
-extension User.Input: Validatable {
+extension UserCreateData: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("email", as: String.self, is: .customEmail)
         validations.add("phoneNumber", as: String.self, is: .frenchPhoneNumber)

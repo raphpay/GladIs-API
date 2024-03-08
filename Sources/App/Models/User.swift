@@ -101,44 +101,52 @@ final class User: Model, Content {
         self.managerID = managerID
     }
     
-    struct Public: Content {
+    final class Public: Content {
         // Required
-        let id: UUID?
-        let firstName: String
-        let lastName: String
-        let phoneNumber: String
-        let email: String
-        let username: String
-        let firstConnection: Bool
-        let userType: UserType
+        var id: UUID?
+        var firstName: String
+        var lastName: String
+        var phoneNumber: String
+        var email: String
+        var username: String
+        var firstConnection: Bool
+        var userType: UserType
         // Optional
-        let companyName: String?
-        let products: String?
-        let numberOfEmployees: Int?
-        let numberOfUsers: Int?
-        let salesAmount: Double?
-        let employeesIDs: [String]?
-        let managerID: String?
+        var companyName: String?
+        var products: String?
+        var numberOfEmployees: Int?
+        var numberOfUsers: Int?
+        var salesAmount: Double?
+        var employeesIDs: [String]?
+        var managerID: String?
+        
+        init(id: UUID?,
+             firstName: String, lastName: String,
+             phoneNumber: String, email: String,
+             username: String, firstConnection: Bool, userType: UserType = .client,
+             products: String? = nil, companyName: String? = nil,
+             numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
+             salesAmount: Double? = nil, employeesIDs: [String]? = nil,
+             managerID: String? = nil) {
+            // Required
+            self.id = id
+            self.firstName = firstName
+            self.lastName = lastName
+            self.phoneNumber = phoneNumber
+            self.email = email
+            self.username = username
+            self.firstConnection = firstConnection
+            self.userType = userType
+            // Optional
+            self.companyName = companyName
+            self.products = products
+            self.numberOfEmployees = numberOfEmployees
+            self.numberOfUsers = numberOfUsers
+            self.salesAmount = salesAmount
+            self.employeesIDs = employeesIDs
+            self.managerID = managerID
+        }
     }
-    
-    struct Input: Content {
-        // Required
-        let firstName: String
-        let lastName: String
-        let phoneNumber: String
-        let email: String
-        let password: String
-        let userType: UserType
-        // Optional
-        let companyName: String?
-        let products: String?
-        let numberOfEmployees: Int?
-        let numberOfUsers: Int?
-        let salesAmount: Double?
-        let employeesIDs: [String]?
-        let managerID: String?
-    }
-
 }
 
 
@@ -176,7 +184,7 @@ extension User {
         User.Public(id: id,
                     firstName: firstName, lastName: lastName, phoneNumber: phoneNumber, email: email,
                     username: username, firstConnection: firstConnection, userType: userType,
-                    companyName: companyName, products: products, numberOfEmployees: numberOfEmployees,
+                    products: products, companyName: companyName, numberOfEmployees: numberOfEmployees,
                     numberOfUsers: numberOfUsers, salesAmount: salesAmount, employeesIDs: employeesIDs,
                     managerID: managerID
         )
@@ -220,4 +228,22 @@ struct PasswordChangeRequest: Content {
 
 struct PasswordChangeResponse: Content {
     let message: String
+}
+
+struct UserCreateData: Content {
+    // Required
+    let firstName: String
+    let lastName: String
+    let phoneNumber: String
+    let email: String
+    let password: String
+    let userType: UserType
+    // Optional
+    let companyName: String?
+    let products: String?
+    let numberOfEmployees: Int?
+    let numberOfUsers: Int?
+    let salesAmount: Double?
+    let employeesIDs: [String]?
+    let managerID: String?
 }
