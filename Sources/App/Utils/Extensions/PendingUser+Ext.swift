@@ -16,7 +16,6 @@ extension PendingUser {
                         companyName: self.companyName, products: self.products,
                         numberOfEmployees: self.numberOfEmployees, numberOfUsers: self.numberOfUsers,
                         salesAmount: self.salesAmount)
-        // TODO: Get the modules right after
         // TODO: Generate and send a password
         return user
     }

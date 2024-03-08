@@ -11,17 +11,20 @@ import Vapor
 struct DocumentController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let documents = routes.grouped("api", "documents")
-        // TODO: Handle tokens
+        // Token Protected
+        let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthGroup = documents.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
-        documents.post(use: upload)
+        tokenAuthGroup.post(use: upload)
         // Read
-        documents.get(use: getAllDocuments)
-        documents.get(":documentID", use: getDocument)
-        documents.get("download", ":documentID", use: dowloadDocument)
-        documents.post("getDocumentsAtPath", use: getDocumentsAtPath)
+        tokenAuthGroup.get(use: getAllDocuments)
+        tokenAuthGroup.get(":documentID", use: getDocument)
+        tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
+        tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
         // Update
         // Delete
-        documents.delete(":documentID", use: remove)
+        tokenAuthGroup.delete(":documentID", use: remove)
     }
     
     
