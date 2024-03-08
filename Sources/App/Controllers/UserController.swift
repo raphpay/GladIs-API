@@ -98,35 +98,23 @@ struct UserController: RouteCollection {
     }
     
     func addModule(req: Request) async throws -> Module {
-        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
-        }
-        
-        guard let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
+              let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
         try await userQuery.$modules.attach(moduleQuery, on: req.db)
-        
         return moduleQuery
     }
     
-    func addTechnicalDocTab(req: Request) throws -> EventLoopFuture<TechnicalDocumentationTab> {
-        let userQuery = User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
+    func addTechnicalDocTab(req: Request) async throws -> TechnicalDocumentationTab {
+        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
+              let tabQuery = try await TechnicalDocumentationTab.find(req.parameters.get("tabID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
         
-        let tabQuery = TechnicalDocumentationTab
-            .find(req.parameters.get("tabID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-        
-        return userQuery.and(tabQuery)
-            .flatMap { user, tab in
-                user
-                    .$technicalDocumentationTabs
-                    .attach(tab, on: req.db)
-                    .map { tab }
-            }
+        try await userQuery.$technicalDocumentationTabs.attach(tabQuery, on: req.db)
+        return tabQuery
     }
     
     // MARK: - Read

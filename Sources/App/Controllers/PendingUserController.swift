@@ -14,7 +14,6 @@ struct PendingUserController: RouteCollection {
         pendingUsers.post(use: create)
         pendingUsers.post(":pendingUserID", "modules", ":moduleID", use: addModule)
         pendingUsers.get(":pendingUserID", "modules", use: getModules)
-        pendingUsers.put(":pendingUserID", "employees", use: addEmployees)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -32,35 +31,30 @@ struct PendingUserController: RouteCollection {
     }
     
     // MARK: - CREATE
-    func create(req: Request) throws -> EventLoopFuture<PendingUser> {
-        try PendingUser.validate(content: req)
-        let user = try req.content.decode(PendingUser.self)
+    func create(req: Request) async throws -> PendingUser {
+        try PendingUser.Input.validate(content: req)
+        let input = try req.content.decode(PendingUser.Input.self)
         
+        let user = PendingUser(firstName: input.firstName, lastName: input.lastName,
+                               phoneNumber: input.phoneNumber, companyName: input.companyName,
+                               email: input.email, numberOfEmployees: input.numberOfEmployees,
+                               numberOfUsers: input.numberOfUsers, salesAmount: input.salesAmount)
+        
+        try await user.save(on: req.db)
         return user
-            .save(on: req.db)
-            .map { user }
     }
     
-    func addModule(req: Request) throws -> EventLoopFuture<Module> {
-        let pendingUserQuery = PendingUser
-            .find(req.parameters.get("pendingUserID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
+    func addModule(req: Request) async throws -> Module {
+        guard let pendingUserQuery = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db),
+              let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
         
-        let moduleQuery = Module
-            .find(req.parameters.get("moduleID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-        
-        return pendingUserQuery.and(moduleQuery)
-            .flatMap { user, module in
-                user
-                    .$modules
-                    .attach(module, on: req.db)
-                    .map { module }
-            }
+        try await pendingUserQuery.$modules.attach(moduleQuery, on: req.db)
+        return moduleQuery
     }
     
     func convertToUser(req: Request) async throws -> User.Public {
-        try PendingUser.validate(content: req)
         let user = try req.auth.require(User.self)
         
         guard user.userType == .admin else {
@@ -73,35 +67,41 @@ struct PendingUserController: RouteCollection {
         
         let newUser = pendingUser.convertToUser()
         let username = try await User.generateUniqueUsername(firstName: user.firstName, lastName: user.lastName, on: req)
+        let givenPassword = "Passwordlong1("
+        do {
+            try PasswordValidation().validatePassword(givenPassword)
+        } catch {
+            throw error
+        }
+        let passwordHash = try Bcrypt.hash(givenPassword)
+        
+        newUser.password = passwordHash
         newUser.username = username
         
         try await newUser.save(on: req.db)
+        try await pendingUser.delete(force: true, on: req.db)
         return newUser.convertToPublic()
     }
     
     // MARK: - READ
-    func getAll(req: Request) throws -> EventLoopFuture<[PendingUser]> {
+    func getAll(req: Request) async throws -> [PendingUser] {
         let authUser = try req.auth.require(User.self)
         
         guard authUser.userType == .admin else {
             throw Abort(.badRequest, reason: "User should be admin for this action")
         }
         
-        return PendingUser
+        return try await PendingUser
             .query(on: req.db)
             .all()
     }
     
-    func getModules(req: Request) throws -> EventLoopFuture<[Module]> {
-        PendingUser
-            .find(req.parameters.get("pendingUserID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user
-                    .$modules
-                    .query(on: req.db)
-                    .all()
-            }
+    func getModules(req: Request) async throws -> [Module] {
+        guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+
+        return try await pendingUser.$modules.query(on: req.db).all()
     }
     
     func getEmployees(req: Request) async throws -> [PotentialEmployee] {
@@ -118,7 +118,7 @@ struct PendingUserController: RouteCollection {
     }
     
     // MARK: - UPDATE
-    func updateStatus(req: Request) throws -> EventLoopFuture<PendingUser> {
+    func updateStatus(req: Request) async throws -> PendingUser {
         let user = try req.auth.require(User.self)
         
         guard user.userType == .admin else {
@@ -126,45 +126,29 @@ struct PendingUserController: RouteCollection {
         }
         
         let newStatus = try req.content.decode(PendingUser.Status.self)
-        return PendingUser.find(req.parameters.get("pendingUserID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { pendingUser in
-                pendingUser.status = newStatus.type
-                return pendingUser
-                    .save(on: req.db)
-                    .map { pendingUser }
+        guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+            throw Abort(.notFound)
         }
-    }
-    
-    func addEmployees(req: Request) throws -> EventLoopFuture<PendingUser> {
-        let employees = try req.content.decode([PotentialEmployee].self)
         
-        return PendingUser
-            .find(req.parameters.get("pendingUserID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { pendingUser in
-                pendingUser.potentialEmployees = employees
-                return pendingUser
-                    .save(on: req.db)
-                    .map { pendingUser }
-            }
+        pendingUser.status = newStatus.type
+        try await pendingUser.save(on: req.db)
+        return pendingUser
     }
     
     // MARK: - DELETE
-    func remove(req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    func remove(req: Request) async throws -> HTTPStatus {
         let user = try req.auth.require(User.self)
         
         guard user.userType == .admin else {
             throw Abort(.badRequest, reason: "User should be admin to create a user from pending user")
         }
         
-        return PendingUser
-            .find(req.parameters.get("pendingUserID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { pendingUser in
-                return pendingUser
-                    .delete(on: req.db)
-                    .transform(to: .noContent)
-            }
+        guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        try await pendingUser.delete(on: req.db)
+        
+        return .noContent
     }
 }

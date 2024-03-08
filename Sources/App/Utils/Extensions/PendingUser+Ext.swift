@@ -11,7 +11,7 @@ extension PendingUser {
     func convertToUser() -> User {
         let user = User(firstName: self.firstName, lastName: self.lastName,
                         phoneNumber: self.phoneNumber,
-                        username: "", password: "",
+                        username: "", password: "Passwordlong1(",
                         email: self.email, firstConnection: true, userType: .client,
                         companyName: self.companyName, products: self.products,
                         numberOfEmployees: self.numberOfEmployees, numberOfUsers: self.numberOfUsers,

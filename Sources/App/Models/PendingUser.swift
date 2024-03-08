@@ -62,6 +62,7 @@ final class PendingUser: Model, Content {
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
+        self.phoneNumber = phoneNumber
         self.companyName = companyName
         self.email = email
         self.products = products
@@ -69,6 +70,19 @@ final class PendingUser: Model, Content {
         self.numberOfUsers = numberOfUsers
         self.salesAmount = salesAmount
         self.status = status
+    }
+    
+    struct Input: Content {
+        var id: UUID?
+        let firstName: String
+        let lastName: String
+        let phoneNumber: String
+        let companyName: String
+        let email: String
+        let products: String
+        let numberOfEmployees: Int?
+        let numberOfUsers: Int?
+        let salesAmount: Double?
     }
 }
 
