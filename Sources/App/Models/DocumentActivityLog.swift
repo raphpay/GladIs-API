@@ -50,23 +50,13 @@ final class DocumentActivityLog: Model, Content {
         self.$client.id = clientID
     }
     
-    final class Input: Content {
+    struct Input: Content {
         var id: UUID?
-        var action: DocumentActivityLog.ActionEnum
-        var actorIsAdmin: Bool
-        var actorID: UUID
-        var documentID: UUID
-        var clientID: UUID
-        
-        init(id: UUID? = nil, action: DocumentActivityLog.ActionEnum,
-             actorIsAdmin: Bool, actorID: UUID, clientID: UUID, documentID: UUID) {
-            self.id = id
-            self.action = action
-            self.actorIsAdmin = actorIsAdmin
-            self.actorID = actorID
-            self.clientID = clientID
-            self.documentID = documentID
-        }
+        let action: DocumentActivityLog.ActionEnum
+        let actorIsAdmin: Bool
+        let actorID: UUID
+        let documentID: UUID
+        let clientID: UUID
     }
 }
 

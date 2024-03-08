@@ -62,3 +62,33 @@ extension User {
             }
     }
 }
+
+extension EventLoopFuture where Value: User {
+    func convertToPublic() -> EventLoopFuture<User.Public> {
+        return self.map { user in
+            return user.convertToPublic()
+        }
+    }
+}
+
+
+extension Collection where Element: User {
+    func convertToPublic() -> [User.Public] {
+        return self.map { $0.convertToPublic() }
+    }
+}
+
+extension EventLoopFuture where Value == Array<User> {
+    func convertToPublic() -> EventLoopFuture<[User.Public]> {
+        return self.map { $0.convertToPublic() }
+    }
+}
+
+extension User: ModelAuthenticatable {
+    static let usernameKey = \User.$username
+    static let passwordHashKey = \User.$password
+    
+    func verify(password: String) throws -> Bool {
+        try Bcrypt.verify(password, created: self.password)
+    }
+}

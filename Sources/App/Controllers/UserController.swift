@@ -38,7 +38,7 @@ struct UserController: RouteCollection {
     
     // MARK: - Create
     func createWithoutToken(req: Request) throws -> EventLoopFuture<User.Public> {
-        let userData = try req.content.decode(UserCreateData.self)
+        let userData = try req.content.decode(User.Input.self)
         
         guard !userData.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
@@ -69,8 +69,8 @@ struct UserController: RouteCollection {
     }
     
     func create(req: Request) throws -> EventLoopFuture<User.Public> {
-        try UserCreateData.validate(content: req)
-        let userData = try req.content.decode(UserCreateData.self)
+        try User.Input.validate(content: req)
+        let userData = try req.content.decode(User.Input.self)
         let adminUser = try req.auth.require(User.self)
         
         guard !userData.password.isEmpty else {

@@ -37,20 +37,12 @@ final class PotentialEmployee: Model, Content {
         self.$pendingUser.id = pendingUserID
     }
     
-    final class Input: Content {
+    struct Input: Content {
         var id: UUID?
-        var firstName: String
-        var lastName: String
-        var companyName: String
-        var pendingUserID: PendingUser.IDValue
-        
-        init(id: UUID? = nil, firstName: String, lastName: String, companyName: String, pendingUserID: PendingUser.IDValue) {
-            self.id = id
-            self.firstName = firstName
-            self.lastName = lastName
-            self.companyName = companyName
-            self.pendingUserID = pendingUserID
-        }
+        let firstName: String
+        let lastName: String
+        let companyName: String
+        let pendingUserID: PendingUser.IDValue
     }
 }
 

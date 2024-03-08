@@ -28,16 +28,10 @@ final class TechnicalDocumentationTab: Model, Content {
         self.area = area
     }
     
-    final class Input: Content {
+    struct Input: Content {
         var id: UUID?
-        var name: String
-        var area: String
-        
-        init(id: UUID? = nil, name: String, area: String) {
-            self.id = id
-            self.name = name
-            self.area = area
-        }
+        let name: String
+        let area: String
     }
 }
 
