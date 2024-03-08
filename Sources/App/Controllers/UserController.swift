@@ -29,11 +29,9 @@ struct UserController: RouteCollection {
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
-        tokenAuthGroup.put("addEmployee", ":clientID", ":employeeID", use: linkClientToEmployee)
-        tokenAuthGroup.put("addManager", ":employeeID", ":clientID", use: linkEmployeeToClient)
         // Delete
-        tokenAuthGroup.delete(use: remove)
-        tokenAuthGroup.delete("removeAll", use: removeAll)
+        tokenAuthGroup.delete(":userID", use: remove)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     // MARK: - Create
@@ -168,19 +166,17 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Update
-    func setUserFirstConnectionToFalse(req: Request) throws -> EventLoopFuture<User.Public> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user.firstConnection = false
-                return user
-                    .save(on: req.db)
-                    .map { user.convertToPublic() }
-            }
+    func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        user.firstConnection = false
+        try await user.save(on: req.db)
+        return user.convertToPublic()
     }
     
-    func changePassword(req: Request) throws -> EventLoopFuture<PasswordChangeResponse> {
+    func changePassword(req: Request) async throws -> PasswordChangeResponse {
         let user = try req.auth.require(User.self)
         let userId = try req.parameters.require("userID", as: UUID.self)
         
@@ -207,74 +203,31 @@ struct UserController: RouteCollection {
         let hashedNewPassword = try Bcrypt.hash(changeRequest.newPassword)
         
         // Update the user's password in the database
-        return User
-            .find(userId, on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user.password = hashedNewPassword
-                return user
-                    .save(on: req.db)
-                    .transform(to: PasswordChangeResponse(message: "Password changed successfully"))
-            }
-    }
-    
-    func linkClientToEmployee(req: Request) throws -> EventLoopFuture<User.Public> {
-        guard let employeeID = req.parameters.get("employeeID") else {
-            throw Abort(.badRequest, reason: "Employee ID is missing in parameters")
+        
+        guard let user = try await User.find(userId, on: req.db) else {
+            throw Abort(.notFound)
         }
         
-        return User
-            .find(req.parameters.get("clientID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                if user.employeesIDs == nil {
-                    user.employeesIDs = [employeeID]
-                } else {
-                    user.employeesIDs?.append(employeeID)
-                }
-                
-                return user
-                    .save(on: req.db)
-                    .map { user.convertToPublic() }
-            }
-    }
-    
-    func linkEmployeeToClient(req: Request) throws -> EventLoopFuture<User.Public> {
-        guard let clientID = req.parameters.get("clientID") else {
-            throw Abort(.badRequest, reason: "Client ID is missing in parameters")
-        }
+        user.password = hashedNewPassword
+        try await user.save(on: req.db)
         
-        return User
-            .find(req.parameters.get("employeeID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user.managerID = clientID
-                
-                return user.save(on: req.db)
-                    .map { user.convertToPublic() }
-            }
+        return PasswordChangeResponse(message: "Password changed successfully")
     }
     
     // MARK: - Delete
-    func remove(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user
-                    .delete(force: true, on: req.db)
-                    .transform(to: .noContent)
-            }
+    func remove(req: Request) async throws -> HTTPStatus {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        try await user.delete(force: true, on: req.db)
+        return .noContent
     }
     
-    func removeAll(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        User
+    func removeAll(req: Request) async throws -> HTTPStatus {
+        try await User
             .query(on: req.db)
             .all()
-            .flatMap { user in
-                user
-                    .delete(force: true, on: req.db)
-                    .transform(to: .noContent)
-            }
+            .delete(force: true, on: req.db)
+        return .noContent
     }
 }
