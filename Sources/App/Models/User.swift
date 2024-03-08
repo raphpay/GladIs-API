@@ -69,9 +69,6 @@ final class User: Model, Content {
               to: \.$technicalDocumentationTab)
     var technicalDocumentationTabs: [TechnicalDocumentationTab]
     
-    @Children(for: \.$user)
-    var employees: [Employee]
-    
     init() {}
     
     init(id: UUID? = nil,

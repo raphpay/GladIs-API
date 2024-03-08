@@ -17,6 +17,5 @@ func routes(_ app: Application) throws {
     try app.register(collection: DocumentController())
     try app.register(collection: TechnicalDocumentationTabController())
     try app.register(collection: DocumentActivityLogController())
-    try app.register(collection: PotentialEmployeeController())    
-    try app.register(collection: EmployeeController())
+    try app.register(collection: PotentialEmployeeController())
 }

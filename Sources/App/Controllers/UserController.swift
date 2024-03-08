@@ -13,7 +13,6 @@ struct UserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let users = routes.grouped("api", "users")
         users.post("noToken", use: createWithoutToken)
-        users.get(":userID", "employees", use: getEmployees)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -186,14 +185,6 @@ struct UserController: RouteCollection {
                     .query(on: req.db)
                     .all()
             }
-    }
-    
-    func getEmployees(req: Request) async throws -> [Employee.Public] {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
-        }
-        
-        return try await user.$employees.get(on: req.db).convertToPublic()
     }
     
     // MARK: - Update

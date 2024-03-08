@@ -24,7 +24,6 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateUserTabPivot())
     app.migrations.add(CreateDocumentActivityLog())
     app.migrations.add(CreatePotentialEmployee())
-    app.migrations.add(CreateEmployee())
     
     switch app.environment {
         case .development:
