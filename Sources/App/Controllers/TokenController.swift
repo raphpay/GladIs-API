@@ -28,54 +28,50 @@ struct TokenController: RouteCollection {
     }
     
     // MARK: - READ
-    func getTokenByID(req: Request) throws -> EventLoopFuture<Token> {
-        Token
-            .find(req.parameters.get("tokenID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
+    func getTokenByID(req: Request) async throws -> Token {
+        guard let token = try await Token.find(req.parameters.get("tokenID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return token
     }
     
-    func getTokens(req: Request) throws -> EventLoopFuture<[Token]> {
-        Token
+    func getTokens(req: Request) async throws -> [Token] {
+        try await Token
             .query(on: req.db)
             .all()
     }
     
     // MARK: - Login
-    func login(req: Request) throws -> EventLoopFuture<Token> {
+    func login(req: Request) async throws -> Token {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         
         // Delete existing tokens
-        return Token
+        let token = try await Token
             .query(on: req.db)
             .filter(\.$user.$id == userID)
             .first()
-            .flatMap { token in
-                if let token = token {
-                    // If a token exists, update its value
-                    token.value = [UInt8].random(count: 16).base64
-                    return token
-                        .update(on: req.db)
-                        .transform(to: token)
-                } else {
-                    // If no token exists, create a new one
-                    let newToken = try! Token.generate(for: user)
-                    return newToken
-                        .save(on: req.db)
-                        .map { newToken }
-                }
-            }
+        
+        if let token = token {
+            token.value = [UInt8].random(count: 16).base64
+            try await token.update(on: req.db)
+            return token
+        } else {
+            // If no token exists, create a new one
+            let newToken = try! Token.generate(for: user)
+            try await newToken.save(on: req.db)
+            return newToken
+        }
     }
     
-    func logout(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        Token
-            .find(req.parameters.get("tokenID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { token in
-                token
-                    .delete(force: true, on: req.db)
-                    .transform(to: .noContent)
-            }
+    func logout(req: Request) async throws -> HTTPStatus {
+        guard let token = try await Token.find(req.parameters.get("tokenID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        try await token.delete(force: true, on: req.db)
+        return .noContent
     }
     
     // MARK: - Delete
