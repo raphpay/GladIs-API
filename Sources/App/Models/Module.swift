@@ -23,6 +23,11 @@ final class Module: Model, Content {
         self.id = id
         self.name = name
     }
+    
+    struct Input: Content {
+        var id: UUID?
+        let name: String
+    }
 }
 
 extension Module {

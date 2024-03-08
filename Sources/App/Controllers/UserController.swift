@@ -37,43 +37,39 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Create
-    func createWithoutToken(req: Request) throws -> EventLoopFuture<User.Public> {
-        let userData = try req.content.decode(User.Input.self)
+    func createWithoutToken(req: Request) async throws -> User.Public {
+        let input = try req.content.decode(User.Input.self)
         
-        guard !userData.password.isEmpty else {
+        guard !input.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
         do {
-            try PasswordValidation().validatePassword(userData.password)
+            try PasswordValidation().validatePassword(input.password)
         } catch {
             throw error
         }
-        let password = try Bcrypt.hash(userData.password)
+        let passwordHash = try Bcrypt.hash(input.password)
         
-        return User
-            .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
-            .flatMap { username in
-                let user = User(firstName: userData.firstName, lastName: userData.lastName,
-                                phoneNumber: userData.phoneNumber, username: username, password: password,
-                                email: userData.email, firstConnection: true, userType: userData.userType,
-                                companyName: userData.companyName, products: userData.products,
-                                numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
-                                salesAmount: userData.salesAmount, employeesIDs: userData.employeesIDs,
-                                managerID: userData.managerID)
-                
-                return user
-                    .save(on: req.db)
-                    .map { user.convertToPublic() }
-            }
+        let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, on: req)
+        let uniqueEmail = try await User.verifyUniqueEmail(input.email, on: req)
+        let user = User(firstName: input.firstName, lastName: input.lastName,
+                        phoneNumber: input.phoneNumber, username: username, password: passwordHash,
+                        email: uniqueEmail, firstConnection: true, userType: input.userType,
+                        companyName: input.companyName, products: input.products,
+                        numberOfEmployees: input.numberOfEmployees, numberOfUsers: input.numberOfUsers,
+                        salesAmount: input.salesAmount, employeesIDs: input.employeesIDs,
+                        managerID: input.managerID)
+        try await user.save(on: req.db)
+        return user.convertToPublic()
     }
     
-    func create(req: Request) throws -> EventLoopFuture<User.Public> {
+    func create(req: Request) async throws -> User.Public {
         try User.Input.validate(content: req)
-        let userData = try req.content.decode(User.Input.self)
+        let input = try req.content.decode(User.Input.self)
         let adminUser = try req.auth.require(User.self)
         
-        guard !userData.password.isEmpty else {
+        guard !input.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
@@ -82,50 +78,39 @@ struct UserController: RouteCollection {
         }
         
         do {
-            try PasswordValidation().validatePassword(userData.password)
+            try PasswordValidation().validatePassword(input.password)
         } catch {
             throw error
         }
-        let password = try Bcrypt.hash(userData.password)
+        let passwordHash = try Bcrypt.hash(input.password)
         
+        let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, on: req)
+        let uniqueEmail = try await User.verifyUniqueEmail(input.email, on: req)
         
-        return User
-            .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
-            .flatMap { username in
-                return User.verifyUniqueEmail(userData.email, on: req)
-                    .flatMap { uniqueEmail in
-                        let user = User(firstName: userData.firstName, lastName: userData.lastName,
-                                        phoneNumber: userData.phoneNumber, username: username, password: password,
-                                        email: userData.email, firstConnection: true, userType: userData.userType,
-                                        companyName: userData.companyName, products: userData.products,
-                                        numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
-                                        salesAmount: userData.salesAmount, employeesIDs: userData.employeesIDs,
-                                        managerID: userData.managerID)
-                        
-                        return user
-                            .save(on: req.db)
-                            .map { user.convertToPublic() }
-                    }
-            }
+        let user = User(firstName: input.firstName, lastName: input.lastName,
+                        phoneNumber: input.phoneNumber, username: username, password: passwordHash,
+                        email: uniqueEmail, firstConnection: true, userType: input.userType,
+                        companyName: input.companyName, products: input.products,
+                        numberOfEmployees: input.numberOfEmployees, numberOfUsers: input.numberOfUsers,
+                        salesAmount: input.salesAmount, employeesIDs: input.employeesIDs,
+                        managerID: input.managerID)
+        
+        try await user.save(on: req.db)
+        return user.convertToPublic()
     }
     
-    
-    func addModule(req: Request) throws -> EventLoopFuture<Module> {
-        let userQuery = User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
+    func addModule(req: Request) async throws -> Module {
+        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
         
-        let moduleQuery = Module
-            .find(req.parameters.get("moduleID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
+        guard let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
         
-        return userQuery.and(moduleQuery)
-            .flatMap { user, module in
-                user
-                    .$modules
-                    .attach(module, on: req.db)
-                    .map { module }
-            }
+        try await userQuery.$modules.attach(moduleQuery, on: req.db)
+        
+        return moduleQuery
     }
     
     func addTechnicalDocTab(req: Request) throws -> EventLoopFuture<TechnicalDocumentationTab> {
@@ -147,32 +132,27 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Read
-    func getAll(req: Request) throws -> EventLoopFuture<[User.Public]> {
-        User
+    func getAll(req: Request) async throws -> [User.Public] {
+        try await User
             .query(on: req.db)
             .all()
             .convertToPublic()
     }
     
-    func getUser(req: Request) throws -> EventLoopFuture<User.Public> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .map { user in
-                return user.convertToPublic()
-            }
+    func getUser(req: Request) async throws -> User.Public {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return user.convertToPublic()
     }
     
-    func getModules(req: Request) throws -> EventLoopFuture<[Module]> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user
-                    .$modules
-                    .query(on: req.db)
-                    .all()
-            }
+    func getModules(req: Request) async throws -> [Module] {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return try await user.$modules.query(on: req.db).all()
     }
     
     func getTechnicalDocumentationTabs(req: Request) throws -> EventLoopFuture<[TechnicalDocumentationTab]> {

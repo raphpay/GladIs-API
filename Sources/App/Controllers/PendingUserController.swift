@@ -59,7 +59,7 @@ struct PendingUserController: RouteCollection {
             }
     }
     
-    func convertToUser(req: Request) throws -> EventLoopFuture<User.Public> {
+    func convertToUser(req: Request) async throws -> User.Public {
         try PendingUser.validate(content: req)
         let user = try req.auth.require(User.self)
         
@@ -67,19 +67,16 @@ struct PendingUserController: RouteCollection {
             throw Abort(.badRequest, reason: "User should be admin to create a user from pending user")
         }
         
-        return PendingUser
-            .find(req.parameters.get("pendingUserID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { pendingUser in
-                let user = pendingUser.convertToUser()
-                return User
-                    .generateUniqueUsername(firstName: user.firstName, lastName: user.lastName, on: req)
-                    .flatMap { username in
-                        user.username = username
-                        return user.save(on: req.db)
-                            .map { user.convertToPublic() }
-                    }
-            }
+        guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let newUser = pendingUser.convertToUser()
+        let username = try await User.generateUniqueUsername(firstName: user.firstName, lastName: user.lastName, on: req)
+        newUser.username = username
+        
+        try await newUser.save(on: req.db)
+        return newUser.convertToPublic()
     }
     
     // MARK: - READ
