@@ -161,6 +161,7 @@ extension User {
         static let username = FieldKey(stringLiteral: "username")
         static let password = FieldKey(stringLiteral: "password")
         
+        static let userTypeEnum = FieldKey(stringLiteral: "userTypeEnum")
         static let userType = "userType"
         static let admin = "admin"
         static let client = "client"

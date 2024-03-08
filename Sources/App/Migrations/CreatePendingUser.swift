@@ -19,8 +19,6 @@ struct CreatePendingUser: AsyncMigration {
             .case(PendingUser.v20240207.rejected)
             .create()
         
-//        let status = try await database.enum(PendingUser.v20240207.status).read()
-        
         try await database.schema(PendingUser.v20240207.schemaName)
             .id()
             .field(PendingUser.v20240207.firstName, .string, .required)
