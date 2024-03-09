@@ -16,6 +16,7 @@ struct PotentialEmployeeController: RouteCollection {
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthGroup = employees.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        tokenAuthGroup.post(":employeeID", "convertToUser", use: convertToUser)
         // Read
         tokenAuthGroup.get(use: getAll)
         // Delete
@@ -35,6 +36,17 @@ struct PotentialEmployeeController: RouteCollection {
         
         try await employee.save(on: req.db)
         return employee
+    }
+    
+    func convertToUser(req: Request) async throws -> User.Public {
+        guard let potentialEmployee = try await PotentialEmployee.find(req.parameters.get("employeeID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let newEmployee = potentialEmployee.convertToEmployee()
+        try await newEmployee.save(on: req.db)
+        try await potentialEmployee.delete(force: true, on: req.db)
+        return newEmployee.convertToPublic()
     }
     
     // MARK: - Read

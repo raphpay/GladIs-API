@@ -249,8 +249,12 @@ struct UserController: RouteCollection {
             throw Abort(.notFound)
         }
         
-        if manager.employeesIDs != nil {
-            manager.employeesIDs?.append(employeeID)
+        if let managerEmployees = manager.employeesIDs {
+            if !managerEmployees.contains(employeeID) {
+                manager.employeesIDs?.append(employeeID)
+            } else {
+                throw Abort(.badRequest, reason: "Manager is already set")
+            }
         } else {
             manager.employeesIDs = [employeeID]
         }
