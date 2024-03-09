@@ -34,10 +34,11 @@ struct PendingUserController: RouteCollection {
     func create(req: Request) async throws -> PendingUser {
         try PendingUser.Input.validate(content: req)
         let input = try req.content.decode(PendingUser.Input.self)
+        let uniqueEmail = try await PendingUser.verifyUniqueEmail(input.email, on: req)
         
         let user = PendingUser(firstName: input.firstName, lastName: input.lastName,
                                phoneNumber: input.phoneNumber, companyName: input.companyName,
-                               email: input.email, numberOfEmployees: input.numberOfEmployees,
+                               email: uniqueEmail, numberOfEmployees: input.numberOfEmployees,
                                numberOfUsers: input.numberOfUsers, salesAmount: input.salesAmount)
         
         try await user.save(on: req.db)
@@ -112,7 +113,6 @@ struct PendingUserController: RouteCollection {
         let employees = try await pendingUser.$potentialEmployees
             .query(on: req.db)
             .all()
-        
         
         return employees
     }
