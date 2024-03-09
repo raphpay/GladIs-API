@@ -24,9 +24,14 @@ struct PotentialEmployeeController: RouteCollection {
     
     // MARK: - Create
     func create(req: Request) async throws -> PotentialEmployee {
+        try PotentialEmployee.Input.validate(content: req)
         let input = try req.content.decode(PotentialEmployee.Input.self)
-        let employee = PotentialEmployee(firstName: input.firstName, lastName: input.lastName,
-                                         companyName: input.companyName, pendingUserID: input.pendingUserID)
+        let employee = PotentialEmployee(firstName: input.firstName,
+                                         lastName: input.lastName,
+                                         companyName: input.companyName,
+                                         phoneNumber: input.phoneNumber,
+                                         email: input.email,
+                                         pendingUserID: input.pendingUserID)
         
         try await employee.save(on: req.db)
         return employee
