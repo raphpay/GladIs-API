@@ -26,54 +26,51 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", use: getUser)
         tokenAuthGroup.get(":userID", "modules", use: getModules)
         tokenAuthGroup.get(":userID", "technicalDocumentationTabs", use: getTechnicalDocumentationTabs)
+        tokenAuthGroup.get(":userID", "manager", use: getManager)
+        tokenAuthGroup.get(":userID", "employees", use: getEmployees)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
-        tokenAuthGroup.put("addEmployee", ":clientID", ":employeeID", use: linkClientToEmployee)
-        tokenAuthGroup.put("addManager", ":employeeID", ":clientID", use: linkEmployeeToClient)
+        tokenAuthGroup.put(":userID", "addManager", ":managerID", use: addManager)
         // Delete
-        tokenAuthGroup.delete(use: remove)
-        tokenAuthGroup.delete("removeAll", use: removeAll)
+        tokenAuthGroup.delete(":userID", use: remove)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     // MARK: - Create
-    func createWithoutToken(req: Request) throws -> EventLoopFuture<User.Public> {
-        let userData = try req.content.decode(UserCreateData.self)
+    func createWithoutToken(req: Request) async throws -> User.Public {
+        let input = try req.content.decode(User.Input.self)
         
-        guard !userData.password.isEmpty else {
+        guard !input.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
         do {
-            try PasswordValidation().validatePassword(userData.password)
+            try PasswordValidation().validatePassword(input.password)
         } catch {
             throw error
         }
-        let password = try Bcrypt.hash(userData.password)
+        let passwordHash = try Bcrypt.hash(input.password)
         
-        return User
-            .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
-            .flatMap { username in
-                let user = User(firstName: userData.firstName, lastName: userData.lastName,
-                                phoneNumber: userData.phoneNumber, username: username, password: password,
-                                email: userData.email, firstConnection: true, userType: userData.userType,
-                                companyName: userData.companyName, products: userData.products,
-                                numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
-                                salesAmount: userData.salesAmount, employeesIDs: userData.employeesIDs,
-                                managerID: userData.managerID)
-                
-                return user
-                    .save(on: req.db)
-                    .map { user.convertToPublic() }
-            }
+        let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, on: req)
+        let uniqueEmail = try await User.verifyUniqueEmail(input.email, on: req)
+        let user = User(firstName: input.firstName, lastName: input.lastName,
+                        phoneNumber: input.phoneNumber, username: username, password: passwordHash,
+                        email: uniqueEmail, firstConnection: true, userType: input.userType,
+                        companyName: input.companyName, products: input.products,
+                        numberOfEmployees: input.numberOfEmployees, numberOfUsers: input.numberOfUsers,
+                        salesAmount: input.salesAmount, employeesIDs: input.employeesIDs,
+                        managerID: input.managerID)
+        try await user.save(on: req.db)
+        return user.convertToPublic()
     }
     
-    func create(req: Request) throws -> EventLoopFuture<User.Public> {
-        try UserCreateData.validate(content: req)
-        let userData = try req.content.decode(UserCreateData.self)
+    func create(req: Request) async throws -> User.Public {
+        try User.Input.validate(content: req)
+        let input = try req.content.decode(User.Input.self)
         let adminUser = try req.auth.require(User.self)
         
-        guard !userData.password.isEmpty else {
+        guard !input.password.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
@@ -82,97 +79,69 @@ struct UserController: RouteCollection {
         }
         
         do {
-            try PasswordValidation().validatePassword(userData.password)
+            try PasswordValidation().validatePassword(input.password)
         } catch {
             throw error
         }
-        let password = try Bcrypt.hash(userData.password)
+        let passwordHash = try Bcrypt.hash(input.password)
         
+        let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, on: req)
+        let uniqueEmail = try await User.verifyUniqueEmail(input.email, on: req)
         
-        return User
-            .generateUniqueUsername(firstName: userData.firstName, lastName: userData.lastName, on: req)
-            .flatMap { username in
-                return User.verifyUniqueEmail(userData.email, on: req)
-                    .flatMap { uniqueEmail in
-                        let user = User(firstName: userData.firstName, lastName: userData.lastName,
-                                        phoneNumber: userData.phoneNumber, username: username, password: password,
-                                        email: userData.email, firstConnection: true, userType: userData.userType,
-                                        companyName: userData.companyName, products: userData.products,
-                                        numberOfEmployees: userData.numberOfEmployees, numberOfUsers: userData.numberOfUsers,
-                                        salesAmount: userData.salesAmount, employeesIDs: userData.employeesIDs,
-                                        managerID: userData.managerID)
-                        
-                        return user
-                            .save(on: req.db)
-                            .map { user.convertToPublic() }
-                    }
-            }
+        let user = User(firstName: input.firstName, lastName: input.lastName,
+                        phoneNumber: input.phoneNumber, username: username, password: passwordHash,
+                        email: uniqueEmail, firstConnection: true, userType: input.userType,
+                        companyName: input.companyName, products: input.products,
+                        numberOfEmployees: input.numberOfEmployees, numberOfUsers: input.numberOfUsers,
+                        salesAmount: input.salesAmount, employeesIDs: input.employeesIDs,
+                        managerID: input.managerID)
+        
+        try await user.save(on: req.db)
+        return user.convertToPublic()
     }
     
-    
-    func addModule(req: Request) throws -> EventLoopFuture<Module> {
-        let userQuery = User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
+    func addModule(req: Request) async throws -> Module {
+        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
+              let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
         
-        let moduleQuery = Module
-            .find(req.parameters.get("moduleID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-        
-        return userQuery.and(moduleQuery)
-            .flatMap { user, module in
-                user
-                    .$modules
-                    .attach(module, on: req.db)
-                    .map { module }
-            }
+        try await userQuery.$modules.attach(moduleQuery, on: req.db)
+        return moduleQuery
     }
     
-    func addTechnicalDocTab(req: Request) throws -> EventLoopFuture<TechnicalDocumentationTab> {
-        let userQuery = User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
+    func addTechnicalDocTab(req: Request) async throws -> TechnicalDocumentationTab {
+        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
+              let tabQuery = try await TechnicalDocumentationTab.find(req.parameters.get("tabID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
         
-        let tabQuery = TechnicalDocumentationTab
-            .find(req.parameters.get("tabID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-        
-        return userQuery.and(tabQuery)
-            .flatMap { user, tab in
-                user
-                    .$technicalDocumentationTabs
-                    .attach(tab, on: req.db)
-                    .map { tab }
-            }
+        try await userQuery.$technicalDocumentationTabs.attach(tabQuery, on: req.db)
+        return tabQuery
     }
     
     // MARK: - Read
-    func getAll(req: Request) throws -> EventLoopFuture<[User.Public]> {
-        User
+    func getAll(req: Request) async throws -> [User.Public] {
+        try await User
             .query(on: req.db)
             .all()
             .convertToPublic()
     }
     
-    func getUser(req: Request) throws -> EventLoopFuture<User.Public> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .map { user in
-                return user.convertToPublic()
-            }
+    func getUser(req: Request) async throws -> User.Public {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return user.convertToPublic()
     }
     
-    func getModules(req: Request) throws -> EventLoopFuture<[Module]> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user
-                    .$modules
-                    .query(on: req.db)
-                    .all()
-            }
+    func getModules(req: Request) async throws -> [Module] {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return try await user.$modules.query(on: req.db).all()
     }
     
     func getTechnicalDocumentationTabs(req: Request) throws -> EventLoopFuture<[TechnicalDocumentationTab]> {
@@ -187,20 +156,54 @@ struct UserController: RouteCollection {
             }
     }
     
-    // MARK: - Update
-    func setUserFirstConnectionToFalse(req: Request) throws -> EventLoopFuture<User.Public> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user.firstConnection = false
-                return user
-                    .save(on: req.db)
-                    .map { user.convertToPublic() }
-            }
+    func getManager(req: Request) async throws -> User.Public {
+        guard let employee = try await User.find(req.parameters.get("userID"), on: req.db),
+              let managerID = employee.managerID,
+              let manager = try await User.find(UUID(uuidString: managerID), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        return manager.convertToPublic()
     }
     
-    func changePassword(req: Request) throws -> EventLoopFuture<PasswordChangeResponse> {
+    func getEmployees(req: Request) async throws -> [User.Public] {
+        guard let manager = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        var employees: [User.Public] = []
+        if let employeesIDs = manager.employeesIDs {
+            for employeeID in employeesIDs {
+                guard let id = UUID(uuidString: employeeID) else {
+                    throw Abort(.notFound)
+                }
+                
+                guard let employee = try await User
+                    .query(on: req.db)
+                    .filter(\.$id == id)
+                    .first() else {
+                    throw Abort(.notFound)
+                }
+                
+                employees.append(employee.convertToPublic())
+            }
+        }
+        
+        return employees
+    }
+    
+    // MARK: - Update
+    func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        user.firstConnection = false
+        try await user.save(on: req.db)
+        return user.convertToPublic()
+    }
+    
+    func changePassword(req: Request) async throws -> PasswordChangeResponse {
         let user = try req.auth.require(User.self)
         let userId = try req.parameters.require("userID", as: UUID.self)
         
@@ -227,74 +230,56 @@ struct UserController: RouteCollection {
         let hashedNewPassword = try Bcrypt.hash(changeRequest.newPassword)
         
         // Update the user's password in the database
-        return User
-            .find(userId, on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user.password = hashedNewPassword
-                return user
-                    .save(on: req.db)
-                    .transform(to: PasswordChangeResponse(message: "Password changed successfully"))
-            }
-    }
-    
-    func linkClientToEmployee(req: Request) throws -> EventLoopFuture<User.Public> {
-        guard let employeeID = req.parameters.get("employeeID") else {
-            throw Abort(.badRequest, reason: "Employee ID is missing in parameters")
+        
+        guard let user = try await User.find(userId, on: req.db) else {
+            throw Abort(.notFound)
         }
         
-        return User
-            .find(req.parameters.get("clientID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                if user.employeesIDs == nil {
-                    user.employeesIDs = [employeeID]
-                } else {
-                    user.employeesIDs?.append(employeeID)
-                }
-                
-                return user
-                    .save(on: req.db)
-                    .map { user.convertToPublic() }
-            }
+        user.password = hashedNewPassword
+        try await user.save(on: req.db)
+        
+        return PasswordChangeResponse(message: "Password changed successfully")
     }
     
-    func linkEmployeeToClient(req: Request) throws -> EventLoopFuture<User.Public> {
-        guard let clientID = req.parameters.get("clientID") else {
-            throw Abort(.badRequest, reason: "Client ID is missing in parameters")
+    func addManager(req: Request) async throws -> User.Public {
+        guard let managerID = req.parameters.get("managerID"),
+              let employeeID = req.parameters.get("userID"),
+            let manager = try await User.find(UUID(uuidString: managerID), on: req.db),
+              let employee = try await User.find(UUID(uuidString: employeeID), on: req.db) else {
+            throw Abort(.notFound)
         }
         
-        return User
-            .find(req.parameters.get("employeeID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user.managerID = clientID
-                
-                return user.save(on: req.db)
-                    .map { user.convertToPublic() }
+        if let managerEmployees = manager.employeesIDs {
+            if !managerEmployees.contains(employeeID) {
+                manager.employeesIDs?.append(employeeID)
+            } else {
+                throw Abort(.badRequest, reason: "Manager is already set")
             }
+        } else {
+            manager.employeesIDs = [employeeID]
+        }
+        employee.managerID = managerID
+        
+        try await manager.save(on: req.db)
+        try await employee.save(on: req.db)
+        
+        return employee.convertToPublic()
     }
     
     // MARK: - Delete
-    func remove(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user
-                    .delete(force: true, on: req.db)
-                    .transform(to: .noContent)
-            }
+    func remove(req: Request) async throws -> HTTPStatus {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        try await user.delete(force: true, on: req.db)
+        return .noContent
     }
     
-    func removeAll(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        User
+    func removeAll(req: Request) async throws -> HTTPStatus {
+        try await User
             .query(on: req.db)
             .all()
-            .flatMap { user in
-                user
-                    .delete(force: true, on: req.db)
-                    .transform(to: .noContent)
-            }
+            .delete(force: true, on: req.db)
+        return .noContent
     }
 }

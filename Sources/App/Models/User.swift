@@ -98,16 +98,16 @@ final class User: Model, Content {
         self.managerID = managerID
     }
     
-    final class Public: Content {
+    struct Public: Content {
         // Required
         var id: UUID?
-        var firstName: String
-        var lastName: String
-        var phoneNumber: String
-        var email: String
-        var username: String
+        let firstName: String
+        let lastName: String
+        let phoneNumber: String
+        let email: String
+        let username: String
         var firstConnection: Bool
-        var userType: UserType
+        let userType: UserType
         // Optional
         var companyName: String?
         var products: String?
@@ -116,33 +116,25 @@ final class User: Model, Content {
         var salesAmount: Double?
         var employeesIDs: [String]?
         var managerID: String?
-        
-        init(id: UUID?,
-             firstName: String, lastName: String,
-             phoneNumber: String, email: String,
-             username: String, firstConnection: Bool, userType: UserType = .client,
-             products: String? = nil, companyName: String? = nil,
-             numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
-             salesAmount: Double? = nil, employeesIDs: [String]? = nil,
-             managerID: String? = nil) {
-            // Required
-            self.id = id
-            self.firstName = firstName
-            self.lastName = lastName
-            self.phoneNumber = phoneNumber
-            self.email = email
-            self.username = username
-            self.firstConnection = firstConnection
-            self.userType = userType
-            // Optional
-            self.companyName = companyName
-            self.products = products
-            self.numberOfEmployees = numberOfEmployees
-            self.numberOfUsers = numberOfUsers
-            self.salesAmount = salesAmount
-            self.employeesIDs = employeesIDs
-            self.managerID = managerID
-        }
+    }
+    
+    
+    struct Input: Content {
+        // Required
+        let firstName: String
+        let lastName: String
+        let phoneNumber: String
+        let email: String
+        let password: String
+        let userType: UserType
+        // Optional
+        let companyName: String?
+        let products: String?
+        let numberOfEmployees: Int?
+        let numberOfUsers: Int?
+        let salesAmount: Double?
+        let employeesIDs: [String]?
+        let managerID: String?
     }
 }
 
@@ -169,10 +161,15 @@ extension User {
         static let username = FieldKey(stringLiteral: "username")
         static let password = FieldKey(stringLiteral: "password")
         
+        static let userTypeEnum = FieldKey(stringLiteral: "userTypeEnum")
         static let userType = "userType"
         static let admin = "admin"
         static let client = "client"
         static let employee = "employee"
+    }
+    
+    enum UserType: String, Codable {
+        case employee, admin, client
     }
 }
 
@@ -181,40 +178,10 @@ extension User {
         User.Public(id: id,
                     firstName: firstName, lastName: lastName, phoneNumber: phoneNumber, email: email,
                     username: username, firstConnection: firstConnection, userType: userType,
-                    products: products, companyName: companyName, numberOfEmployees: numberOfEmployees,
+                    companyName: companyName, products: products, numberOfEmployees: numberOfEmployees,
                     numberOfUsers: numberOfUsers, salesAmount: salesAmount, employeesIDs: employeesIDs,
                     managerID: managerID
         )
-    }
-}
-
-extension EventLoopFuture where Value: User {
-    func convertToPublic() -> EventLoopFuture<User.Public> {
-        return self.map { user in
-            return user.convertToPublic()
-        }
-    }
-}
-
-
-extension Collection where Element: User {
-    func convertToPublic() -> [User.Public] {
-        return self.map { $0.convertToPublic() }
-    }
-}
-
-extension EventLoopFuture where Value == Array<User> {
-    func convertToPublic() -> EventLoopFuture<[User.Public]> {
-        return self.map { $0.convertToPublic() }
-    }
-}
-
-extension User: ModelAuthenticatable {
-    static let usernameKey = \User.$username
-    static let passwordHashKey = \User.$password
-    
-    func verify(password: String) throws -> Bool {
-        try Bcrypt.verify(password, created: self.password)
     }
 }
 
@@ -225,22 +192,4 @@ struct PasswordChangeRequest: Content {
 
 struct PasswordChangeResponse: Content {
     let message: String
-}
-
-struct UserCreateData: Content {
-    // Required
-    let firstName: String
-    let lastName: String
-    let phoneNumber: String
-    let email: String
-    let password: String
-    let userType: UserType
-    // Optional
-    let companyName: String?
-    let products: String?
-    let numberOfEmployees: Int?
-    let numberOfUsers: Int?
-    let salesAmount: Double?
-    let employeesIDs: [String]?
-    let managerID: String?
 }

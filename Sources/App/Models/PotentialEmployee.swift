@@ -22,6 +22,12 @@ final class PotentialEmployee: Model, Content {
     
     @Field(key: PotentialEmployee.v20240207.companyName)
     var companyName: String
+    
+    @Field(key: PotentialEmployee.v20240207.phoneNumber)
+    var phoneNumber: String
+    
+    @Field(key: PotentialEmployee.v20240207.email)
+    var email: String
 
     @Parent(key: PotentialEmployee.v20240207.pendingUserID)
     var pendingUser: PendingUser
@@ -29,28 +35,25 @@ final class PotentialEmployee: Model, Content {
     init() {}
     
     init(id: UUID? = nil, firstName: String, lastName: String,
-         companyName: String, pendingUserID: PendingUser.IDValue) {
+         companyName: String, phoneNumber: String,
+         email: String, pendingUserID: PendingUser.IDValue) {
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
         self.companyName = companyName
+        self.phoneNumber = phoneNumber
+        self.email = email
         self.$pendingUser.id = pendingUserID
     }
     
-    final class Input: Content {
+    struct Input: Content {
         var id: UUID?
-        var firstName: String
-        var lastName: String
-        var companyName: String
-        var pendingUserID: PendingUser.IDValue
-        
-        init(id: UUID? = nil, firstName: String, lastName: String, companyName: String, pendingUserID: PendingUser.IDValue) {
-            self.id = id
-            self.firstName = firstName
-            self.lastName = lastName
-            self.companyName = companyName
-            self.pendingUserID = pendingUserID
-        }
+        let firstName: String
+        let lastName: String
+        let companyName: String
+        let phoneNumber: String
+        let email: String
+        let pendingUserID: PendingUser.IDValue
     }
 }
 
@@ -61,6 +64,8 @@ extension PotentialEmployee {
         static let firstName = FieldKey(stringLiteral: "firstName")
         static let lastName = FieldKey(stringLiteral: "lastName")
         static let companyName = FieldKey(stringLiteral: "companyName")
+        static let phoneNumber = FieldKey(stringLiteral: "phoneNumber")
+        static let email = FieldKey(stringLiteral: "email")
         static let pendingUserID = FieldKey(stringLiteral: "pendingUserID")
     }
 }

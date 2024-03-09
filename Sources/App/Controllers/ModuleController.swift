@@ -26,17 +26,19 @@ struct ModuleController: RouteCollection {
     }
     
     // MARK: - Create
-    func create(req: Request) throws -> EventLoopFuture<Module> {
-        let module = try req.content.decode(Module.self)
+    func create(req: Request) async throws -> Module {
+        let input = try req.content.decode(Module.Input.self)
         let user = try req.auth.require(User.self)
         
-        guard user.id != nil else {
+        guard user.id != nil,
+              user.userType == .admin else {
             throw Abort(.unauthorized, reason: "User not authenticated")
         }
-
+        
+        let module = Module(name: input.name)
+        
+        try await module.save(on: req.db)
         return module
-            .save(on: req.db)
-            .map { module }
     }
     
     // MARK: - Read

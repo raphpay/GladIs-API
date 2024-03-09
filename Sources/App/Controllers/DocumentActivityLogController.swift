@@ -53,13 +53,13 @@ struct DocumentActivityLogController: RouteCollection {
         try await DocumentActivityLog.query(on: req.db).all()
     }
     
-    func getLogsForClient(req: Request) throws -> EventLoopFuture<[DocumentActivityLog]> {
+    func getLogsForClient(req: Request) async throws -> [DocumentActivityLog] {
         guard let clientID = req.parameters.get("clientID"),
               let uuid = UUID(uuidString: clientID) else {
             throw Abort(.badRequest)
         }
         
-        return DocumentActivityLog
+        return try await DocumentActivityLog
             .query(on: req.db)
             .filter(\.$client.$id == uuid)
             .all()

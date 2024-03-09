@@ -7,10 +7,9 @@
 
 import Fluent
 
-struct CreateModulePendingUserPivot: Migration {
-    func prepare(on database: FluentKit.Database) -> NIOCore.EventLoopFuture<Void> {
-        database
-            .schema(ModulePendingUserPivot.v20240207.schemaName)
+struct CreateModulePendingUserPivot: AsyncMigration {
+    func prepare(on database: Database) async throws {
+        try await database.schema(ModulePendingUserPivot.v20240207.schemaName)
             .id()
             .field(ModuleUserPivot.v20240207.moduleID, .uuid, .required,
                    .references(Module.v20240207.schemaName, Module.v20240207.id))
@@ -18,9 +17,9 @@ struct CreateModulePendingUserPivot: Migration {
                 .references(PendingUser.v20240207.schemaName, PendingUser.v20240207.id))
             .create()
     }
-    
-    func revert(on database: FluentKit.Database) -> NIOCore.EventLoopFuture<Void> {
-        database
+
+    func revert(on database: Database) async throws {
+        try await database
             .schema(ModulePendingUserPivot.v20240207.schemaName)
             .delete()
     }
