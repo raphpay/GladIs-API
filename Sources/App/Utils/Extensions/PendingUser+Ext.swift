@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import Fluent
+import Vapor
 
 extension PendingUser {
     func convertToUser() -> User {
@@ -18,5 +20,18 @@ extension PendingUser {
                         salesAmount: self.salesAmount)
         // TODO: Generate and send a password
         return user
+    }
+    
+    static func verifyUniqueEmail(_ email: String, on req: Request) async throws -> String {
+        let pendingUser = try await PendingUser.query(on: req.db)
+            .filter(\.$email == email)
+            .first()
+        
+        guard pendingUser == nil else {
+            // If a user with the email already exists, throw an error
+            throw Abort(.badRequest, reason: "Email already exists")
+        }
+        // If the email is unique, return it
+        return email
     }
 }
