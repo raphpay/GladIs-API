@@ -217,7 +217,7 @@ struct UserController: RouteCollection {
         // Verify that the current password matches the one stored in the database
         let isCurrentPasswordValid = try Bcrypt.verify(changeRequest.currentPassword, created: user.password)
         guard isCurrentPasswordValid else {
-            throw Abort(.unauthorized, reason: "Invalid current password")
+            throw Abort(.unauthorized, reason: "password.current.invalid")
         }
         
         do {

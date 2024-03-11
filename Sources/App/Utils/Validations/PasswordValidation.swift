@@ -5,31 +5,31 @@
 //  Created by Raphaël Payet on 14/02/2024.
 //
 
-import Foundation
+import Vapor
 
 struct PasswordValidation {
     func validatePassword(_ password: String) throws {
         // Check the password length
         guard password.count >= 12 else {
-            throw ValidationError.invalidLength("The password should contain at least 12 characters")
+            throw Abort(.unauthorized, reason: "password.invalidLength")
         }
         
         // Check an uppercase presence
         let uppercaseRegex = ".*[A-Z]+.*"
         guard NSPredicate(format: "SELF MATCHES %@", uppercaseRegex).evaluate(with: password) else {
-            throw ValidationError.missingUppercase("The password should contain at least one uppercased letter")
+            throw Abort(.unauthorized, reason: "password.missingUppercase")
         }
         
         // Check a digit presence
         let digitRegex = ".*[0-9]+.*"
         guard NSPredicate(format: "SELF MATCHES %@", digitRegex).evaluate(with: password) else {
-            throw ValidationError.missingDigit("The password should contain at least one digit")
+            throw Abort(.unauthorized, reason: "password.missingDigit")
         }
         
         // Check a special character presence
         let specialCharRegex = ".*[!@#$%^&*()]+.*"
         guard NSPredicate(format: "SELF MATCHES %@", specialCharRegex).evaluate(with: password) else {
-            throw ValidationError.missingSpecialCharacter("The password should contain at least one character within !@#$%^&*.()")
+            throw Abort(.unauthorized, reason: "password.missingSpecialCharacter")
         }
     }
 
