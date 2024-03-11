@@ -44,6 +44,20 @@ struct PotentialEmployeeController: RouteCollection {
         }
         
         let newEmployee = potentialEmployee.convertToEmployee()
+        
+        let givenPassword = "Passwordlong1("
+        do {
+            try PasswordValidation().validatePassword(givenPassword)
+        } catch {
+            throw error
+        }
+        let passwordHash = try Bcrypt.hash(givenPassword)
+        
+        let username = try await User.generateUniqueUsername(firstName: newEmployee.firstName, lastName: newEmployee.lastName, on: req)
+        
+        newEmployee.password = passwordHash
+        newEmployee.username = username
+        
         try await newEmployee.save(on: req.db)
         try await potentialEmployee.delete(force: true, on: req.db)
         return newEmployee.convertToPublic()
