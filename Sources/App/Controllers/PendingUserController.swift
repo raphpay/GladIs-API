@@ -67,7 +67,7 @@ struct PendingUserController: RouteCollection {
         }
         
         let newUser = pendingUser.convertToUser()
-        let username = try await User.generateUniqueUsername(firstName: user.firstName, lastName: user.lastName, on: req)
+        let username = try await User.generateUniqueUsername(firstName: newUser.firstName, lastName: newUser.lastName, on: req)
         let givenPassword = "Passwordlong1("
         do {
             try PasswordValidation().validatePassword(givenPassword)

@@ -11,7 +11,7 @@ extension PotentialEmployee {
     func convertToEmployee() -> User {
         let user = User(firstName: self.firstName, lastName: self.lastName,
                         phoneNumber: self.phoneNumber,
-                        username: "", password: "Passwordlong1(",
+                        username: "", password: "",
                         email: self.email, firstConnection: true, userType: .employee,
                         companyName: self.companyName)
         // TODO: Generate and send a password
