@@ -16,17 +16,22 @@ final class Module: Model, Content {
 
     @Field(key: Module.v20240207.name)
     var name: String
+    
+    @Field(key: Module.v20240207.index)
+    var index: Int
 
     init() {}
     
-    init(id: UUID? = nil, name: String) {
+    init(id: UUID? = nil, name: String, index: Int) {
         self.id = id
         self.name = name
+        self.index = index
     }
     
     struct Input: Content {
         var id: UUID?
         let name: String
+        let index: Int
     }
 }
 
@@ -35,5 +40,6 @@ extension Module {
         static let schemaName = "modules"
         static let id = FieldKey(stringLiteral: "id")
         static let name = FieldKey(stringLiteral: "name")
+        static let index = FieldKey(stringLiteral: "index")
     }
 }
