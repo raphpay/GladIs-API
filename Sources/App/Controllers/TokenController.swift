@@ -13,7 +13,6 @@ struct TokenController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let tokens = routes.grouped("api", "tokens")
         tokens.get(":tokenID", use: getTokenByID)
-        tokens.delete(":tokenID", use: logout)
         // Basic Auth
         let basicAuthMiddleware = User.authenticator()
         let basicAuthGroup = tokens.grouped(basicAuthMiddleware)
@@ -24,6 +23,7 @@ struct TokenController: RouteCollection {
         let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthGroup = tokens.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         tokenAuthGroup.get(use: getTokens)
+        tokenAuthGroup.delete(":tokenID", use: logout)
         tokenAuthGroup.delete("all", use: removeAll)
     }
     

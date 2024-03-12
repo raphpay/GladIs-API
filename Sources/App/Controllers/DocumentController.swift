@@ -76,8 +76,8 @@ struct DocumentController: RouteCollection {
     }
     
     // MARK: - READ
-    func getAllDocuments(req: Request) async throws -> [Document] {
-        try await Document
+    func getAllDocuments(req: Request) throws -> EventLoopFuture<[Document]> {
+        Document
             .query(on: req.db)
             .all()
     }
