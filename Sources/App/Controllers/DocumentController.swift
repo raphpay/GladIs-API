@@ -11,6 +11,7 @@ import Vapor
 struct DocumentController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let documents = routes.grouped("api", "documents")
+        documents.post("logo", use: uploadLogo)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -29,11 +30,11 @@ struct DocumentController: RouteCollection {
     
     
     // MARK: - CREATE
-    func upload(req: Request) throws -> EventLoopFuture<Document> {
-        let document = try req.content.decode(Document.Input.self)
-
-        let uploadDirectory = req.application.directory.publicDirectory + document.path
-        let fileName = document.name + ".pdf"
+    func upload(req: Request) async throws -> Document {
+        let input = try req.content.decode(Document.Input.self)
+        let uploadDirectory = req.application.directory.publicDirectory + input.path
+        
+        let fileName = input.name
         
         if !FileManager.default.fileExists(atPath: uploadDirectory) {
             do {
@@ -43,20 +44,40 @@ struct DocumentController: RouteCollection {
             }
         }
         
-        return req.fileio
-            .writeFile(document.file.data, at: uploadDirectory + fileName)
-            .flatMapThrowing {
-                let document = Document(name: document.name + ".pdf", path: document.path)
-                return document
-                    .save(on: req.db)
-                    .map { document }
+        try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
+        
+        let document = Document(name: fileName, path: input.path)
+        try await document.save(on: req.db)
+        
+        return document
+    }
+    
+    
+    func uploadLogo(req: Request) async throws -> Document {
+        let input = try req.content.decode(Document.Input.self)
+        let uploadDirectory = req.application.directory.publicDirectory + input.path
+        
+        let fileName = input.name
+        
+        if !FileManager.default.fileExists(atPath: uploadDirectory) {
+            do {
+                try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
+            } catch {
+                throw Abort(.internalServerError, reason: "Failed to create directory: \(error)")
             }
-            .flatMap { $0 }
+        }
+        
+        try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
+        
+        let document = Document(name: fileName, path: input.path)
+        try await document.save(on: req.db)
+        
+        return document
     }
     
     // MARK: - READ
-    func getAllDocuments(req: Request) throws -> EventLoopFuture<[Document]> {
-        Document
+    func getAllDocuments(req: Request) async throws -> [Document] {
+        try await Document
             .query(on: req.db)
             .all()
     }
