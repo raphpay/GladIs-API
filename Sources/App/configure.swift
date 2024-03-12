@@ -23,6 +23,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateTechnicalDocumentationTab())
     app.migrations.add(CreateUserTabPivot())
     app.migrations.add(CreateDocumentActivityLog())
+    app.migrations.add(CreatePotentialEmployee())
     
     switch app.environment {
         case .development:

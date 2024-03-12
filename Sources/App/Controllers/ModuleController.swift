@@ -19,6 +19,8 @@ struct ModuleController: RouteCollection {
         let tokenAuthGroup = modules.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: create)
+        // Read
+        tokenAuthGroup.get("sorted", use: getSorted)
         // Update
         tokenAuthGroup.put(":moduleID", use: update)
         // Delete
@@ -26,51 +28,66 @@ struct ModuleController: RouteCollection {
     }
     
     // MARK: - Create
-    func create(req: Request) throws -> EventLoopFuture<Module> {
-        let module = try req.content.decode(Module.self)
+    func create(req: Request) async throws -> Module {
+        let input = try req.content.decode(Module.Input.self)
         let user = try req.auth.require(User.self)
         
-        guard user.id != nil else {
+        guard user.id != nil,
+              user.userType == .admin else {
             throw Abort(.unauthorized, reason: "User not authenticated")
         }
-
+        
+        let module = Module(name: input.name, index: input.index)
+        let moduleQuery = try await Module.query(on: req.db).filter(\.$index == input.index).first()
+        
+        if moduleQuery != nil {
+            throw Abort(.badRequest, reason: "Module with index \(input.index) already exists")
+        }
+        
+        try await module.save(on: req.db)
         return module
-            .save(on: req.db)
-            .map { module }
     }
+
     
     // MARK: - Read
-    func getAll(req: Request) throws -> EventLoopFuture<[Module]> {
-        Module
+    func getAll(req: Request) async throws -> [Module]{
+        try await Module
             .query(on: req.db)
             .all()
     }
     
-    // MARK: - Update
-    func update(req: Request) throws -> EventLoopFuture<Module> {
-        let newModule = try req.content.decode(Module.self)
-        
-        return Module
-            .find(req.parameters.get("moduleID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { module in
-                module.name = newModule.name
-                
-                return module
-                    .save(on: req.db)
-                    .map { module }
-            }
+    func getSorted(req: Request) async throws -> [Module] {
+        try await Module
+            .query(on: req.db)
+            .sort(\.$index)
+            .all()
     }
+
+    // Update index
+    // MARK: - Update
+    func update(req: Request) async throws -> Module {
+        let newModule = try req.content.decode(Module.Input.self)
+        
+        guard let module = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        module.name = newModule.name
+        module.index = newModule.index
+        try await module.save(on: req.db)
+        
+        let moduleToReturn = Module(id: module.id, name: newModule.name, index: newModule.index)
+        
+        return moduleToReturn
+    }
+
     
     // MARK: - Delete
-    func remove(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        Module
-            .find(req.parameters.get("moduleID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { module in
-                module
-                    .delete(force: true, on: req.db)
-                    .transform(to: .noContent)
-            }
+    func remove(req: Request) async throws -> HTTPStatus {
+        guard let module = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        try await module.delete(force: true, on: req.db)
+        return .noContent
     }
 }

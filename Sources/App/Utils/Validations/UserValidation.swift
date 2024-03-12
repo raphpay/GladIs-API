@@ -103,7 +103,7 @@ extension Validator where T == String {
     
     static var customEmail: Validator<T> {
         .init { input in
-            let regex = #"^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$"#
+            let regex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
             let isValid = NSPredicate(format: "SELF MATCHES %@", regex).evaluate(with: input)
             guard isValid else {
                 return ValidatorResults.CustomEmail(isValid: false)
@@ -142,19 +142,27 @@ extension Validator where T == Int {
     }
 }
 
-extension UserCreateData: Validatable {
+extension User.Input: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("email", as: String.self, is: .customEmail)
         validations.add("phoneNumber", as: String.self, is: .frenchPhoneNumber)
     }
 }
 
-extension PendingUser: Validatable {
+extension PendingUser.Input: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("email", as: String.self, is: .customEmail)
         validations.add("phoneNumber", as: String.self, is: .frenchPhoneNumber)
         validations.add("numberOfEmployees", as: Int.self, is: .numberOfEmployees)
         validations.add("numberOfUsers", as: Int.self, is: .numberOfUsers)
         validations.add("salesAmount", as: Int.self, is: .salesAmount)
+    }
+}
+
+
+extension PotentialEmployee.Input: Validatable {
+    static func validations(_ validations: inout Validations) {
+        validations.add("email", as: String.self, is: .customEmail)
+        validations.add("phoneNumber", as: String.self, is: .frenchPhoneNumber)
     }
 }
