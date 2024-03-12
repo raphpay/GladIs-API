@@ -41,9 +41,6 @@ final class PendingUser: Model, Content {
     @OptionalField(key: PendingUser.v20240207.salesAmount)
     var salesAmount: Double?
     
-    @OptionalField(key: PendingUser.v20240207.logoPath)
-    var logoPath: String?
-    
     @Siblings(through: ModulePendingUserPivot.self,
               from: \.$pendingUser,
               to: \.$module)
@@ -58,8 +55,7 @@ final class PendingUser: Model, Content {
          phoneNumber: String, companyName: String,
          email: String, products: String? = nil,
          numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
-        salesAmount: Double? = nil, status: PendingUser.StatusEnum = .pending,
-         logoPath: String? = nil) {
+        salesAmount: Double? = nil, status: PendingUser.StatusEnum = .pending) {
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
@@ -70,7 +66,6 @@ final class PendingUser: Model, Content {
         self.numberOfUsers = numberOfUsers
         self.salesAmount = salesAmount
         self.status = status
-        self.logoPath = logoPath
     }
 }
 
@@ -88,7 +83,6 @@ extension PendingUser {
         static let numberOfEmployees = FieldKey(stringLiteral: "numberOfEmployees")
         static let numberOfUsers = FieldKey(stringLiteral: "numberOfUsers")
         static let salesAmount = FieldKey(stringLiteral: "salesAmount")
-        static let logoPath = FieldKey(stringLiteral: "logoPath")
         
         static let statusEnum = FieldKey(stringLiteral: "statusEnum")
         static let status = "status"
