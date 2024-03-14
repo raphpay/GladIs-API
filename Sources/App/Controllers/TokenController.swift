@@ -48,7 +48,7 @@ struct TokenController: RouteCollection {
         let userID = try user.requireID()
         
         guard user.isBlocked != true else {
-            throw Abort(.unauthorized, reason: "Account is blocked")
+            throw Abort(.unauthorized, reason: "login.account.blocked")
         }
         
         // Delete existing tokens
