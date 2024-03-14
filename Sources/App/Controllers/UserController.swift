@@ -20,6 +20,7 @@ struct UserController: RouteCollection {
         // Create
         tokenAuthGroup.post(use: create)
         tokenAuthGroup.post(":userID", "modules", ":moduleID", use: addModule)
+        tokenAuthGroup.post(":userID", "remove", "modules", ":moduleID", use: removeModule)
         tokenAuthGroup.post(":userID", "technicalDocumentationTabs", ":tabID", use: addTechnicalDocTab)
         // Read
         tokenAuthGroup.get(use: getAll)
@@ -41,16 +42,17 @@ struct UserController: RouteCollection {
     func createWithoutToken(req: Request) async throws -> User.Public {
         let input = try req.content.decode(User.Input.self)
         
-        guard !input.password.isEmpty else {
+        guard let inputPassword = input.password,
+            !inputPassword.isEmpty else {
             throw Abort(.badRequest, reason: "Password cannot be empty")
         }
         
         do {
-            try PasswordValidation().validatePassword(input.password)
+            try PasswordValidation().validatePassword(inputPassword)
         } catch {
             throw error
         }
-        let passwordHash = try Bcrypt.hash(input.password)
+        let passwordHash = try Bcrypt.hash(inputPassword)
         
         let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, on: req)
         let uniqueEmail = try await User.verifyUniqueEmail(input.email, on: req)
@@ -70,8 +72,11 @@ struct UserController: RouteCollection {
         let input = try req.content.decode(User.Input.self)
         let adminUser = try req.auth.require(User.self)
         
-        guard !input.password.isEmpty else {
-            throw Abort(.badRequest, reason: "Password cannot be empty")
+        var password = "Passwordlong1("
+        
+        if let inputPassword = input.password,
+            !inputPassword.isEmpty {
+            password = inputPassword
         }
         
         guard adminUser.userType == .admin else {
@@ -79,11 +84,11 @@ struct UserController: RouteCollection {
         }
         
         do {
-            try PasswordValidation().validatePassword(input.password)
+            try PasswordValidation().validatePassword(password)
         } catch {
             throw error
         }
-        let passwordHash = try Bcrypt.hash(input.password)
+        let passwordHash = try Bcrypt.hash(password)
         
         let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, on: req)
         let uniqueEmail = try await User.verifyUniqueEmail(input.email, on: req)
@@ -108,6 +113,17 @@ struct UserController: RouteCollection {
         
         try await userQuery.$modules.attach(moduleQuery, on: req.db)
         return moduleQuery
+    }
+    
+    func removeModule(req: Request) async throws -> [Module] {
+        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
+              let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        try await userQuery.$modules.detach(moduleQuery, on: req.db)
+        
+        return try await userQuery.$modules.query(on: req.db).all()
     }
     
     func addTechnicalDocTab(req: Request) async throws -> TechnicalDocumentationTab {

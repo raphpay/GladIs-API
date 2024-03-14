@@ -125,7 +125,7 @@ final class User: Model, Content {
         let lastName: String
         let phoneNumber: String
         let email: String
-        let password: String
+        let password: String?
         let userType: UserType
         // Optional
         let companyName: String?
