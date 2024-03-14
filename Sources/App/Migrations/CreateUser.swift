@@ -33,6 +33,7 @@ struct CreateUser: AsyncMigration {
             .field(User.v20240207.salesAmount, .double)
             .field(User.v20240207.employeesIDs, .array(of: .string))
             .field(User.v20240207.managerID, .string)
+            .field(User.v20240207.isBlocked, .bool)
             .field(User.v20240207.userTypeEnum, type, .required)
             .unique(on: User.v20240207.email)
             .unique(on: User.v20240207.username)

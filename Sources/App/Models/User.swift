@@ -56,6 +56,9 @@ final class User: Model, Content {
     @OptionalField(key: User.v20240207.managerID)
     var managerID: String?
     
+    @OptionalField(key: User.v20240207.isBlocked)
+    var isBlocked: Bool?
+    
     @Enum(key: "userType")
     var userType: UserType
     
@@ -68,6 +71,9 @@ final class User: Model, Content {
               from: \.$user,
               to: \.$technicalDocumentationTab)
     var technicalDocumentationTabs: [TechnicalDocumentationTab]
+    
+    @Children(for: \.$user)
+    var tokens: [Token]
     
     init() {}
     
@@ -116,6 +122,7 @@ final class User: Model, Content {
         var salesAmount: Double?
         var employeesIDs: [String]?
         var managerID: String?
+        var isBlocked: Bool?
     }
     
     
@@ -157,6 +164,8 @@ extension User {
         static let salesAmount = FieldKey(stringLiteral: "salesAmount")
         static let employeesIDs = FieldKey(stringLiteral: "employeesIDs")
         static let managerID = FieldKey(stringLiteral: "managerID")
+        static let isBlocked = FieldKey(stringLiteral: "isBlocked")
+        
         
         static let username = FieldKey(stringLiteral: "username")
         static let password = FieldKey(stringLiteral: "password")
@@ -180,7 +189,7 @@ extension User {
                     username: username, firstConnection: firstConnection, userType: userType,
                     companyName: companyName, products: products, numberOfEmployees: numberOfEmployees,
                     numberOfUsers: numberOfUsers, salesAmount: salesAmount, employeesIDs: employeesIDs,
-                    managerID: managerID
+                    managerID: managerID, isBlocked: isBlocked
         )
     }
 }
