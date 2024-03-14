@@ -36,6 +36,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.put(":userID", "addManager", ":managerID", use: addManager)
         tokenAuthGroup.put(":userID", "block", use: blockUser)
         tokenAuthGroup.put(":userID", "unblock", use: unblockUser)
+        tokenAuthGroup.put(":userID", "updateInfos", use: updateUserInfos)
         // Delete
         tokenAuthGroup.delete(":userID", use: remove)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -221,6 +222,25 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Update
+    func updateUserInfos(req: Request) async throws -> User.Public {
+        try User.Input.validate(content: req)
+        
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let updatedUser = try req.content.decode(User.Input.self)
+        
+        user.firstName = updatedUser.firstName
+        user.lastName = updatedUser.lastName
+        user.email = updatedUser.email
+        user.phoneNumber = updatedUser.phoneNumber
+        
+        try await user.update(on: req.db)
+        
+        return user.convertToPublic()
+    }
+    
     func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound)
