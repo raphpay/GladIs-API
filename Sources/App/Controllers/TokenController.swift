@@ -47,6 +47,10 @@ struct TokenController: RouteCollection {
         let user = try req.auth.require(User.self)
         let userID = try user.requireID()
         
+        guard user.isBlocked != true else {
+            throw Abort(.unauthorized, reason: "Account is blocked")
+        }
+        
         // Delete existing tokens
         let token = try await Token
             .query(on: req.db)
