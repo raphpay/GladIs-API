@@ -29,10 +29,13 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "technicalDocumentationTabs", use: getTechnicalDocumentationTabs)
         tokenAuthGroup.get(":userID", "manager", use: getManager)
         tokenAuthGroup.get(":userID", "employees", use: getEmployees)
+        tokenAuthGroup.get(":userID", "token", use: getToken)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
         tokenAuthGroup.put(":userID", "addManager", ":managerID", use: addManager)
+        tokenAuthGroup.put(":userID", "block", use: blockUser)
+        tokenAuthGroup.put(":userID", "unblock", use: unblockUser)
         // Delete
         tokenAuthGroup.delete(":userID", use: remove)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -208,6 +211,15 @@ struct UserController: RouteCollection {
         return employees
     }
     
+    func getToken(req: Request) async throws -> Token {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db),
+              let token = try await user.$tokens.query(on: req.db).first() else {
+            throw Abort(.notFound)
+        }
+        
+        return token
+    }
+    
     // MARK: - Update
     func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
@@ -280,6 +292,28 @@ struct UserController: RouteCollection {
         try await employee.save(on: req.db)
         
         return employee.convertToPublic()
+    }
+    
+    func blockUser(req: Request) async throws -> User.Public {
+        guard let client = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        client.isBlocked = true
+        try await client.save(on: req.db)
+        
+        return client.convertToPublic()
+    }
+    
+    func unblockUser(req: Request) async throws -> User.Public {
+        guard let client = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        client.isBlocked = false
+        try await client.save(on: req.db)
+        
+        return client.convertToPublic()
     }
     
     // MARK: - Delete
