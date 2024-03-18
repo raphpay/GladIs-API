@@ -38,7 +38,7 @@ struct PendingUserController: RouteCollection {
         
         let user = PendingUser(firstName: input.firstName, lastName: input.lastName,
                                phoneNumber: input.phoneNumber, companyName: input.companyName,
-                               email: uniqueEmail, numberOfEmployees: input.numberOfEmployees,
+                               email: uniqueEmail, products: input.products, numberOfEmployees: input.numberOfEmployees,
                                numberOfUsers: input.numberOfUsers, salesAmount: input.salesAmount)
         
         try await user.save(on: req.db)
