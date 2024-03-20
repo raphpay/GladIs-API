@@ -26,6 +26,7 @@ struct DocumentController: RouteCollection {
         // Update
         // Delete
         tokenAuthGroup.delete(":documentID", use: remove)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     
@@ -46,7 +47,7 @@ struct DocumentController: RouteCollection {
         
         try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
         
-        let document = Document(name: fileName, path: input.path)
+        let document = Document(name: fileName, path: input.path, status: .none)
         try await document.save(on: req.db)
         
         return document
@@ -69,7 +70,7 @@ struct DocumentController: RouteCollection {
         
         try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
         
-        let document = Document(name: fileName, path: input.path)
+        let document = Document(name: fileName, path: input.path, status: .none)
         try await document.save(on: req.db)
         
         return document
@@ -132,6 +133,27 @@ struct DocumentController: RouteCollection {
             throw Abort(.badRequest, reason: error.localizedDescription)
         }
     }
+    
+    func removeAll(req: Request) async throws -> HTTPResponseStatus {
+        let documents = try await getAllDocuments(req: req)
+        
+        for document in documents {
+            let filePath = req.application.directory.publicDirectory + document.path + document.name
+            
+            if FileManager.default.fileExists(atPath: filePath) {
+                try FileManager.default.removeItem(atPath: filePath)
+            }
+            
+            do {
+                try await document.delete(force: true, on: req.db)
+            } catch let error {
+                throw Abort(.badRequest, reason: error.localizedDescription)
+            }
+        }
+        
+        return .noContent
+    }
+    
 }
 
 
