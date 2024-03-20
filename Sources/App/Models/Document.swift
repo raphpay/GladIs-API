@@ -45,6 +45,10 @@ final class Document: Model, Content {
             self.file = file
         }
     }
+    
+    struct StatusInput: Content {
+        let status: Status
+    }
 }
 
 extension Document {
