@@ -16,19 +16,38 @@ struct PasswordValidation {
         
         // Check an uppercase presence
         let uppercaseRegex = ".*[A-Z]+.*"
-        guard NSPredicate(format: "SELF MATCHES %@", uppercaseRegex).evaluate(with: password) else {
+    
+        do {
+            let regex = try NSRegularExpression(pattern: uppercaseRegex)
+            let range = NSRange(location: 0, length: password.utf16.count)
+            if regex.firstMatch(in: password, options: [], range: range) == nil {
+                throw Abort(.unauthorized, reason: "password.missingUppercase")
+            }
+        } catch {
             throw Abort(.unauthorized, reason: "password.missingUppercase")
         }
         
         // Check a digit presence
         let digitRegex = ".*[0-9]+.*"
-        guard NSPredicate(format: "SELF MATCHES %@", digitRegex).evaluate(with: password) else {
+        do {
+            let regex = try NSRegularExpression(pattern: digitRegex)
+            let range = NSRange(location: 0, length: password.utf16.count)
+            if regex.firstMatch(in: password, options: [], range: range) == nil {
+                throw Abort(.unauthorized, reason: "password.missingDigit")
+            }
+        } catch {
             throw Abort(.unauthorized, reason: "password.missingDigit")
         }
         
         // Check a special character presence
         let specialCharRegex = ".*[!@#$%^&*()]+.*"
-        guard NSPredicate(format: "SELF MATCHES %@", specialCharRegex).evaluate(with: password) else {
+        do {
+            let regex = try NSRegularExpression(pattern: specialCharRegex)
+            let range = NSRange(location: 0, length: password.utf16.count)
+            if regex.firstMatch(in: password, options: [], range: range) == nil {
+                throw Abort(.unauthorized, reason: "password.missingSpecialCharacter")
+            }
+        } catch {
             throw Abort(.unauthorized, reason: "password.missingSpecialCharacter")
         }
     }
