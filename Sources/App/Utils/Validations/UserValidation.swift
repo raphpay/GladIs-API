@@ -93,22 +93,43 @@ extension Validator where T == String {
     static var frenchPhoneNumber: Validator<T> {
         .init { input in
             let regex = #"^(0|\+33|0033)[1-9]([-. ]?[0-9]{2}){4}$"#
-            let predicate = NSPredicate(format: "SELF MATCHES %@", regex)
-            guard predicate.evaluate(with: input) else {
+            do {
+                let regex = try NSRegularExpression(pattern: regex)
+                let range = NSRange(input.startIndex..., in: input)
+                let match = regex.firstMatch(in: input, options: [], range: range)
+                
+                if match != nil {
+                    return ValidatorResults.FrenchPhoneNumber(isValid: true)
+                } else {
+                    return ValidatorResults.FrenchPhoneNumber(isValid: false)
+                }
+            } catch {
+                // Handle regex pattern error
+                print("Regex pattern is invalid: \(error.localizedDescription)")
                 return ValidatorResults.FrenchPhoneNumber(isValid: false)
             }
-            return ValidatorResults.FrenchPhoneNumber(isValid: true)
         }
     }
     
     static var customEmail: Validator<T> {
         .init { input in
             let regex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-            let isValid = NSPredicate(format: "SELF MATCHES %@", regex).evaluate(with: input)
-            guard isValid else {
+
+            do {
+                let regex = try NSRegularExpression(pattern: regex)
+                let range = NSRange(input.startIndex..., in: input)
+                let match = regex.firstMatch(in: input, options: [], range: range)
+                
+                if match != nil {
+                    return ValidatorResults.CustomEmail(isValid: true)
+                } else {
+                    return ValidatorResults.CustomEmail(isValid: false)
+                }
+            } catch {
+                // Handle regex pattern error
+                print("Regex pattern is invalid: \(error.localizedDescription)")
                 return ValidatorResults.CustomEmail(isValid: false)
             }
-            return ValidatorResults.CustomEmail(isValid: true)
         }
     }
 }
