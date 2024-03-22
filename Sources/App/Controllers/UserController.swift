@@ -37,6 +37,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.put(":userID", "block", use: blockUser)
         tokenAuthGroup.put(":userID", "unblock", use: unblockUser)
         tokenAuthGroup.put(":userID", "updateInfos", use: updateUserInfos)
+        tokenAuthGroup.put(":userID", "remove", ":employeeID", use: removeEmployee)
         // Delete
         tokenAuthGroup.delete(":userID", use: remove)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -334,6 +335,25 @@ struct UserController: RouteCollection {
         try await client.save(on: req.db)
         
         return client.convertToPublic()
+    }
+    
+    func removeEmployee(req: Request) async throws -> User.Public {
+        guard let manager = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let employeeID = req.parameters.get("employeeID")
+        
+        
+        
+        if let employeesIDs = manager.employeesIDs {
+            let newArray = employeesIDs.filter { $0 != employeeID }
+            manager.employeesIDs = newArray
+        }
+        
+        try await manager.update(on: req.db)
+        
+        return manager.convertToPublic()
     }
     
     // MARK: - Delete
