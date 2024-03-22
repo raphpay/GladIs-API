@@ -24,8 +24,10 @@ struct DocumentController: RouteCollection {
         tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
         tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
         // Update
+        tokenAuthGroup.put(":documentID", use: changeDocumentStatus)
         // Delete
         tokenAuthGroup.delete(":documentID", use: remove)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     
@@ -46,7 +48,7 @@ struct DocumentController: RouteCollection {
         
         try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
         
-        let document = Document(name: fileName, path: input.path)
+        let document = Document(name: fileName, path: input.path, status: .none)
         try await document.save(on: req.db)
         
         return document
@@ -69,7 +71,7 @@ struct DocumentController: RouteCollection {
         
         try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
         
-        let document = Document(name: fileName, path: input.path)
+        let document = Document(name: fileName, path: input.path, status: .none)
         try await document.save(on: req.db)
         
         return document
@@ -116,6 +118,18 @@ struct DocumentController: RouteCollection {
     }
     
     // MARK: - Update
+    func changeDocumentStatus(req: Request) async throws -> Document {
+        let input = try req.content.decode(Document.StatusInput.self)
+        guard let document = try await Document.find(req.parameters.get("documentID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        document.status = input.status
+        try await document.update(on: req.db)
+        
+        return document
+    }
+    
     // MARK: - Delete
     func remove(req: Request) async throws -> HTTPResponseStatus {
         let document = try await getDocument(req: req)
@@ -132,6 +146,27 @@ struct DocumentController: RouteCollection {
             throw Abort(.badRequest, reason: error.localizedDescription)
         }
     }
+    
+    func removeAll(req: Request) async throws -> HTTPResponseStatus {
+        let documents = try await getAllDocuments(req: req)
+        
+        for document in documents {
+            let filePath = req.application.directory.publicDirectory + document.path + document.name
+            
+            if FileManager.default.fileExists(atPath: filePath) {
+                try FileManager.default.removeItem(atPath: filePath)
+            }
+            
+            do {
+                try await document.delete(force: true, on: req.db)
+            } catch let error {
+                throw Abort(.badRequest, reason: error.localizedDescription)
+            }
+        }
+        
+        return .noContent
+    }
+    
 }
 
 
