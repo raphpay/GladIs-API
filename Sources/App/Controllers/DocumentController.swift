@@ -98,12 +98,11 @@ struct DocumentController: RouteCollection {
     }
     
     func getDocument(req: Request) async throws -> Document {
-        guard let model = try await Document
-            .find(req.parameters.get("documentID"), on: req.db) else {
+        guard let document = try await Document.find(req.parameters.get("documentID"), on: req.db) else {
             throw Abort(.notFound)
         }
         
-        return model
+        return document
     }
     
     func dowloadDocument(req: Request) async throws -> Response {

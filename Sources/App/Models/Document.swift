@@ -20,15 +20,19 @@ final class Document: Model, Content {
     @Field(key: Document.v20240207.path)
     var path: String
     
+    @Field(key: Document.v20240207.lastModified)
+    var lastModified: Date?
+    
     @Enum(key: "status")
     var status: Status
     
     init() {}
     
-    init(id: UUID? = nil, name: String, path: String, status: Status) {
+    init(id: UUID? = nil, name: String, path: String, lastModified: Date? = .now,  status: Status) {
         self.id = id
         self.name = name
         self.path = path
+        self.lastModified = lastModified
         self.status = status
     }
     
@@ -36,12 +40,14 @@ final class Document: Model, Content {
         var id: UUID?
         var name: String
         var path: String
+        var lastModified: Date?
         var file : File
         
-        init(id: UUID? = nil, name: String, path: String, file: File) {
+        init(id: UUID? = nil, name: String, path: String, lastModified: Date? = .now, file: File) {
             self.id = id
             self.name = name
             self.path = path
+            self.lastModified = lastModified
             self.file = file
         }
     }
@@ -57,6 +63,7 @@ extension Document {
         static let id = FieldKey(stringLiteral: "id")
         static let name = FieldKey(stringLiteral: "name")
         static let path = FieldKey(stringLiteral: "path")
+        static let lastModified = FieldKey(stringLiteral: "lastModified")
         
         static let statusEnum = FieldKey(stringLiteral: "statusEnum")
         static let status = "status"
