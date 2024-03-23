@@ -24,6 +24,7 @@ struct CreateDocument: AsyncMigration {
             .id()
             .field(Document.v20240207.name, .string, .required)
             .field(Document.v20240207.path, .string, .required)
+            .field(Document.v20240207.lastModified, .date)
             .field(Document.v20240207.statusEnum, status, .required)
             .create()
     }
