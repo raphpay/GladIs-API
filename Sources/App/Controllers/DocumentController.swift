@@ -23,6 +23,7 @@ struct DocumentController: RouteCollection {
         tokenAuthGroup.get(":documentID", use: getDocument)
         tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
         tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
+        tokenAuthGroup.post("paginated", "path", use: getPaginatedDocumentsAtPath)
         // Update
         tokenAuthGroup.put(":documentID", use: changeDocumentStatus)
         // Delete
@@ -95,6 +96,26 @@ struct DocumentController: RouteCollection {
             .query(on: req.db)
             .filter(\.$path == path.value)
             .all()
+    }
+    
+    func getPaginatedDocumentsAtPath(req: Request) async throws -> [Document] {
+        struct Path: Codable {
+            var value: String
+        }
+        
+        let path = try req.content.decode(Path.self)
+        
+        guard let page = req.query[Int.self, at: "page"],
+              let perPage = req.query[Int.self, at: "perPage"] else {
+            throw Abort(.badRequest, reason: "Missing page or perPage query parameters")
+        }
+        
+        let paginatedResults = try await Document
+            .query(on: req.db)
+            .filter(\.$path == path.value)
+            .paginate(PageRequest(page: page, per: perPage))
+        
+        return paginatedResults.items
     }
     
     func getDocument(req: Request) async throws -> Document {
