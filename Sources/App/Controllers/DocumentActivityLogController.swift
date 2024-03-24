@@ -63,6 +63,7 @@ struct DocumentActivityLogController: RouteCollection {
         return try await DocumentActivityLog
             .query(on: req.db)
             .filter(\.$client.$id == uuid)
+            .sort(\.$actionDate, .descending)
             .all()
     }
     
@@ -79,6 +80,7 @@ struct DocumentActivityLogController: RouteCollection {
 
         let paginatedResult = try await DocumentActivityLog.query(on: req.db)
             .filter(\.$client.$id == uuid)
+            .sort(\.$actionDate, .descending)
             .paginate(PageRequest(page: page, per: perPage))
 
         return paginatedResult.items
