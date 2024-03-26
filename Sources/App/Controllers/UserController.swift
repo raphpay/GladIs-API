@@ -30,6 +30,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "manager", use: getManager)
         tokenAuthGroup.get(":userID", "employees", use: getEmployees)
         tokenAuthGroup.get(":userID", "token", use: getToken)
+        tokenAuthGroup.get("byMail", use: getUserByMail)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
@@ -220,6 +221,23 @@ struct UserController: RouteCollection {
         }
         
         return token
+    }
+    
+    func getUserByMail(req: Request) async throws -> User.Public {
+        struct EmailInput: Content {
+            let email: String
+        }
+        
+        let input = try req.content.decode(EmailInput.self)
+        
+        guard let user = try await User
+            .query(on: req.db)
+            .filter(\.$email == input.email)
+            .first() else {
+            throw Abort(.notFound)
+        }
+        
+        return user.convertToPublic()
     }
     
     // MARK: - Update
