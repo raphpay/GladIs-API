@@ -18,14 +18,14 @@ final class Event: Model, Content {
     var name: String
     
     @Field(key: Event.v20240207.date)
-    var date: Date
+    var date: Double
 
     @Parent(key: Event.v20240207.clientID)
     var client: User
 
     init() {}
 
-    init(id: UUID? = nil, name: String, date: Date, clientID: User.IDValue) {
+    init(id: UUID? = nil, name: String, date: Double, clientID: User.IDValue) {
         self.id = id
         self.name = name
         self.date = date
@@ -35,7 +35,7 @@ final class Event: Model, Content {
     struct Input: Content {
         var id: UUID?
         let name: String
-        let date: Date
+        let date: Double
         let clientID: User.IDValue
     }
 }
