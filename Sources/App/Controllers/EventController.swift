@@ -20,6 +20,10 @@ struct EventController: RouteCollection {
         // Read
         tokenAuthGroup.get(use: getAll)
         tokenAuthGroup.get("client", ":clientID", use: getAllForClient)
+        // Update
+        tokenAuthGroup.put(":eventID", use: update)
+        // Delete
+        tokenAuthGroup.delete(":eventID", use: remove)
     }
     
     // MARK: - Create
@@ -50,5 +54,33 @@ struct EventController: RouteCollection {
             .query(on: req.db)
             .filter(\.$client.$id == uuid)
             .all()
+    }
+    
+    // MARK: - Update
+    func update(req: Request) async throws -> Event {
+        guard let event = try await Event.find(req.parameters.get("eventID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        let input = try req.content.decode(Event.Input.self)
+        
+        event.name = input.name
+        event.date = input.date
+        event.$client.id = input.clientID
+        
+        try await event.update(on: req.db)
+        
+        return event
+    }
+    
+    // MARK: - Delete
+    func remove(req: Request) async throws -> HTTPResponseStatus {
+        guard let event = try await Event.find(req.parameters.get("eventID"), on: req.db) else {
+            throw Abort(.notFound)
+        }
+        
+        try await event.delete(force: true, on: req.db)
+        
+        return .noContent
     }
 }
