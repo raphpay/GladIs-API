@@ -28,8 +28,22 @@ struct EventController: RouteCollection {
     
     // MARK: - Create
     func create(req: Request) async throws -> Event {
-        let input = try req.content.decode(Event.Input.self)
+        let user = try req.auth.require(User.self)
         
+        guard user.userType != .employee else {
+            throw Abort(.unauthorized, reason: "event.errors.unauthorized.employee")
+        }
+        
+        if user.userType == .client {
+            let clientEvents = try await Event.query(on: req.db)
+                .filter(\.$client.$id == user.requireID())
+                .all()
+            if clientEvents.count >= 5 {
+                throw Abort(.forbidden, reason: "event.errors.forbidden.tooManyEvents")
+            }
+        }
+        
+        let input = try req.content.decode(Event.Input.self)
         let event = Event(name: input.name, date: input.date, clientID: input.clientID)
         
         try await event.save(on: req.db)
