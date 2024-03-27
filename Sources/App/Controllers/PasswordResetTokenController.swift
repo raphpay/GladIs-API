@@ -57,11 +57,6 @@ struct PasswordResetTokenController: RouteCollection {
             throw Abort(.notFound)
         }
         
-        let isCurrentPasswordValid = try Bcrypt.verify(input.newPassword, created: user.password)
-        guard isCurrentPasswordValid else {
-            throw Abort(.unauthorized, reason: "password.current.invalid")
-        }
-        
         do {
             try PasswordValidation().validatePassword(input.newPassword)
         } catch {
