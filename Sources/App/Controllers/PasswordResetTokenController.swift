@@ -16,7 +16,10 @@ struct PasswordResetTokenController: RouteCollection {
         passwordResetTokens.post("request", use: requestPasswordReset)
         passwordResetTokens.post("reset", use: resetPassword)
         // Read
-        passwordResetTokens.get(use: getAll)
+        let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthGroup = passwordResetTokens.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        tokenAuthGroup.get(use: getAll)
         // Delete
         passwordResetTokens.delete(use: removeAll)
     }
@@ -51,10 +54,6 @@ struct PasswordResetTokenController: RouteCollection {
         
         guard token.expiresAt > Date() else {
             throw Abort(.badRequest, reason: "Token expired")
-        }
-        
-        guard let user = try await User.find(token.$user.id, on: req.db) else {
-            throw Abort(.notFound)
         }
         
         do {
