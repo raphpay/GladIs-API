@@ -224,11 +224,7 @@ struct UserController: RouteCollection {
     }
     
     func getUserByMail(req: Request) async throws -> User.Public {
-        struct EmailInput: Content {
-            let email: String
-        }
-        
-        let input = try req.content.decode(EmailInput.self)
+        let input = try req.content.decode(User.EmailInput.self)
         
         guard let user = try await User
             .query(on: req.db)
