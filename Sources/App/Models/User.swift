@@ -75,6 +75,9 @@ final class User: Model, Content {
     @Children(for: \.$user)
     var tokens: [Token]
     
+    @Children(for: \.$user)
+    var resetTokens: [PasswordResetToken]
+    
     init() {}
     
     init(id: UUID? = nil,

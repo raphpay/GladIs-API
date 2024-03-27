@@ -30,6 +30,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "manager", use: getManager)
         tokenAuthGroup.get(":userID", "employees", use: getEmployees)
         tokenAuthGroup.get(":userID", "token", use: getToken)
+        tokenAuthGroup.get(":userID", "resetToken", use: getToken)
         tokenAuthGroup.get("byMail", use: getUserByMail)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
@@ -221,6 +222,15 @@ struct UserController: RouteCollection {
         }
         
         return token
+    }
+    
+    func getResetTokens(req: Request) async throws -> PasswordResetToken {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db),
+              let resetToken = try await user.$resetTokens.query(on: req.db).first() else {
+            throw Abort(.notFound)
+        }
+        
+        return resetToken
     }
     
     func getUserByMail(req: Request) async throws -> User.Public {
