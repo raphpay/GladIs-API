@@ -34,11 +34,22 @@ struct PasswordResetTokenController: RouteCollection {
             throw Abort(.notFound, reason: "User not found")
         }
         
-        let token = PasswordResetToken.generate()
         let userID = try user.requireID()
-        let resetToken = PasswordResetToken(token: token, userId: userID, expiresAt: Date().addingTimeInterval(3600))
         
-        try await resetToken.save(on: req.db)
+        
+        let token = try await PasswordResetToken
+            .query(on: req.db)
+            .filter(\.$user.$id == userID)
+            .first()
+        
+        if let existingToken = token {
+            existingToken.token = PasswordResetToken.generate()
+            try await existingToken.update(on: req.db)
+        } else {
+            let token = PasswordResetToken.generate()
+            let resetToken = PasswordResetToken(token: token, userId: userID, expiresAt: Date().addingTimeInterval(3600))
+            try await resetToken.save(on: req.db)
+        }
         
         return .ok
     }
