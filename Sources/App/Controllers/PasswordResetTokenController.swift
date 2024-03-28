@@ -36,7 +36,6 @@ struct PasswordResetTokenController: RouteCollection {
         
         let userID = try user.requireID()
         
-        
         let token = try await PasswordResetToken
             .query(on: req.db)
             .filter(\.$user.$id == userID)
@@ -48,7 +47,10 @@ struct PasswordResetTokenController: RouteCollection {
             try await existingToken.update(on: req.db)
         } else {
             let token = PasswordResetToken.generate()
-            let resetToken = PasswordResetToken(token: token, userId: userID, expiresAt: Date().addingTimeInterval(3600))
+            let resetToken = PasswordResetToken(token: token, 
+                                                userId: userID,
+                                                userEmail: input.email,
+                                                expiresAt: Date().addingTimeInterval(3600))
             try await resetToken.save(on: req.db)
         }
         

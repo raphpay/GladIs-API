@@ -19,22 +19,27 @@ final class PasswordResetToken: Model, Content {
 
     @Parent(key: PasswordResetToken.v20240207.userID)
     var user: User
+    
+    @Field(key: PasswordResetToken.v20240207.userEmail)
+    var userEmail: String
 
     @Field(key: PasswordResetToken.v20240207.expiresAt)
     var expiresAt: Date
     
     init() { }
 
-    init(id: UUID? = nil, token: String, userId: User.IDValue, expiresAt: Date) {
+    init(id: UUID? = nil, token: String, userId: User.IDValue, userEmail: String, expiresAt: Date) {
         self.id = id
         self.token = token
         self.$user.id = userId
+        self.userEmail = userEmail
         self.expiresAt = expiresAt
     }
     
     struct Public: Content {
         let id: UUID?
         let userID: User.IDValue
+        let userEmail: String
         let expiresAt: Date
     }
 }
@@ -45,6 +50,7 @@ extension PasswordResetToken {
         static let id = FieldKey(stringLiteral: "id")
         static let token = FieldKey(stringLiteral: "token")
         static let userID = FieldKey(stringLiteral: "userID")
+        static let userEmail = FieldKey(stringLiteral: "userEmail")
         static let expiresAt = FieldKey(stringLiteral: "expiresAt")
     }
 }

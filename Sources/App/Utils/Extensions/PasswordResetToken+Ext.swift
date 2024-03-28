@@ -10,7 +10,7 @@ import Vapor
 
 extension PasswordResetToken {
     func convertToPublic() -> PasswordResetToken.Public {
-        PasswordResetToken.Public(id: id, userID: $user.id, expiresAt: expiresAt)
+        PasswordResetToken.Public(id: id, userID: $user.id, userEmail: userEmail, expiresAt: expiresAt)
     }
 }
 
