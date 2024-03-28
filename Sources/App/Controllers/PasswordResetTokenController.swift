@@ -86,6 +86,7 @@ struct PasswordResetTokenController: RouteCollection {
         }
         
         user.password = hashedNewPassword
+        user.firstConnection = false
         try await user.save(on: req.db)
         
         try await token.delete(force: true, on: req.db)
