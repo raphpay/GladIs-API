@@ -1,6 +1,6 @@
 //
 //  UserController.swift
-//  
+//
 //
 //  Created by Raphaël Payet on 07/02/2024.
 //
@@ -30,7 +30,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "manager", use: getManager)
         tokenAuthGroup.get(":userID", "employees", use: getEmployees)
         tokenAuthGroup.get(":userID", "token", use: getToken)
-        tokenAuthGroup.get(":userID", "resetToken", use: getToken)
+        tokenAuthGroup.get(":userID", "resetToken", use: getResetTokensForClient)
         tokenAuthGroup.get("byMail", use: getUserByMail)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
@@ -224,10 +224,16 @@ struct UserController: RouteCollection {
         return token
     }
     
-    func getResetTokens(req: Request) async throws -> PasswordResetToken {
+    func getResetTokensForClient(req: Request) async throws -> PasswordResetToken {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db),
               let resetToken = try await user.$resetTokens.query(on: req.db).first() else {
             throw Abort(.notFound)
+        }
+        
+        let authUser = try req.auth.require(User.self)
+        
+        guard authUser.userType == .admin else {
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         return resetToken

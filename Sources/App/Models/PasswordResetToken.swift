@@ -31,6 +31,12 @@ final class PasswordResetToken: Model, Content {
         self.$user.id = userId
         self.expiresAt = expiresAt
     }
+    
+    struct Public: Content {
+        let id: UUID?
+        let userID: User.IDValue
+        let expiresAt: Date
+    }
 }
 
 extension PasswordResetToken {

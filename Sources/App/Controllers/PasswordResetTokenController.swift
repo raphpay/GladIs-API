@@ -95,8 +95,8 @@ struct PasswordResetTokenController: RouteCollection {
     }
     
     // MARK: - Read
-    func getAll(req: Request) async throws -> [PasswordResetToken] {
-        try await PasswordResetToken.query(on: req.db).all()
+    func getAll(req: Request) async throws -> [PasswordResetToken.Public] {
+        try await PasswordResetToken.query(on: req.db).all().convertToPublic()
     }
     
     // MARK: - Delete
