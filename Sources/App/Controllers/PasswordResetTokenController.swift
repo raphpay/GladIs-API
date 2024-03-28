@@ -26,10 +26,10 @@ struct PasswordResetTokenController: RouteCollection {
     
     // MARK: - Create
     func requestPasswordReset(req: Request) async throws -> HTTPResponseStatus {
-        let inputEmail = try req.content.decode(String.self)
+        let input = try req.content.decode(User.EmailInput.self)
     
         guard let user = try await User.query(on: req.db)
-            .filter(\.$email == inputEmail)
+            .filter(\.$email == input.email)
             .first() else {
             throw Abort(.notFound, reason: "passwordReset.userNotFound")
         }

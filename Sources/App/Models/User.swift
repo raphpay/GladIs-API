@@ -146,6 +146,10 @@ final class User: Model, Content {
         let employeesIDs: [String]?
         let managerID: String?
     }
+    
+    struct EmailInput: Content {
+        let email: String
+    }
 }
 
 
