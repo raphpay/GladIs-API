@@ -29,7 +29,7 @@ extension PendingUser {
         
         guard pendingUser == nil else {
             // If a user with the email already exists, throw an error
-            throw Abort(.badRequest, reason: "Email already exists")
+            throw Abort(.badRequest, reason: "badRequest.emailAlreadyExists")
         }
         // If the email is unique, return it
         return email

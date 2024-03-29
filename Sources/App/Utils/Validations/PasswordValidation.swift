@@ -11,25 +11,25 @@ struct PasswordValidation {
     func validatePassword(_ password: String) throws {
         // Check the password length
         guard password.count >= 12 else {
-            throw Abort(.unauthorized, reason: "password.invalidLength")
+            throw Abort(.unauthorized, reason: "unauthorized.password.invalidLength")
         }
         
         // Check an uppercase presence
         let uppercaseRegex = ".*[A-Z]+.*"
         guard NSPredicate(format: "SELF MATCHES %@", uppercaseRegex).evaluate(with: password) else {
-            throw Abort(.unauthorized, reason: "password.missingUppercase")
+            throw Abort(.unauthorized, reason: "unauthorized.password.missingUppercase")
         }
         
         // Check a digit presence
         let digitRegex = ".*[0-9]+.*"
         guard NSPredicate(format: "SELF MATCHES %@", digitRegex).evaluate(with: password) else {
-            throw Abort(.unauthorized, reason: "password.missingDigit")
+            throw Abort(.unauthorized, reason: "unauthorized.password.missingDigit")
         }
         
         // Check a special character presence
         let specialCharRegex = ".*[!@#$%^&*()]+.*"
         guard NSPredicate(format: "SELF MATCHES %@", specialCharRegex).evaluate(with: password) else {
-            throw Abort(.unauthorized, reason: "password.missingSpecialCharacter")
+            throw Abort(.unauthorized, reason: "unauthorized.password.missingSpecialCharacter")
         }
     }
 
