@@ -184,7 +184,7 @@ struct UserController: RouteCollection {
     
     func getUser(req: Request) async throws -> User.Public {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         return user.convertToPublic()

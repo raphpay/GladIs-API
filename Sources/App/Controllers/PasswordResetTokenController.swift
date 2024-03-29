@@ -31,7 +31,7 @@ struct PasswordResetTokenController: RouteCollection {
         guard let user = try await User.query(on: req.db)
             .filter(\.$email == input.email)
             .first() else {
-            throw Abort(.notFound, reason: "passwordReset.userNotFound")
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         let userID = try user.requireID()
@@ -63,11 +63,11 @@ struct PasswordResetTokenController: RouteCollection {
         guard let token = try await PasswordResetToken.query(on: req.db)
             .filter(\.$token == input.token)
             .first() else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.resetToken")
         }
         
         guard token.expiresAt > Date() else {
-            throw Abort(.badRequest, reason: "Token expired")
+            throw Abort(.badRequest, reason: "badRequest.tokenExpired")
         }
         
         do {
@@ -79,12 +79,8 @@ struct PasswordResetTokenController: RouteCollection {
         // Hash the new password
         let hashedNewPassword = try Bcrypt.hash(input.newPassword)
         
-        guard token.expiresAt > Date() else {
-            throw Abort(.badRequest, reason: "Token expired")
-        }
-        
         guard let user = try await User.find(token.$user.id, on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         user.password = hashedNewPassword
