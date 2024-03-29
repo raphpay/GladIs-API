@@ -25,6 +25,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.post(":userID", "verifyPassword", use: verifyPassword)
         // Read
         tokenAuthGroup.get(use: getAll)
+        tokenAuthGroup.get("clients", use: getAllClients)
         tokenAuthGroup.get(":userID", use: getUser)
         tokenAuthGroup.get(":userID", "modules", use: getModules)
         tokenAuthGroup.get(":userID", "technicalDocumentationTabs", use: getTechnicalDocumentationTabs)
@@ -169,6 +170,14 @@ struct UserController: RouteCollection {
     func getAll(req: Request) async throws -> [User.Public] {
         try await User
             .query(on: req.db)
+            .all()
+            .convertToPublic()
+    }
+    
+    func getAllClients(req: Request) async throws -> [User.Public] {
+        try await User
+            .query(on: req.db)
+            .filter(\.$userType == .client)
             .all()
             .convertToPublic()
     }
