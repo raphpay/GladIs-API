@@ -160,7 +160,7 @@ struct UserController: RouteCollection {
         let isCurrentPasswordValid = try Bcrypt.verify(passwordValidationRequest.currentPassword,
                                                        created: user.password)
         guard isCurrentPasswordValid else {
-            throw Abort(.unauthorized, reason: "unauthorized.invalidCurrentPassword")
+            throw Abort(.unauthorized, reason: "unauthorized.password.invalidCurrent")
         }
         
         return .ok
@@ -318,7 +318,7 @@ struct UserController: RouteCollection {
         let userId = try req.parameters.require("userID", as: UUID.self)
         
         guard user.id == userId else {
-            throw Abort(.forbidden, reason: "Unauthorized access")
+            throw Abort(.forbidden, reason: "forbidden.wrongUser")
         }
         
         // Decode the request body containing the new password
@@ -327,7 +327,7 @@ struct UserController: RouteCollection {
         // Verify that the current password matches the one stored in the database
         let isCurrentPasswordValid = try Bcrypt.verify(changeRequest.currentPassword, created: user.password)
         guard isCurrentPasswordValid else {
-            throw Abort(.unauthorized, reason: "password.current.invalid")
+            throw Abort(.unauthorized, reason: "unauthorized.password.invalidCurrent")
         }
         
         do {
@@ -341,7 +341,7 @@ struct UserController: RouteCollection {
         
         // Update the user's password in the database
         guard let user = try await User.find(userId, on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         user.password = hashedNewPassword
