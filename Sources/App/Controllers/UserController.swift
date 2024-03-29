@@ -1,6 +1,6 @@
 //
 //  UserController.swift
-//  
+//
 //
 //  Created by Raphaël Payet on 07/02/2024.
 //
@@ -22,14 +22,18 @@ struct UserController: RouteCollection {
         tokenAuthGroup.post(":userID", "modules", ":moduleID", use: addModule)
         tokenAuthGroup.post(":userID", "remove", "modules", ":moduleID", use: removeModule)
         tokenAuthGroup.post(":userID", "technicalDocumentationTabs", ":tabID", use: addTechnicalDocTab)
+        tokenAuthGroup.post(":userID", "verifyPassword", use: verifyPassword)
         // Read
         tokenAuthGroup.get(use: getAll)
+        tokenAuthGroup.get("clients", use: getAllClients)
         tokenAuthGroup.get(":userID", use: getUser)
         tokenAuthGroup.get(":userID", "modules", use: getModules)
         tokenAuthGroup.get(":userID", "technicalDocumentationTabs", use: getTechnicalDocumentationTabs)
         tokenAuthGroup.get(":userID", "manager", use: getManager)
         tokenAuthGroup.get(":userID", "employees", use: getEmployees)
         tokenAuthGroup.get(":userID", "token", use: getToken)
+        tokenAuthGroup.get(":userID", "resetToken", use: getResetTokensForClient)
+        tokenAuthGroup.get("byMail", use: getUserByMail)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
@@ -141,6 +145,27 @@ struct UserController: RouteCollection {
         return tabQuery
     }
     
+    func verifyPassword(req: Request) async throws -> HTTPResponseStatus {
+        let user = try req.auth.require(User.self)
+        let userId = try req.parameters.require("userID", as: UUID.self)
+        
+        guard user.id == userId else {
+            throw Abort(.forbidden, reason: "forbidden.access")
+        }
+        
+        // Decode the request body containing the new password
+        let passwordValidationRequest = try req.content.decode(PasswordValidationRequest.self)
+        
+        // Verify that the current password matches the one stored in the database
+        let isCurrentPasswordValid = try Bcrypt.verify(passwordValidationRequest.currentPassword,
+                                                       created: user.password)
+        guard isCurrentPasswordValid else {
+            throw Abort(.unauthorized, reason: "unauthorized.invalidCurrentPassword")
+        }
+        
+        return .ok
+    }
+    
     // MARK: - Read
     func getAll(req: Request) async throws -> [User.Public] {
         try await User
@@ -149,9 +174,17 @@ struct UserController: RouteCollection {
             .convertToPublic()
     }
     
+    func getAllClients(req: Request) async throws -> [User.Public] {
+        try await User
+            .query(on: req.db)
+            .filter(\.$userType == .client)
+            .all()
+            .convertToPublic()
+    }
+    
     func getUser(req: Request) async throws -> User.Public {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         return user.convertToPublic()
@@ -222,6 +255,34 @@ struct UserController: RouteCollection {
         return token
     }
     
+    func getResetTokensForClient(req: Request) async throws -> PasswordResetToken {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db),
+              let resetToken = try await user.$resetTokens.query(on: req.db).first() else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        let authUser = try req.auth.require(User.self)
+        
+        guard authUser.userType == .admin else {
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
+        }
+        
+        return resetToken
+    }
+    
+    func getUserByMail(req: Request) async throws -> User.Public {
+        let input = try req.content.decode(User.EmailInput.self)
+        
+        guard let user = try await User
+            .query(on: req.db)
+            .filter(\.$email == input.email)
+            .first() else {
+            throw Abort(.notFound)
+        }
+        
+        return user.convertToPublic()
+    }
+    
     // MARK: - Update
     func updateUserInfos(req: Request) async throws -> User.Public {
         try User.Input.validate(content: req)
@@ -279,7 +340,6 @@ struct UserController: RouteCollection {
         let hashedNewPassword = try Bcrypt.hash(changeRequest.newPassword)
         
         // Update the user's password in the database
-        
         guard let user = try await User.find(userId, on: req.db) else {
             throw Abort(.notFound)
         }

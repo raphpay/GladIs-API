@@ -75,6 +75,9 @@ final class User: Model, Content {
     @Children(for: \.$user)
     var tokens: [Token]
     
+    @Children(for: \.$user)
+    var resetTokens: [PasswordResetToken]
+    
     init() {}
     
     init(id: UUID? = nil,
@@ -143,6 +146,10 @@ final class User: Model, Content {
         let employeesIDs: [String]?
         let managerID: String?
     }
+    
+    struct EmailInput: Content {
+        let email: String
+    }
 }
 
 
@@ -199,6 +206,15 @@ struct PasswordChangeRequest: Content {
     let newPassword: String
 }
 
+struct PasswordValidationRequest: Content {
+    let currentPassword: String
+}
+
 struct PasswordChangeResponse: Content {
     let message: String
+}
+
+struct ResetPasswordRequest: Content {
+    let token: String
+    let newPassword: String
 }

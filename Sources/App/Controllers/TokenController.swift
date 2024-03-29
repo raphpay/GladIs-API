@@ -44,8 +44,14 @@ struct TokenController: RouteCollection {
     
     // MARK: - Login
     func login(req: Request) async throws -> Token {
-        let user = try req.auth.require(User.self)
-        let userID = try user.requireID()
+        var user: User
+        var userID: User.IDValue = UUID()
+        do {
+            user = try req.auth.require(User.self)
+            userID = try user.requireID()
+        } catch {
+            throw Abort(.unauthorized, reason: "unauthorized.login")
+        }
         
         guard user.isBlocked != true else {
             throw Abort(.unauthorized, reason: "login.account.blocked")
