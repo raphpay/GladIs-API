@@ -20,7 +20,7 @@ extension ValidatorResults {
         }
         
         var failureDescription: String? {
-            "phoneNumber.invalid"
+            "badRequest.phoneNumber.invalid"
         }
     }
     
@@ -36,7 +36,7 @@ extension ValidatorResults {
         }
         
         var failureDescription: String? {
-            "email.invalid"
+            "badRequest.email.invalid"
         }
     }
     
@@ -52,7 +52,7 @@ extension ValidatorResults {
         }
         
         var failureDescription: String? {
-            "numberOfEmployees.invalid"
+            "badRequest.numberOfEmployees.invalid"
         }
     }
     
@@ -68,7 +68,7 @@ extension ValidatorResults {
         }
         
         var failureDescription: String? {
-            "numberOfUsers.invalid"
+            "badRequest.numberOfUsers.invalid"
         }
     }
     
@@ -84,7 +84,7 @@ extension ValidatorResults {
         }
         
         var failureDescription: String? {
-            "salesAmount.invalid"
+            "badRequest.salesAmount.invalid"
         }
     }
 }
