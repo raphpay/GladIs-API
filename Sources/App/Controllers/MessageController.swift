@@ -25,7 +25,17 @@ struct MessageController: RouteCollection {
     
     // MARK: - Create
     func create(req: Request) async throws -> Message {
+        do {
+            try Message.Input.validate(content: req)
+        } catch {
+            throw Abort(.badRequest, reason: "badRequest.message.contentLength")
+        }
+        
         let input = try req.content.decode(Message.Input.self)
+        
+        guard input.senderID != input.receiverID else {
+            throw Abort(.badRequest, reason: "badRequest.message.senderAndReceiverSame")
+        }
         
         let message = Message(title: input.title, content: input.content,
                               dateSent: .now,
