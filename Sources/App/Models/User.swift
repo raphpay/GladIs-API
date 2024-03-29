@@ -78,6 +78,12 @@ final class User: Model, Content {
     @Children(for: \.$user)
     var resetTokens: [PasswordResetToken]
     
+    @Children(for: \.$sender)
+    var sentMessages: [Message]
+    
+    @Children(for: \.$receiver)
+    var receivedMessages: [Message]
+    
     init() {}
     
     init(id: UUID? = nil,
