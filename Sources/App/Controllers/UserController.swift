@@ -22,6 +22,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.post(":userID", "modules", ":moduleID", use: addModule)
         tokenAuthGroup.post(":userID", "remove", "modules", ":moduleID", use: removeModule)
         tokenAuthGroup.post(":userID", "technicalDocumentationTabs", ":tabID", use: addTechnicalDocTab)
+        tokenAuthGroup.post(":userID", "verifyPassword", use: verifyPassword)
         // Read
         tokenAuthGroup.get(use: getAll)
         tokenAuthGroup.get(":userID", use: getUser)
@@ -143,6 +144,27 @@ struct UserController: RouteCollection {
         return tabQuery
     }
     
+    func verifyPassword(req: Request) async throws -> HTTPResponseStatus {
+        let user = try req.auth.require(User.self)
+        let userId = try req.parameters.require("userID", as: UUID.self)
+        
+        guard user.id == userId else {
+            throw Abort(.forbidden, reason: "forbidden.access")
+        }
+        
+        // Decode the request body containing the new password
+        let passwordValidationRequest = try req.content.decode(PasswordValidationRequest.self)
+        
+        // Verify that the current password matches the one stored in the database
+        let isCurrentPasswordValid = try Bcrypt.verify(passwordValidationRequest.currentPassword,
+                                                       created: user.password)
+        guard isCurrentPasswordValid else {
+            throw Abort(.unauthorized, reason: "unauthorized.invalidCurrentPassword")
+        }
+        
+        return .ok
+    }
+    
     // MARK: - Read
     func getAll(req: Request) async throws -> [User.Public] {
         try await User
@@ -227,7 +249,7 @@ struct UserController: RouteCollection {
     func getResetTokensForClient(req: Request) async throws -> PasswordResetToken {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db),
               let resetToken = try await user.$resetTokens.query(on: req.db).first() else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         let authUser = try req.auth.require(User.self)
@@ -309,7 +331,6 @@ struct UserController: RouteCollection {
         let hashedNewPassword = try Bcrypt.hash(changeRequest.newPassword)
         
         // Update the user's password in the database
-        
         guard let user = try await User.find(userId, on: req.db) else {
             throw Abort(.notFound)
         }

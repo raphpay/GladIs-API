@@ -206,6 +206,10 @@ struct PasswordChangeRequest: Content {
     let newPassword: String
 }
 
+struct PasswordValidationRequest: Content {
+    let currentPassword: String
+}
+
 struct PasswordChangeResponse: Content {
     let message: String
 }
