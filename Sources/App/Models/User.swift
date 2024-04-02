@@ -156,6 +156,10 @@ final class User: Model, Content {
     struct EmailInput: Content {
         let email: String
     }
+    
+    struct UsernameInput: Content {
+        let username: String
+    }
 }
 
 
