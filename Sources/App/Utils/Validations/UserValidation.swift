@@ -149,6 +149,12 @@ extension User.Input: Validatable {
     }
 }
 
+extension User.EmailInput: Validatable {
+    static func validations(_ validations: inout Validations) {
+        validations.add("email", as: String.self, is: .customEmail)
+    }
+}
+
 extension PendingUser.Input: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("email", as: String.self, is: .customEmail)

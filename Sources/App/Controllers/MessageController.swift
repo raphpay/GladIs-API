@@ -39,7 +39,8 @@ struct MessageController: RouteCollection {
         
         let message = Message(title: input.title, content: input.content,
                               dateSent: .now,
-                              senderID: input.senderID, receiverID: input.receiverID)
+                              senderID: input.senderID, senderMail: input.senderMail,
+                              receiverID: input.receiverID, receiverMail: input.receiverMail)
         
         
         try await message.save(on: req.db)

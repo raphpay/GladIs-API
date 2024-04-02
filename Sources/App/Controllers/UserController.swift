@@ -23,6 +23,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.post(":userID", "remove", "modules", ":moduleID", use: removeModule)
         tokenAuthGroup.post(":userID", "technicalDocumentationTabs", ":tabID", use: addTechnicalDocTab)
         tokenAuthGroup.post(":userID", "verifyPassword", use: verifyPassword)
+        tokenAuthGroup.post("byMail", use: getUserByMail)
         // Read
         tokenAuthGroup.get(use: getAll)
         tokenAuthGroup.get("clients", use: getAllClients)
@@ -33,7 +34,6 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "employees", use: getEmployees)
         tokenAuthGroup.get(":userID", "token", use: getToken)
         tokenAuthGroup.get(":userID", "resetToken", use: getResetTokensForClient)
-        tokenAuthGroup.get("byMail", use: getUserByMail)
         tokenAuthGroup.get(":userID", "messages", "all", use: getUserMessages)
         tokenAuthGroup.get(":userID", "messages", "received", use: getReceivedMessages)
         tokenAuthGroup.get(":userID", "messages", "sent", use: getSentMessages)
@@ -274,6 +274,8 @@ struct UserController: RouteCollection {
     }
     
     func getUserByMail(req: Request) async throws -> User.Public {
+        try User.EmailInput.validate(content: req)
+        
         let input = try req.content.decode(User.EmailInput.self)
         
         guard let user = try await User
