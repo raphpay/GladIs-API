@@ -20,6 +20,7 @@ struct MessageController: RouteCollection {
         // Read
         tokenAuthGroup.get(use: getAll)
         // Delete
+        tokenAuthGroup.delete(":messageID", use: delete)
         tokenAuthGroup.delete("all", use: removeAll)
     }
     
@@ -53,6 +54,22 @@ struct MessageController: RouteCollection {
     }
     
     // MARK: - Delete
+    func delete(req: Request) async throws -> HTTPResponseStatus {
+        let authUser = try req.auth.require(User.self)
+        
+        guard authUser.userType == .admin else {
+            throw Abort(.badRequest, reason: "badRequest.userShouldBeAdmin")
+        }
+        
+        guard let message = try await Message.find(req.parameters.get("messageID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.message")
+        }
+        
+        try await message.delete(force: true, on: req.db)
+        
+        return .noContent
+    }
+    
     func removeAll(req: Request) async throws -> HTTPResponseStatus {
         let adminUser = try req.auth.require(User.self)
         
