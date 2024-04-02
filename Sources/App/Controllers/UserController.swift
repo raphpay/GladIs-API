@@ -283,7 +283,7 @@ struct UserController: RouteCollection {
             .query(on: req.db)
             .filter(\.$email == input.email)
             .first() else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         return user.convertToPublic()
@@ -296,7 +296,7 @@ struct UserController: RouteCollection {
             .query(on: req.db)
             .filter(\.$username == input.username)
             .first() else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         return user.convertToPublic()
