@@ -26,6 +26,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreatePotentialEmployee())
     app.migrations.add(CreateEvent())
     app.migrations.add(CreatePasswordResetToken())
+    app.migrations.add(CreateMessage())
     
     switch app.environment {
         case .development:

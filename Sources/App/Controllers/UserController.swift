@@ -23,6 +23,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.post(":userID", "remove", "modules", ":moduleID", use: removeModule)
         tokenAuthGroup.post(":userID", "technicalDocumentationTabs", ":tabID", use: addTechnicalDocTab)
         tokenAuthGroup.post(":userID", "verifyPassword", use: verifyPassword)
+        tokenAuthGroup.post("byMail", use: getUserByMail)
         // Read
         tokenAuthGroup.get(use: getAll)
         tokenAuthGroup.get("clients", use: getAllClients)
@@ -33,7 +34,9 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "employees", use: getEmployees)
         tokenAuthGroup.get(":userID", "token", use: getToken)
         tokenAuthGroup.get(":userID", "resetToken", use: getResetTokensForClient)
-        tokenAuthGroup.get("byMail", use: getUserByMail)
+        tokenAuthGroup.get(":userID", "messages", "all", use: getUserMessages)
+        tokenAuthGroup.get(":userID", "messages", "received", use: getReceivedMessages)
+        tokenAuthGroup.get(":userID", "messages", "sent", use: getSentMessages)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
@@ -271,6 +274,8 @@ struct UserController: RouteCollection {
     }
     
     func getUserByMail(req: Request) async throws -> User.Public {
+        try User.EmailInput.validate(content: req)
+        
         let input = try req.content.decode(User.EmailInput.self)
         
         guard let user = try await User
@@ -281,6 +286,54 @@ struct UserController: RouteCollection {
         }
         
         return user.convertToPublic()
+    }
+    
+    func getSentMessages(req: Request) async throws -> [Message] {
+        guard let userID = req.parameters.get("userID"),
+              let uuid = UUID(uuidString: userID) else {
+            throw Abort(.badRequest, reason: "badRequest.emptyUserID")
+        }
+        
+        let messages = try await Message
+            .query(on: req.db)
+            .filter(\.$sender.$id == uuid)
+            .sort(\.$dateSent, .ascending)
+            .all()
+        
+        return messages
+    }
+    
+    func getReceivedMessages(req: Request) async throws -> [Message] {
+        guard let userID = req.parameters.get("userID"),
+              let uuid = UUID(uuidString: userID) else {
+            throw Abort(.badRequest, reason: "badRequest.emptyUserID")
+        }
+        
+        let messages = try await Message
+            .query(on: req.db)
+            .filter(\.$receiver.$id == uuid)
+            .sort(\.$dateSent, .ascending)
+            .all()
+        
+        return messages
+    }
+    
+    func getUserMessages(req: Request) async throws -> [Message] {
+        let sentMessages = try await getSentMessages(req: req)
+        let receivedMessages = try await getReceivedMessages(req: req)
+        
+        let overallMessages = sentMessages + receivedMessages
+        
+        var seenIds = Set<UUID>()
+        let uniqueMessages = overallMessages.filter { message in
+            guard let id = message.id, !seenIds.contains(id) else { return false }
+            seenIds.insert(id)
+            return true
+        }
+
+        let sortedMessages = uniqueMessages.sorted(by: { $0.dateSent < $1.dateSent })
+        
+        return sortedMessages
     }
     
     // MARK: - Update
