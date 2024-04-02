@@ -11,6 +11,7 @@ import Vapor
 struct EventController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let events = routes.grouped("api", "events")
+        events.post("maxLogin", use: createMaxLoginEvent)
         // Token Authentification
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -49,6 +50,15 @@ struct EventController: RouteCollection {
         try await event.save(on: req.db)
         
         return event 
+    }
+    
+    func createMaxLoginEvent(req: Request) async throws -> Event {
+        let input = try req.content.decode(Event.Input.self)
+        let event = Event(name: input.name, date: input.date, clientID: input.clientID)
+        
+        try await event.save(on: req.db)
+        
+        return event
     }
     
     // MARK: - Read
