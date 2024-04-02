@@ -30,11 +30,11 @@ struct DocumentActivityLogController: RouteCollection {
         let logInput = try req.content.decode(DocumentActivityLog.Input.self)
         
         guard let docQuery = try await Document.find(logInput.documentID, on: req.db) else {
-            throw Abort(.notFound, reason: "Document not found")
+            throw Abort(.notFound, reason: "notFound.document")
         }
         
         guard let userQuery = try await User.find(logInput.actorID, on: req.db) else {
-            throw Abort(.notFound, reason: "User not found")
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         let docID = try docQuery.requireID()
@@ -45,6 +45,7 @@ struct DocumentActivityLogController: RouteCollection {
                                       actorIsAdmin: logInput.actorIsAdmin,
                                       documentID: docID,
                                       clientID: logInput.clientID)
+        
         try await log.save(on: req.db)
         return log
     }
@@ -57,7 +58,7 @@ struct DocumentActivityLogController: RouteCollection {
     func getLogsForClient(req: Request) async throws -> [DocumentActivityLog] {
         guard let clientID = req.parameters.get("clientID"),
               let uuid = UUID(uuidString: clientID) else {
-            throw Abort(.badRequest)
+            throw Abort(.badRequest, reason: "badRequest.clientID")
         }
         
         return try await DocumentActivityLog
@@ -70,12 +71,15 @@ struct DocumentActivityLogController: RouteCollection {
     func getPaginatedLogsForClient(req: Request) async throws -> [DocumentActivityLog] {
         guard let clientID = req.parameters.get("clientID"),
               let uuid = UUID(uuidString: clientID) else {
-            throw Abort(.badRequest)
+            throw Abort(.badRequest, reason: "badRequest.clientID")
         }
         
-        guard let page = req.query[Int.self, at: "page"],
-              let perPage = req.query[Int.self, at: "perPage"] else {
-            throw Abort(.badRequest, reason: "Missing page or perPage query parameters")
+        guard let page = req.query[Int.self, at: "page"] else {
+            throw Abort(.badRequest, reason: "badRequest.page")
+        }
+        
+        guard let perPage = req.query[Int.self, at: "perPage"] else {
+            throw Abort(.badRequest, reason: "badRequest.perPage")
         }
 
         let paginatedResult = try await DocumentActivityLog.query(on: req.db)
@@ -91,7 +95,7 @@ struct DocumentActivityLogController: RouteCollection {
         let adminUser = try req.auth.require(User.self)
         
         guard adminUser.userType == .admin else {
-            throw Abort(.badRequest, reason: "User should be admin to delete document logs")
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         try await DocumentActivityLog
