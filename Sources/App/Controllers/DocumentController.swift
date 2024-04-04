@@ -131,7 +131,7 @@ struct DocumentController: RouteCollection {
         let filePath = req.application.directory.publicDirectory + document.path + document.name
         
         if !FileManager.default.fileExists(atPath: filePath) {
-            throw Abort(.notFound, reason: "File not found at \(filePath)")
+            throw Abort(.notFound, reason: "notFound.file")
         }
 
         return req.fileio.streamFile(at: filePath)

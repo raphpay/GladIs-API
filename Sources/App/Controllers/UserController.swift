@@ -57,7 +57,7 @@ struct UserController: RouteCollection {
         
         guard let inputPassword = input.password,
             !inputPassword.isEmpty else {
-            throw Abort(.badRequest, reason: "Password cannot be empty")
+            throw Abort(.badRequest, reason: "badRequest.password")
         }
         
         do {
@@ -93,7 +93,7 @@ struct UserController: RouteCollection {
         }
         
         guard adminUser.userType == .admin else {
-            throw Abort(.badRequest, reason: "User should be admin to create another user")
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         do {
@@ -121,7 +121,7 @@ struct UserController: RouteCollection {
     func addModule(req: Request) async throws -> Module {
         guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
               let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         try await userQuery.$modules.attach(moduleQuery, on: req.db)
@@ -131,7 +131,7 @@ struct UserController: RouteCollection {
     func removeModule(req: Request) async throws -> [Module] {
         guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
               let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         try await userQuery.$modules.detach(moduleQuery, on: req.db)
@@ -142,7 +142,7 @@ struct UserController: RouteCollection {
     func addTechnicalDocTab(req: Request) async throws -> TechnicalDocumentationTab {
         guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
               let tabQuery = try await TechnicalDocumentationTab.find(req.parameters.get("tabID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         try await userQuery.$technicalDocumentationTabs.attach(tabQuery, on: req.db)
@@ -196,7 +196,7 @@ struct UserController: RouteCollection {
     
     func getModules(req: Request) async throws -> [Module] {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         return try await user.$modules.query(on: req.db).all()
@@ -218,7 +218,7 @@ struct UserController: RouteCollection {
         guard let employee = try await User.find(req.parameters.get("userID"), on: req.db),
               let managerID = employee.managerID,
               let manager = try await User.find(UUID(uuidString: managerID), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         return manager.convertToPublic()
@@ -226,21 +226,21 @@ struct UserController: RouteCollection {
     
     func getEmployees(req: Request) async throws -> [User.Public] {
         guard let manager = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         var employees: [User.Public] = []
         if let employeesIDs = manager.employeesIDs {
             for employeeID in employeesIDs {
                 guard let id = UUID(uuidString: employeeID) else {
-                    throw Abort(.notFound)
+                    throw Abort(.notFound, reason: "notFound.user")
                 }
                 
                 guard let employee = try await User
                     .query(on: req.db)
                     .filter(\.$id == id)
                     .first() else {
-                    throw Abort(.notFound)
+                    throw Abort(.notFound, reason: "notFound.user")
                 }
                 
                 employees.append(employee.convertToPublic())
@@ -253,7 +253,7 @@ struct UserController: RouteCollection {
     func getToken(req: Request) async throws -> Token {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db),
               let token = try await user.$tokens.query(on: req.db).first() else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         return token
@@ -355,7 +355,7 @@ struct UserController: RouteCollection {
         try User.Input.validate(content: req)
         
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         let updatedUser = try req.content.decode(User.Input.self)
@@ -372,7 +372,7 @@ struct UserController: RouteCollection {
     
     func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         user.firstConnection = false
@@ -422,14 +422,14 @@ struct UserController: RouteCollection {
               let employeeID = req.parameters.get("userID"),
             let manager = try await User.find(UUID(uuidString: managerID), on: req.db),
               let employee = try await User.find(UUID(uuidString: employeeID), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         if let managerEmployees = manager.employeesIDs {
             if !managerEmployees.contains(employeeID) {
                 manager.employeesIDs?.append(employeeID)
             } else {
-                throw Abort(.badRequest, reason: "Manager is already set")
+                throw Abort(.badRequest, reason: "badRequest.managerAlreadySet")
             }
         } else {
             manager.employeesIDs = [employeeID]
@@ -444,7 +444,7 @@ struct UserController: RouteCollection {
     
     func blockUser(req: Request) async throws -> User.Public {
         guard let client = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         client.isBlocked = true
@@ -455,7 +455,7 @@ struct UserController: RouteCollection {
     
     func unblockUser(req: Request) async throws -> User.Public {
         guard let client = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         client.isBlocked = false
@@ -466,12 +466,10 @@ struct UserController: RouteCollection {
     
     func removeEmployee(req: Request) async throws -> User.Public {
         guard let manager = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         
         let employeeID = req.parameters.get("employeeID")
-        
-        
         
         if let employeesIDs = manager.employeesIDs {
             let newArray = employeesIDs.filter { $0 != employeeID }
@@ -486,7 +484,7 @@ struct UserController: RouteCollection {
     // MARK: - Delete
     func remove(req: Request) async throws -> HTTPStatus {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         try await user.delete(force: true, on: req.db)
         return .noContent

@@ -30,7 +30,7 @@ struct TechnicalDocumentationTabController: RouteCollection {
         let adminUser = try req.auth.require(User.self)
         
         guard adminUser.userType == .admin else {
-            throw Abort(.badRequest, reason: "User should be admin to create another user")
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         let technicalDocTab = TechnicalDocumentationTab(name: tabData.name, area: tabData.area)
@@ -49,7 +49,7 @@ struct TechnicalDocumentationTabController: RouteCollection {
     // MARK: - DELETE
     func remove(req: Request) async throws -> HTTPResponseStatus {
         guard let tab = try await TechnicalDocumentationTab.find(req.parameters.get("tabID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.user")
         }
         try await tab.delete(force: true, on: req.db)
         return .noContent
