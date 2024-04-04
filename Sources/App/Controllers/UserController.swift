@@ -119,9 +119,12 @@ struct UserController: RouteCollection {
     }
     
     func addModule(req: Request) async throws -> Module {
-        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
-              let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        guard let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.module")
         }
         
         try await userQuery.$modules.attach(moduleQuery, on: req.db)
