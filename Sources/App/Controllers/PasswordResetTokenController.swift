@@ -21,7 +21,8 @@ struct PasswordResetTokenController: RouteCollection {
         let tokenAuthGroup = passwordResetTokens.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         tokenAuthGroup.get(use: getAll)
         // Delete
-        passwordResetTokens.delete(use: removeAll)
+        tokenAuthGroup.delete("passwordResetTokenID", use: remove)
+        tokenAuthGroup.delete(use: removeAll)
     }
     
     // MARK: - Create
@@ -98,6 +99,16 @@ struct PasswordResetTokenController: RouteCollection {
     }
     
     // MARK: - Delete
+    func remove(req: Request) async throws -> HTTPResponseStatus {
+        guard let token = try await PasswordResetToken.find(req.parameters.get("passwordResetTokenID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.passwordResetToken")
+        }
+        
+        try await token.delete(force: true, on: req.db)
+        
+        return .noContent
+    }
+    
     func removeAll(req: Request) async throws -> HTTPResponseStatus {
         let tokens = try await PasswordResetToken.query(on: req.db).all()
         
@@ -105,7 +116,7 @@ struct PasswordResetTokenController: RouteCollection {
             do {
                 try await token.delete(force: true, on: req.db)
             } catch let error {
-                throw Abort(.badRequest, reason: error.localizedDescription)
+                throw Abort(.badRequest, reason: "badRequest.passwordResetToken.delete")
             }
         }
         
