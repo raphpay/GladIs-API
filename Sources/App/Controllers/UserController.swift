@@ -395,7 +395,8 @@ struct UserController: RouteCollection {
         let changeRequest = try req.content.decode(PasswordChangeRequest.self)
         
         // Verify that the current password matches the one stored in the database
-        let isCurrentPasswordValid = try Bcrypt.verify(changeRequest.currentPassword, created: user.password)
+        let isCurrentPasswordValid = try Bcrypt.verify(changeRequest.currentPassword,
+                                                       created: user.password)
         guard isCurrentPasswordValid else {
             throw Abort(.unauthorized, reason: "unauthorized.password.invalidCurrent")
         }
@@ -417,7 +418,7 @@ struct UserController: RouteCollection {
         user.password = hashedNewPassword
         try await user.save(on: req.db)
         
-        return PasswordChangeResponse(message: "Password changed successfully")
+        return PasswordChangeResponse(message: "success.passwordChanged")
     }
     
     func addManager(req: Request) async throws -> User.Public {

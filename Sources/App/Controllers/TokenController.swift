@@ -30,7 +30,7 @@ struct TokenController: RouteCollection {
     // MARK: - READ
     func getTokenByID(req: Request) async throws -> Token {
         guard let token = try await Token.find(req.parameters.get("tokenID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.token")
         }
         
         return token
@@ -77,7 +77,7 @@ struct TokenController: RouteCollection {
     
     func logout(req: Request) async throws -> HTTPStatus {
         guard let token = try await Token.find(req.parameters.get("tokenID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.token")
         }
         
         try await token.delete(force: true, on: req.db)
@@ -89,7 +89,7 @@ struct TokenController: RouteCollection {
         let authUser = try req.auth.require(User.self)
         
         guard authUser.userType == .admin else {
-            throw Abort(.badRequest, reason: "User should be admin to delete tokens")
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         try await Token.query(on: req.db)
