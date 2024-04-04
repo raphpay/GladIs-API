@@ -32,7 +32,7 @@ struct EventController: RouteCollection {
         let user = try req.auth.require(User.self)
         
         guard user.userType != .employee else {
-            throw Abort(.unauthorized, reason: "event.errors.unauthorized.employee")
+            throw Abort(.unauthorized, reason: "unauthorized.event.employee")
         }
         
         if user.userType == .client {
@@ -40,7 +40,7 @@ struct EventController: RouteCollection {
                 .filter(\.$client.$id == user.requireID())
                 .all()
             if clientEvents.count >= 5 {
-                throw Abort(.forbidden, reason: "event.errors.forbidden.tooManyEvents")
+                throw Abort(.forbidden, reason: "forbidden.event.tooManyEvents")
             }
         }
         
@@ -71,7 +71,7 @@ struct EventController: RouteCollection {
     func getAllForClient(req: Request) async throws -> [Event] {
         guard let clientID = req.parameters.get("clientID"),
             let uuid = UUID(uuidString: clientID) else {
-            throw Abort(.badRequest, reason: "Invalid UUID")
+            throw Abort(.badRequest, reason: "badRequest.uuid")
         }
         
         return try await Event
@@ -83,7 +83,7 @@ struct EventController: RouteCollection {
     // MARK: - Update
     func update(req: Request) async throws -> Event {
         guard let event = try await Event.find(req.parameters.get("eventID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.event")
         }
         
         let input = try req.content.decode(Event.Input.self)
@@ -100,7 +100,7 @@ struct EventController: RouteCollection {
     // MARK: - Delete
     func remove(req: Request) async throws -> HTTPResponseStatus {
         guard let event = try await Event.find(req.parameters.get("eventID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.event")
         }
         
         try await event.delete(force: true, on: req.db)

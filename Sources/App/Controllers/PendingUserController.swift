@@ -48,7 +48,7 @@ struct PendingUserController: RouteCollection {
     func addModule(req: Request) async throws -> Module {
         guard let pendingUserQuery = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db),
               let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFount.pendingUser")
         }
         
         try await pendingUserQuery.$modules.attach(moduleQuery, on: req.db)
@@ -59,11 +59,11 @@ struct PendingUserController: RouteCollection {
         let user = try req.auth.require(User.self)
         
         guard user.userType == .admin else {
-            throw Abort(.badRequest, reason: "User should be admin to create a user from pending user")
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFount.pendingUser")
         }
         
         let newUser = pendingUser.convertToUser()
@@ -89,7 +89,7 @@ struct PendingUserController: RouteCollection {
         let authUser = try req.auth.require(User.self)
         
         guard authUser.userType == .admin else {
-            throw Abort(.badRequest, reason: "User should be admin for this action")
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         return try await PendingUser
@@ -99,7 +99,7 @@ struct PendingUserController: RouteCollection {
     
     func getModules(req: Request) async throws -> [Module] {
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFount.pendingUser")
         }
 
         return try await pendingUser.$modules.query(on: req.db).all()
@@ -107,7 +107,7 @@ struct PendingUserController: RouteCollection {
     
     func getEmployees(req: Request) async throws -> [PotentialEmployee] {
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFount.pendingUser")
         }
         
         let employees = try await pendingUser.$potentialEmployees
@@ -122,12 +122,12 @@ struct PendingUserController: RouteCollection {
         let user = try req.auth.require(User.self)
         
         guard user.userType == .admin else {
-            throw Abort(.badRequest, reason: "User should be admin to complete this action")
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         let newStatus = try req.content.decode(PendingUser.Status.self)
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFount.pendingUser")
         }
         
         pendingUser.status = newStatus.type
@@ -140,11 +140,11 @@ struct PendingUserController: RouteCollection {
         let user = try req.auth.require(User.self)
         
         guard user.userType == .admin else {
-            throw Abort(.badRequest, reason: "User should be admin to create a user from pending user")
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.pendingUser")
         }
         
         try await pendingUser.delete(on: req.db)
