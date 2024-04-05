@@ -132,13 +132,19 @@ struct EventController: RouteCollection {
         return .noContent
     }
 
-
     func remove(req: Request) async throws -> HTTPResponseStatus {
-        guard let event = try await Event.find(req.parameters.get("eventID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.event")
+        guard let eventID = req.parameters.get("eventID"),
+            let uuid = UUID(uuidString: eventID) else {
+            throw Abort(.badRequest, reason: "badRequest.uuid")
         }
         
-        try await event.delete(force: true, on: req.db)
+        let events = try await Event
+            .query(on: req.db)
+            .withDeleted()
+            .filter(\.$id == uuid)
+            .all()
+
+        try await events.delete(force: true, on: req.db)
         
         return .noContent
     }
