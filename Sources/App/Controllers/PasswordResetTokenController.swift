@@ -21,7 +21,7 @@ struct PasswordResetTokenController: RouteCollection {
         let tokenAuthGroup = passwordResetTokens.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         tokenAuthGroup.get(use: getAll)
         // Delete
-        tokenAuthGroup.delete("passwordResetTokenID", use: remove)
+        tokenAuthGroup.delete(":passwordResetTokenID", use: remove)
         tokenAuthGroup.delete(use: removeAll)
     }
     
