@@ -20,11 +20,16 @@ struct EventController: RouteCollection {
         tokenAuthGroup.post(use: create)
         // Read
         tokenAuthGroup.get(use: getAll)
+        tokenAuthGroup.get("archived", use: getArchivedEvents)
         tokenAuthGroup.get("client", ":clientID", use: getAllForClient)
+        tokenAuthGroup.get("client", "archived", ":clientID", use: getArchivedEventsForClient)
         // Update
         tokenAuthGroup.put(":eventID", use: update)
+        tokenAuthGroup.put("restore", ":eventID", use: restore)
         // Delete
         tokenAuthGroup.delete(":eventID", use: remove)
+        tokenAuthGroup.delete("archive", ":eventID", use: archive)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     // MARK: - Create
@@ -79,6 +84,28 @@ struct EventController: RouteCollection {
             .filter(\.$client.$id == uuid)
             .all()
     }
+
+    func getArchivedEvents(req: Request) async throws -> [Event] {
+        try await Event
+            .query(on: req.db)
+            .withDeleted()
+            .filter(\.$deletedAt != nil)
+            .all()
+    }
+
+    func getArchivedEventsForClient(req: Request) async throws -> [Event] {
+        guard let clientID = req.parameters.get("clientID"),
+            let uuid = UUID(uuidString: clientID) else {
+            throw Abort(.badRequest, reason: "badRequest.uuid")
+        }
+        
+        return try await Event
+            .query(on: req.db)
+            .withDeleted()
+            .filter(\.$client.$id == uuid)
+            .filter(\.$deletedAt != nil)
+            .all()
+    }
     
     // MARK: - Update
     func update(req: Request) async throws -> Event {
@@ -96,15 +123,55 @@ struct EventController: RouteCollection {
         
         return event
     }
+
+    func restore(req: Request) async throws -> Event {
+        guard let eventID = req.parameters.get("eventID"),
+            let uuid = UUID(uuidString: eventID) else {
+            throw Abort(.badRequest, reason: "badRequest.uuid")
+        }
+        
+        guard let event = try await Event
+            .query(on: req.db)
+            .withDeleted()
+            .filter(\.$id == uuid)
+            .filter(\.$deletedAt != nil)
+            .first() else {
+                throw Abort(.notFound, reason: "notFound.event")
+        }
+
+        try await event.restore(on: req.db)
+
+        return event
+    }
     
     // MARK: - Delete
-    func remove(req: Request) async throws -> HTTPResponseStatus {
+    func archive(req: Request) async throws -> HTTPResponseStatus {
         guard let event = try await Event.find(req.parameters.get("eventID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.event")
         }
+        try await event.delete(force: false, on: req.db)
+        return .noContent
+    }
+
+    func remove(req: Request) async throws -> HTTPResponseStatus {
+        guard let eventID = req.parameters.get("eventID"),
+            let uuid = UUID(uuidString: eventID) else {
+            throw Abort(.badRequest, reason: "badRequest.uuid")
+        }
         
-        try await event.delete(force: true, on: req.db)
+        let events = try await Event
+            .query(on: req.db)
+            .withDeleted()
+            .filter(\.$id == uuid)
+            .all()
+
+        try await events.delete(force: true, on: req.db)
         
+        return .noContent
+    }
+
+    func removeAll(req: Request) async throws -> HTTPResponseStatus {        
+        try await Event.query(on: req.db).all().delete(force: true, on: req.db)
         return .noContent
     }
 }
