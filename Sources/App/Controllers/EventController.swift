@@ -20,11 +20,14 @@ struct EventController: RouteCollection {
         tokenAuthGroup.post(use: create)
         // Read
         tokenAuthGroup.get(use: getAll)
+        tokenAuthGroup.get("archived", use: getArchivedEvents)
         tokenAuthGroup.get("client", ":clientID", use: getAllForClient)
         // Update
         tokenAuthGroup.put(":eventID", use: update)
         // Delete
         tokenAuthGroup.delete(":eventID", use: remove)
+        tokenAuthGroup.delete("archive", ":eventID", use: archive)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     // MARK: - Create
@@ -79,6 +82,14 @@ struct EventController: RouteCollection {
             .filter(\.$client.$id == uuid)
             .all()
     }
+
+    func getArchivedEvents(req: Request) async throws -> [Event] {
+        try await Event
+            .query(on: req.db)
+            .withDeleted()
+            .filter(\.$deletedAt != nil)
+            .all()
+    }
     
     // MARK: - Update
     func update(req: Request) async throws -> Event {
@@ -98,6 +109,15 @@ struct EventController: RouteCollection {
     }
     
     // MARK: - Delete
+    func archive(req: Request) async throws -> HTTPResponseStatus {
+        guard let event = try await Event.find(req.parameters.get("eventID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.event")
+        }
+        try await event.delete(force: false, on: req.db)
+        return .noContent
+    }
+
+
     func remove(req: Request) async throws -> HTTPResponseStatus {
         guard let event = try await Event.find(req.parameters.get("eventID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.event")
@@ -105,6 +125,11 @@ struct EventController: RouteCollection {
         
         try await event.delete(force: true, on: req.db)
         
+        return .noContent
+    }
+
+    func removeAll(req: Request) async throws -> HTTPResponseStatus {        
+        try await Event.query(on: req.db).all().delete(force: true, on: req.db)
         return .noContent
     }
 }

@@ -20,6 +20,9 @@ final class Event: Model, Content {
     @Field(key: Event.v20240207.date)
     var date: Double
 
+    @Timestamp(key: Event.v20240207.deletedAt, on: .delete)
+    var deletedAt: Date?
+
     @Parent(key: Event.v20240207.clientID)
     var client: User
 
@@ -45,6 +48,7 @@ extension Event {
         static let schemaName = "events"
         static let id = FieldKey(stringLiteral: "id")
         static let name = FieldKey(stringLiteral: "name")
+        static let deletedAt = FieldKey(stringLiteral: "deleted_at")
         static let clientID = FieldKey(stringLiteral: "clientID")
         static let date = FieldKey(stringLiteral: "date")
     }
