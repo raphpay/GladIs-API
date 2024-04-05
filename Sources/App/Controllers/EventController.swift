@@ -25,6 +25,7 @@ struct EventController: RouteCollection {
         tokenAuthGroup.get("client", "archived", ":clientID", use: getArchivedEventsForClient)
         // Update
         tokenAuthGroup.put(":eventID", use: update)
+        tokenAuthGroup.put("restore", ":eventID", use: restore)
         // Delete
         tokenAuthGroup.delete(":eventID", use: remove)
         tokenAuthGroup.delete("archive", ":eventID", use: archive)
@@ -120,6 +121,26 @@ struct EventController: RouteCollection {
         
         try await event.update(on: req.db)
         
+        return event
+    }
+
+    func restore(req: Request) async throws -> Event {
+        guard let eventID = req.parameters.get("eventID"),
+            let uuid = UUID(uuidString: eventID) else {
+            throw Abort(.badRequest, reason: "badRequest.uuid")
+        }
+        
+        guard let event = try await Event
+            .query(on: req.db)
+            .withDeleted()
+            .filter(\.$id == uuid)
+            .filter(\.$deletedAt != nil)
+            .first() else {
+                throw Abort(.notFound, reason: "notFound.event")
+        }
+
+        try await event.restore(on: req.db)
+
         return event
     }
     
