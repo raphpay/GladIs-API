@@ -124,7 +124,7 @@ struct DocumentController: RouteCollection {
     
     func getDocument(req: Request) async throws -> Document {
         guard let document = try await Document.find(req.parameters.get("documentID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.document")
         }
         
         return document
@@ -145,7 +145,7 @@ struct DocumentController: RouteCollection {
     func changeDocumentStatus(req: Request) async throws -> Document {
         let input = try req.content.decode(Document.StatusInput.self)
         guard let document = try await Document.find(req.parameters.get("documentID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.document")
         }
         
         document.status = input.status
