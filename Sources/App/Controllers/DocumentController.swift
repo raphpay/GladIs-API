@@ -66,7 +66,7 @@ struct DocumentController: RouteCollection {
             do {
                 try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
             } catch {
-                throw Abort(.internalServerError, reason: "Failed to create directory: \(error)")
+                throw Abort(.internalServerError, reason: "internalServerError.failedToCreateDirectory")
             }
         }
         
