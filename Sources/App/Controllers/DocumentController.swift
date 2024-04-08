@@ -98,7 +98,7 @@ struct DocumentController: RouteCollection {
             .all()
     }
     
-    func getPaginatedDocumentsAtPath(req: Request) async throws -> [Document] {
+    func getPaginatedDocumentsAtPath(req: Request) async throws -> Document.PaginatedOutput {
         struct Path: Codable {
             var value: String
         }
@@ -114,8 +114,12 @@ struct DocumentController: RouteCollection {
             .query(on: req.db)
             .filter(\.$path == path.value)
             .paginate(PageRequest(page: page, per: perPage))
+
+        let pageCount = paginatedResults.metadata.pageCount
         
-        return paginatedResults.items
+        let output = Document.PaginatedOutput(documents: paginatedResults.items, pageCount: pageCount)
+
+        return output
     }
     
     func getDocument(req: Request) async throws -> Document {
