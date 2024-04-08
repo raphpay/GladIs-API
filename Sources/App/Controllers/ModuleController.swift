@@ -69,7 +69,7 @@ struct ModuleController: RouteCollection {
         let newModule = try req.content.decode(Module.Input.self)
         
         guard let module = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.module")
         }
         module.name = newModule.name
         module.index = newModule.index
@@ -84,7 +84,7 @@ struct ModuleController: RouteCollection {
     // MARK: - Delete
     func remove(req: Request) async throws -> HTTPStatus {
         guard let module = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.module")
         }
         
         try await module.delete(force: true, on: req.db)
