@@ -19,7 +19,7 @@ struct DocumentActivityLogController: RouteCollection {
         // Read
         tokenAuthGroup.get(use: getAll)
         tokenAuthGroup.get(":clientID", use: getLogsForClient)
-        tokenAuthGroup.get("paginate", ":clientID", use: getPaginatedLogsForClient)
+        tokenAuthGroup.get(":clientID", "paginate", use: getPaginatedLogsForClient)
         // Delete
         tokenAuthGroup.delete(use: removeAll)
     }
@@ -68,7 +68,7 @@ struct DocumentActivityLogController: RouteCollection {
             .all()
     }
     
-    func getPaginatedLogsForClient(req: Request) async throws -> [DocumentActivityLog] {
+    func getPaginatedLogsForClient(req: Request) async throws -> DocumentActivityLog.PaginatedOutput {
         guard let clientID = req.parameters.get("clientID"),
               let uuid = UUID(uuidString: clientID) else {
             throw Abort(.badRequest, reason: "badRequest.clientID")
@@ -87,7 +87,9 @@ struct DocumentActivityLogController: RouteCollection {
             .sort(\.$actionDate, .descending)
             .paginate(PageRequest(page: page, per: perPage))
 
-        return paginatedResult.items
+        let output = DocumentActivityLog.PaginatedOutput(logs: paginatedResult.items, pageCount: paginatedResult.metadata.pageCount)
+
+        return output
     }
     
     // MARK: - DELETE

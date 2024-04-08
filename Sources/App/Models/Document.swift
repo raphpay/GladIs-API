@@ -55,6 +55,11 @@ final class Document: Model, Content {
     struct StatusInput: Content {
         let status: Status
     }
+    
+    struct PaginatedOutput: Content {
+        let documents: [Document]
+        let pageCount: Int
+    }
 }
 
 extension Document {
