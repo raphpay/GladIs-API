@@ -14,6 +14,7 @@ final class EventControllerTests: XCTestCase {
     // Expected Properties
     let expectedUsername = "testUsername"
     let expectedEventName = "Event"
+    let updatedEventName = "Updated event"
     
     override func setUp() async throws {
         try await super.setUp()
