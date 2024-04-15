@@ -129,3 +129,101 @@ extension DocumentActivityLogControllerTests {
     }
 
 }
+
+// MARK: - Get Paginated Logs For Client
+extension DocumentActivityLogControllerTests {
+    // Happy Path: Verifying that pagination works as expected when logs are available.
+    func testGetPaginatedLogsForClientWithLogsAvailable() async throws {
+        // Arrange
+        let clientID = UUID()
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+        let document = try await createDocument()
+
+        // Create 5 logs to ensure pagination can be tested
+        for _ in 0..<5 {
+            let log = DocumentActivityLog(name: document.name,
+                                          actorUsername: user.username,
+                                          action: .visualisation,
+                                          actionDate: Date(),
+                                          actorIsAdmin: false,
+                                          documentID: try document.requireID(),
+                                          clientID: clientID)
+            try await log.save(on: app.db)
+        }
+
+        try app.test(.GET, "api/documentActivityLogs/\(clientID)/paginate?page=1&perPage=3",
+                     beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let response = try res.content.decode(DocumentActivityLog.PaginatedOutput.self)
+            XCTAssertEqual(response.logs.count, 3)
+            XCTAssertEqual(response.pageCount, 2)  // Expect two pages since there are 5 logs and 3 per page
+        })
+    }
+
+    // No Logs Available: Ensuring the method handles cases where no logs exist for the specified client ID.
+    func testGetPaginatedLogsForClientWithNoLogsAvailable() async throws {
+        // Arrange
+        let clientID = UUID()  // A client ID with no associated logs
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+        
+        // Act & Assert
+        try app.test(.GET, "api/documentActivityLogs/\(clientID)/paginate?page=1&perPage=3", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let response = try res.content.decode(DocumentActivityLog.PaginatedOutput.self)
+            XCTAssertTrue(response.logs.isEmpty)
+            XCTAssertEqual(response.logs.count, 0)
+            XCTAssertEqual(response.pageCount, 1)
+        })
+    }
+
+    // Invalid Client ID: Handling malformed or nonexistent client IDs.
+    func testGetPaginatedLogsForClientWithInvalidClientID() async throws {
+        // Arrange
+        let invalidClientID = "invalid-uuid"
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+        
+        // Act & Assert
+        try app.test(.GET, "api/documentActivityLogs/\(invalidClientID)/paginate?page=1&perPage=3", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+        })
+    }
+
+    // Pagination Parameters: Testing behavior with incorrect or missing pagination parameters.
+    func testGetPaginatedLogsForClientMissingPaginationParameters() async throws {
+        // Arrange
+        let clientID = UUID()
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+
+        // Missing both 'page' and 'perPage' parameters
+        try app.test(.GET, "api/documentActivityLogs/\(clientID)/paginate", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+        })
+
+        // Missing 'perPage' parameter
+        try app.test(.GET, "api/documentActivityLogs/\(clientID)/paginate?page=1", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+        })
+
+        // Missing 'page' parameter
+        try app.test(.GET, "api/documentActivityLogs/\(clientID)/paginate?perPage=3", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+        })
+    }
+
+}
