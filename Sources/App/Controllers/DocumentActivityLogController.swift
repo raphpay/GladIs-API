@@ -108,5 +108,3 @@ struct DocumentActivityLogController: RouteCollection {
         return .noContent
     }
 }
-
-
