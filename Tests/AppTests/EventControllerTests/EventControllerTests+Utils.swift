@@ -30,4 +30,12 @@ extension EventControllerTests {
         try await event.save(on: app.db)
         return event
     }
+    
+    func archiveEvent(_ event: Event) async throws {
+        try await event.delete(force: false, on: app.db)
+    }
+    
+    func deleteAll() async throws {
+        try await Event.query(on: app.db).withDeleted().all().delete(force: true, on: app.db)
+    }
 }
