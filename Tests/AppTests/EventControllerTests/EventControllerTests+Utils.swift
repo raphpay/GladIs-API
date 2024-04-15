@@ -24,4 +24,10 @@ extension EventControllerTests {
         try await token.save(on: app.db)
         return token
     }
+    
+    func createEvent(clientID: UUID = UUID()) async throws -> Event{
+        let event = Event(name: expectedEventName, date: Date.now.timeIntervalSince1970, clientID: clientID)
+        try await event.save(on: app.db)
+        return event
+    }
 }
