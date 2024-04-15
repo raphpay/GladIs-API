@@ -75,6 +75,15 @@ final class User: Model, Content {
     @Children(for: \.$user)
     var tokens: [Token]
     
+    @Children(for: \.$user)
+    var resetTokens: [PasswordResetToken]
+    
+    @Children(for: \.$sender)
+    var sentMessages: [Message]
+    
+    @Children(for: \.$receiver)
+    var receivedMessages: [Message]
+    
     init() {}
     
     init(id: UUID? = nil,
@@ -143,6 +152,14 @@ final class User: Model, Content {
         let employeesIDs: [String]?
         let managerID: String?
     }
+    
+    struct EmailInput: Content {
+        let email: String
+    }
+    
+    struct UsernameInput: Content {
+        let username: String
+    }
 }
 
 
@@ -199,6 +216,15 @@ struct PasswordChangeRequest: Content {
     let newPassword: String
 }
 
+struct PasswordValidationRequest: Content {
+    let currentPassword: String
+}
+
 struct PasswordChangeResponse: Content {
     let message: String
+}
+
+struct ResetPasswordRequest: Content {
+    let token: String
+    let newPassword: String
 }

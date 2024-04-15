@@ -58,6 +58,11 @@ final class DocumentActivityLog: Model, Content {
         let documentID: UUID
         let clientID: UUID
     }
+
+    struct PaginatedOutput: Content {
+        let logs: [DocumentActivityLog]
+        let pageCount: Int
+    }
 }
 
 extension DocumentActivityLog {

@@ -40,7 +40,7 @@ struct PotentialEmployeeController: RouteCollection {
     
     func convertToUser(req: Request) async throws -> User.Public {
         guard let potentialEmployee = try await PotentialEmployee.find(req.parameters.get("employeeID"), on: req.db) else {
-            throw Abort(.notFound)
+            throw Abort(.notFound, reason: "notFound.employee")
         }
         
         let newEmployee = potentialEmployee.convertToEmployee()
@@ -53,7 +53,8 @@ struct PotentialEmployeeController: RouteCollection {
         }
         let passwordHash = try Bcrypt.hash(givenPassword)
         
-        let username = try await User.generateUniqueUsername(firstName: newEmployee.firstName, lastName: newEmployee.lastName, on: req)
+        let username = try await User.generateUniqueUsername(firstName: newEmployee.firstName,
+                                                             lastName: newEmployee.lastName, on: req)
         
         newEmployee.password = passwordHash
         newEmployee.username = username
@@ -73,7 +74,7 @@ struct PotentialEmployeeController: RouteCollection {
     // MARK: - Delete
     func removeByCompany(req: Request) async throws -> HTTPResponseStatus {
         guard let company = req.parameters.get("company") else {
-            throw Abort(.badRequest, reason: "A company name should be provided")
+            throw Abort(.badRequest, reason: "badRequest.company")
         }
         
         try await PotentialEmployee

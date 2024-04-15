@@ -29,7 +29,7 @@ final class PendingUser: Model, Content {
     @Field(key: PendingUser.v20240207.email)
     var email: String
     
-    @OptionalField(key: PendingUser.v20240207.products)
+    @Field(key: PendingUser.v20240207.products)
     var products: String?
     
     @OptionalField(key: PendingUser.v20240207.numberOfEmployees)
@@ -56,7 +56,7 @@ final class PendingUser: Model, Content {
 
     init(id: UUID = UUID(), firstName: String, lastName: String,
          phoneNumber: String, companyName: String,
-         email: String, products: String? = nil,
+         email: String, products: String,
          numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
         salesAmount: Double? = nil, status: PendingUser.StatusEnum = .pending) {
         self.id = id

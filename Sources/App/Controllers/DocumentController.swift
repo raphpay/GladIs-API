@@ -23,9 +23,12 @@ struct DocumentController: RouteCollection {
         tokenAuthGroup.get(":documentID", use: getDocument)
         tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
         tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
+        tokenAuthGroup.post("paginated", "path", use: getPaginatedDocumentsAtPath)
         // Update
+        tokenAuthGroup.put(":documentID", use: changeDocumentStatus)
         // Delete
         tokenAuthGroup.delete(":documentID", use: remove)
+        tokenAuthGroup.delete("all", use: removeAll)
     }
     
     
@@ -40,13 +43,13 @@ struct DocumentController: RouteCollection {
             do {
                 try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
             } catch {
-                throw Abort(.internalServerError, reason: "Failed to create directory: \(error)")
+                throw Abort(.internalServerError, reason: "internalServerError.failedToCreateDirectory")
             }
         }
         
         try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
         
-        let document = Document(name: fileName, path: input.path)
+        let document = Document(name: fileName, path: input.path, status: .none)
         try await document.save(on: req.db)
         
         return document
@@ -63,13 +66,13 @@ struct DocumentController: RouteCollection {
             do {
                 try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
             } catch {
-                throw Abort(.internalServerError, reason: "Failed to create directory: \(error)")
+                throw Abort(.internalServerError, reason: "internalServerError.failedToCreateDirectory")
             }
         }
         
         try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
         
-        let document = Document(name: fileName, path: input.path)
+        let document = Document(name: fileName, path: input.path, status: .none)
         try await document.save(on: req.db)
         
         return document
@@ -95,13 +98,36 @@ struct DocumentController: RouteCollection {
             .all()
     }
     
-    func getDocument(req: Request) async throws -> Document {
-        guard let model = try await Document
-            .find(req.parameters.get("documentID"), on: req.db) else {
-            throw Abort(.notFound)
+    func getPaginatedDocumentsAtPath(req: Request) async throws -> Document.PaginatedOutput {
+        struct Path: Codable {
+            var value: String
         }
         
-        return model
+        let path = try req.content.decode(Path.self)
+        
+        guard let page = req.query[Int.self, at: "page"],
+              let perPage = req.query[Int.self, at: "perPage"] else {
+            throw Abort(.badRequest, reason: "Missing page or perPage query parameters")
+        }
+        
+        let paginatedResults = try await Document
+            .query(on: req.db)
+            .filter(\.$path == path.value)
+            .paginate(PageRequest(page: page, per: perPage))
+
+        let pageCount = paginatedResults.metadata.pageCount
+        
+        let output = Document.PaginatedOutput(documents: paginatedResults.items, pageCount: pageCount)
+
+        return output
+    }
+    
+    func getDocument(req: Request) async throws -> Document {
+        guard let document = try await Document.find(req.parameters.get("documentID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.document")
+        }
+        
+        return document
     }
     
     func dowloadDocument(req: Request) async throws -> Response {
@@ -109,13 +135,25 @@ struct DocumentController: RouteCollection {
         let filePath = req.application.directory.publicDirectory + document.path + document.name
         
         if !FileManager.default.fileExists(atPath: filePath) {
-            throw Abort(.notFound, reason: "File not found at \(filePath)")
+            throw Abort(.notFound, reason: "notFound.file")
         }
 
         return req.fileio.streamFile(at: filePath)
     }
     
     // MARK: - Update
+    func changeDocumentStatus(req: Request) async throws -> Document {
+        let input = try req.content.decode(Document.StatusInput.self)
+        guard let document = try await Document.find(req.parameters.get("documentID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.document")
+        }
+        
+        document.status = input.status
+        try await document.update(on: req.db)
+        
+        return document
+    }
+    
     // MARK: - Delete
     func remove(req: Request) async throws -> HTTPResponseStatus {
         let document = try await getDocument(req: req)
@@ -132,6 +170,27 @@ struct DocumentController: RouteCollection {
             throw Abort(.badRequest, reason: error.localizedDescription)
         }
     }
+    
+    func removeAll(req: Request) async throws -> HTTPResponseStatus {
+        let documents = try await getAllDocuments(req: req)
+        
+        for document in documents {
+            let filePath = req.application.directory.publicDirectory + document.path + document.name
+            
+            if FileManager.default.fileExists(atPath: filePath) {
+                try FileManager.default.removeItem(atPath: filePath)
+            }
+            
+            do {
+                try await document.delete(force: true, on: req.db)
+            } catch let error {
+                throw Abort(.badRequest, reason: error.localizedDescription)
+            }
+        }
+        
+        return .noContent
+    }
+    
 }
 
 

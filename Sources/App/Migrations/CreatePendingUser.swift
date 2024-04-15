@@ -25,7 +25,7 @@ struct CreatePendingUser: AsyncMigration {
             .field(PendingUser.v20240207.lastName, .string, .required)
             .field(PendingUser.v20240207.companyName, .string, .required)
             .field(PendingUser.v20240207.email, .string, .required)
-            .field(PendingUser.v20240207.products, .string)
+            .field(PendingUser.v20240207.products, .string, .required)
             .field(PendingUser.v20240207.numberOfEmployees, .int16)
             .field(PendingUser.v20240207.numberOfUsers, .int16)
             .field(PendingUser.v20240207.salesAmount, .double)
