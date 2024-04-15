@@ -13,12 +13,10 @@ extension DocumentActivityLogControllerTests {
     // Happy Path: The document and user exist, and the log is created successfully.
     func testCreateDocumentActivityLog() async throws {
         // Create user and token
-        let user = try await createUser(app: app, username: expectedUsername)
-        let token = try await createToken(app: app, user: user)
-        
-        // Create a document
-        let document = Document(name: expectedDocumentName, path: expectedDocPath, status: .none)
-        try await document.save(on: app.db)
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+        let document = try await createDocument()
+    
         
         let logInput = DocumentActivityLog.Input(action: .creation, actorIsAdmin: false,
                                                  actorID: try user.requireID(), documentID: try document.requireID(),
@@ -39,8 +37,8 @@ extension DocumentActivityLogControllerTests {
     
     // Document Not Found: The document does not exist.
     func testCreateDocumentActivityLogDocumentNotFound() async throws {
-        let user = try await createUser(app: app, username: expectedUsername)
-        let token = try await createToken(app: app, user: user)
+        let user = try await createUser()
+        let token = try await createToken(user: user)
         
         let logInput = DocumentActivityLog.Input(action: .creation, actorIsAdmin: false,
                                                  actorID: try user.requireID(),
@@ -58,11 +56,9 @@ extension DocumentActivityLogControllerTests {
 
     // User Not Found: The user does not exist.
     func testCreateDocumentActivityLogUserNotFound() async throws {
-        let user = try await createUser(app: app, username: expectedUsername)
-        let token = try await createToken(app: app, user: user)
-        
-        let document = Document(name: expectedDocumentName, path: expectedDocPath, status: .none)
-        try await document.save(on: app.db)
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+        let document = try await createDocument()
 
         let logInput = DocumentActivityLog.Input(action: .creation, actorIsAdmin: false,
                                                  actorID: UUID(),
@@ -80,10 +76,8 @@ extension DocumentActivityLogControllerTests {
 
     // Invalid Token: The authentication token is missing or invalid.
     func testCreateDocumentActivityLogInvalidToken() async throws {
-        let document = Document(name: expectedDocumentName, path: expectedDocPath, status: .none)
-        try await document.save(on: app.db)
-
-        let user = try await createUser(app: app, username: expectedUsername)
+        let document = try await createDocument()
+        let user = try await createUser()
         
         let logInput = DocumentActivityLog.Input(action: .creation, actorIsAdmin: false,
                                                  actorID: try user.requireID(),

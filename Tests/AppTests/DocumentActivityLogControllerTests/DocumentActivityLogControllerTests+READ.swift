@@ -8,14 +8,13 @@
 @testable import App
 import XCTVapor
 
+// MARK: - Get All
 extension DocumentActivityLogControllerTests {
     // Happy Path: When the database has multiple logs stored.
     func testGetAllDocumentActivityLogs() async throws {
-        let user = try await createUser(app: app, username: expectedUsername)
-        let token = try await createToken(app: app, user: user)
-        
-        let document = Document(name: expectedDocumentName, path: expectedDocPath, status: .none)
-        try await document.save(on: app.db)
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+        let document = try await createDocument()
 
         for _ in 0..<3 {
             let log = DocumentActivityLog(name: document.name, actorUsername: user.username,
@@ -39,8 +38,8 @@ extension DocumentActivityLogControllerTests {
     
     // No Logs Available: When there are no logs in the database.
     func testGetAllDocumentActivityLogsNoLogsAvailable() async throws {
-        let user = try await createUser(app: app, username: expectedUsername)
-        let token = try await createToken(app: app, user: user)
+        let user = try await createUser()
+        let token = try await createToken(user: user)
         
         try app.test(.GET, "api/documentActivityLogs", beforeRequest: { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -61,4 +60,42 @@ extension DocumentActivityLogControllerTests {
             XCTAssertEqual(res.status, .unauthorized)
         })
     }
+}
+
+// MARK: - Get Logs For Client
+extension DocumentActivityLogControllerTests {
+    // Logs Available: The database has logs for the specified client.
+    func testGetLogsForClientWithLogsAvailable() async throws {
+        // Arrange
+        let clientID = UUID()
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+        let document = try await createDocument()
+
+        for _ in 0..<3 {
+            let log = DocumentActivityLog(name: document.name,
+                                          actorUsername: user.username,
+                                          action: .visualisation,
+                                          actionDate: Date(),
+                                          actorIsAdmin: false,
+                                          documentID: try document.requireID(),
+                                          clientID: clientID)
+            try await log.save(on: app.db)
+        }
+
+        // Act & Assert
+        try app.test(.GET, "api/documentActivityLogs/\(clientID)", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let logs = try res.content.decode([DocumentActivityLog].self)
+            XCTAssertEqual(logs.count, 3)
+            for log in logs {
+                XCTAssertEqual(log.$client.id, clientID)
+            }
+        })
+    }
+
+    // No Logs Available: There are no logs for the specified client.
+    // Invalid Client ID: The client ID provided does not exist or is formatted incorrectly.
 }
