@@ -97,5 +97,35 @@ extension DocumentActivityLogControllerTests {
     }
 
     // No Logs Available: There are no logs for the specified client.
+    func testGetLogsForClientWithNoLogsAvailable() async throws {
+        // Arrange
+        let clientID = UUID()  // A client ID with no associated logs
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+
+        // Act & Assert
+        try app.test(.GET, "api/documentActivityLogs/\(clientID)", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let logs = try res.content.decode([DocumentActivityLog].self)
+            XCTAssertTrue(logs.isEmpty)
+        })
+    }
+
     // Invalid Client ID: The client ID provided does not exist or is formatted incorrectly.
+    func testGetLogsForClientWithInvalidClientID() async throws {
+        // Arrange
+        let invalidClientID = "invalid-uuid"
+        let user = try await createUser()
+        let token = try await createToken(user: user)
+
+        // Act & Assert
+        try app.test(.GET, "api/documentActivityLogs/\(invalidClientID)", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+        })
+    }
+
 }
