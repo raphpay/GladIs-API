@@ -9,7 +9,7 @@
 import XCTVapor
 
 
-// MARK: - Get all
+// MARK: - Update
 extension EventControllerTests {
     // Successful Update: Verify that the method updates an event's details correctly when provided with valid input and authorization.
     func testUpdateEventSuccessfully() async throws {
@@ -51,4 +51,65 @@ extension EventControllerTests {
             XCTAssertEqual(res.status, .notFound)
         })
     }
+}
+
+// MARK: - Restore
+extension EventControllerTests {
+    // Successful Restore: Verify the method successfully restores a previously archived event.
+    func testRestoreEventSuccessfully() async throws {
+        let user = try await createUser(userType: .admin)
+        let token = try await createToken(user: user)
+        let event = try await createEvent(name: expectedEventName, clientID: user.requireID())
+        
+        // Simulate archiving the event
+        try await archiveEvent(event)
+
+        // The path for the restore endpoint
+        let eventID = try event.requireID()
+        let path = "api/events/restore/\(eventID)"
+
+        try await app.test(.PUT, path, beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let restoredEvent = try res.content.decode(Event.self)
+            XCTAssertNotNil(restoredEvent.deletedAt == nil)  // Check if the event is un-archived
+            let fetchedEvent = try await Event.query(on: app.db)
+                .withDeleted()
+                .first()
+            XCTAssertNotNil(fetchedEvent)
+            XCTAssertNil(fetchedEvent?.deletedAt)
+        })
+    }
+
+    // Event Not Found: Test the scenario where the event ID provided does not correspond to any archived event.
+    func testRestoreEventNotFound() async throws {
+        let user = try await createUser(userType: .admin)
+        let token = try await createToken(user: user)
+        let nonExistingID = UUID()
+
+        let path = "api/events/restore/\(nonExistingID)"
+
+        try app.test(.PUT, path, beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .notFound)
+        })
+    }
+
+    // Invalid Event ID: Ensure the method properly handles malformed or invalid event IDs.
+    func testRestoreEventInvalidUUID() async throws {
+        let user = try await createUser(userType: .admin)
+        let token = try await createToken(user: user)
+        let invalidUUID = "1234"
+
+        let path = "api/events/restore/\(invalidUUID)"
+
+        try app.test(.PUT, path, beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+        })
+    }
+
 }
