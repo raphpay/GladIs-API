@@ -64,3 +64,32 @@ extension EventControllerTests {
         })
     }
 }
+
+
+// MARK: - Create Max Login
+extension EventControllerTests {
+    func testCreateMaxLoginEventSuccessfully() async throws {
+        let user = try await createUser(userType: .admin)
+        let token = try await createToken(user: user)
+        // Event input simulation
+        let eventInput = Event.Input(name: "Max Login Attempt", date: Date().timeIntervalSince1970, clientID: try user.requireID())
+        let path = "api/events/maxLogin"
+
+        try await app.test(.POST, path, beforeRequest: { req in
+            try req.content.encode(eventInput)
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let event = try res.content.decode(Event.self)
+            XCTAssertNotNil(event.id)
+            XCTAssertEqual(event.name, eventInput.name)
+            XCTAssertEqual(event.$client.id, eventInput.clientID)
+
+            // Verify the event is saved in the database
+            let foundEvent = try await Event.find(event.id, on: app.db)
+            XCTAssertNotNil(foundEvent)
+            XCTAssertEqual(foundEvent?.name, eventInput.name)
+        })
+    }
+
+}
