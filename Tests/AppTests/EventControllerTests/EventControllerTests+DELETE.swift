@@ -8,6 +8,29 @@
 @testable import App
 import XCTVapor
 
+// MARK: - Archive
+extension EventControllerTests {
+    func testArchiveEventSuccessfully() async throws {
+        // Setup: Create a user, create an event, then attempt to archive
+        let user = try await createUser(userType: .admin)
+        let token = try await createToken(user: user)
+        let event = try await createEvent(clientID: user.requireID())
+
+        // The path for the archive endpoint
+        let eventID = try event.requireID()
+        let path = "api/events/archive/\(eventID)"
+
+        try await app.test(.DELETE, path, beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .noContent)
+            // Verify the event is archived in the database
+            let fetchedEvent = try await getEvent(eventID)
+            XCTAssertNotNil(fetchedEvent?.deletedAt)
+        })
+    }
+
+}
 
 // MARK: - Remove
 extension EventControllerTests {

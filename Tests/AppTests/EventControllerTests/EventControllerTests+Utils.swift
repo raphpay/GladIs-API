@@ -38,4 +38,13 @@ extension EventControllerTests {
     func deleteAll() async throws {
         try await Event.query(on: app.db).withDeleted().all().delete(force: true, on: app.db)
     }
+    
+    func getEvent(_ id: UUID) async throws -> Event? {
+        let events = try await Event.query(on: app.db)
+            .withDeleted()
+            .all()
+        
+        let filteredEvents = events.filter{ $0.id == id }
+        return filteredEvents.first
+    }
 }
