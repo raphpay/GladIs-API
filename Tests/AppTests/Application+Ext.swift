@@ -39,7 +39,7 @@ extension Document {
 }
 
 extension Event {
-    static func create(name: String, clientID: UUID = UUID(), on database: Database) async throws -> Event{
+    static func create(name: String, clientID: UUID = UUID(), on database: Database) async throws -> Event {
         let event = Event(name: name, date: Date.now.timeIntervalSince1970, clientID: clientID)
         try await event.save(on: database)
         return event
@@ -63,5 +63,23 @@ extension Event {
         
         let filteredEvents = events.filter{ $0.id == id }
         return filteredEvents.first
+    }
+}
+
+
+extension Message {
+    static func create(title: String, content: String, sender: User, receiver: User, on database: Database) async throws -> Message {
+        let message = Message(title: title, content: content, dateSent: Date.now,
+                              senderID: try sender.requireID(), senderMail: sender.email,
+                              receiverID: try receiver.requireID(), receiverMail: receiver.email)
+        try await message.save(on: database)
+        return message
+    }
+    
+    static func deleteAll(on database: Database) async throws {
+        try await Message.query(on: database)
+            .withDeleted()
+            .all()
+            .delete(force: true, on: database)
     }
 }
