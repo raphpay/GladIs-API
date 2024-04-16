@@ -157,5 +157,59 @@ extension EventControllerTests {
         
         try await deleteAll()
     }
+}
 
+// MARK: - Get Archived Events for Client
+extension EventControllerTests {
+//    func getArchivedEventsForClient(req: Request) async throws -> [Event] {
+//        guard let clientID = req.parameters.get("clientID"),
+//            let uuid = UUID(uuidString: clientID) else {
+//            throw Abort(.badRequest, reason: "badRequest.uuid")
+//        }
+//        
+//        return try await Event
+//            .query(on: req.db)
+//            .withDeleted()
+//            .filter(\.$client.$id == uuid)
+//            .filter(\.$deletedAt != nil)
+//            .all()
+//    }
+    
+    func testGetArchivedEventsForClientSuccessfully() async throws {
+        let user = try await createUser(userType: .admin)
+        let clientOne = try await createUser(userType: .client)
+        let clientTwo = try await createUser(userType: .client)
+        let token = try await createToken(user: user)
+        
+        let activeEvent = try await createEvent(name: "Active Event", clientID: user.requireID())
+        let archivedEvent1 = try await createEvent(name: "Archived Event 1", clientID: clientOne.requireID())
+        let archivedEvent2 = try await createEvent(name: "Archived Event 2", clientID: clientTwo.requireID())
+        try await archiveEvent(archivedEvent1)
+        try await archiveEvent(archivedEvent2)
+
+        let clientID = try clientOne.requireID()
+        let path = "api/events/client/archived/\(clientID)"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let events = try res.content.decode([Event].self)
+            XCTAssertEqual(events.count, 1)
+        }
+        
+        try await deleteAll()
+    }
+    
+    func testGetArchivedEventsForClientBadUUID() async throws {
+        let user = try await createUser(userType: .admin)
+        let token = try await createToken(user: user)
+        let uuid = "1234"
+        
+        let path = "api/events/client/archived/\(uuid)"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+        }
+    }
 }
