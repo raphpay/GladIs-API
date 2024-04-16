@@ -13,9 +13,9 @@ import XCTVapor
 extension EventControllerTests {
     // Successful Update: Verify that the method updates an event's details correctly when provided with valid input and authorization.
     func testUpdateEventSuccessfully() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
-        let event = try await createEvent(clientID: user.requireID())
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let event = try await Event.create(name: expectedEventName, clientID: user.requireID(), on: app.db)
         
         let updatedEventData = Event.Input(name: updatedEventName, date: Date().timeIntervalSince1970, clientID: try user.requireID())
         let eventID = try event.requireID()
@@ -37,8 +37,8 @@ extension EventControllerTests {
 
     // Event Not Found: Test the scenario where the event ID provided does not exist.
     func testUpdateEventNotFound() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
         let nonExistingID = UUID()
 
         let updatedEventData = Event.Input(name: updatedEventName, date: Date().timeIntervalSince1970, clientID: try user.requireID())
@@ -57,12 +57,12 @@ extension EventControllerTests {
 extension EventControllerTests {
     // Successful Restore: Verify the method successfully restores a previously archived event.
     func testRestoreEventSuccessfully() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
-        let event = try await createEvent(name: expectedEventName, clientID: user.requireID())
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let event = try await Event.create(name: expectedEventName, clientID: user.requireID(), on: app.db)
         
         // Simulate archiving the event
-        try await archiveEvent(event)
+        try await Event.archive(event, on: app.db)
 
         // The path for the restore endpoint
         let eventID = try event.requireID()
@@ -84,8 +84,8 @@ extension EventControllerTests {
 
     // Event Not Found: Test the scenario where the event ID provided does not correspond to any archived event.
     func testRestoreEventNotFound() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
         let nonExistingID = UUID()
 
         let path = "api/events/restore/\(nonExistingID)"
@@ -99,8 +99,8 @@ extension EventControllerTests {
 
     // Invalid Event ID: Ensure the method properly handles malformed or invalid event IDs.
     func testRestoreEventInvalidUUID() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
         let invalidUUID = "1234"
 
         let path = "api/events/restore/\(invalidUUID)"

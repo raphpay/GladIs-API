@@ -12,12 +12,12 @@ import XCTVapor
 // MARK: - Get all
 extension EventControllerTests {
     func testGetAllEventsSuccessfully() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         // Create multiple events for testing
-        let eventOne = try await createEvent(name: expectedEventName, clientID: user.requireID())
-        let eventTwo = try await createEvent(name: "Event 2", clientID: user.requireID())
+        let eventOne = try await Event.create(name: expectedEventName, clientID: user.requireID(), on: app.db)
+        let eventTwo = try await Event.create(name: expectedEventName, clientID: user.requireID(), on: app.db)
 
         let path = "api/events"
 
@@ -34,8 +34,8 @@ extension EventControllerTests {
     }
 
     func testGetAllEventsEmpty() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         let path = "api/events"
 
@@ -54,12 +54,12 @@ extension EventControllerTests {
     // Events Available for Client: Verifies that the method fetches all events for a specific client correctly.
     func testGetAllForClientEventsAvailable() async throws {
         // Create user and authenticate
-        let user = try await createUser(userType: .client)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         // Assume helper function to create events for this specific client
-        let eventOne = try await createEvent(clientID: user.requireID())
-        let eventTwo = try await createEvent(name: "Client Event 2", clientID: user.requireID())
+        let eventOne = try await Event.create(name: expectedEventName, clientID: user.requireID(), on: app.db)
+        let eventTwo = try await Event.create(name: "Client Event 2", clientID: user.requireID(), on: app.db)
 
         let userID = try user.requireID()
         let path = "api/events/client/\(userID)"
@@ -75,13 +75,14 @@ extension EventControllerTests {
             XCTAssertEqual(events.last?.name, eventTwo.name)
         }
         
-        try await deleteAll()
+        try await Event.deleteAll(on: app.db)
     }
 
     // No Events for Client: Ensures that the method handles cases where no events exist for a specific client.
     func testGetAllForClientNoEventsAvailable() async throws {
-        let user = try await createUser(userType: .client)
-        let token = try await createToken(user: user)
+        // Create user and authenticate
+        let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         let userID = try user.requireID()
         let path = "api/events/client/\(userID)"
@@ -100,8 +101,8 @@ extension EventControllerTests {
         let invalidClientID = "invalid-uuid"
 
         // Create user and authenticate
-        let admin = try await createUser(userType: .admin)
-        let token = try await createToken(user: admin)
+        let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         let path = "api/events/client/\(invalidClientID)"
 
@@ -118,15 +119,15 @@ extension EventControllerTests {
 // MARK: - Get Archived Events
 extension EventControllerTests {
     func testGetArchivedEventsSuccessfully() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         // Create and archive events for testing
-        let activeEvent = try await createEvent(name: "Active Event", clientID: user.requireID())
-        let archivedEvent1 = try await createEvent(name: "Archived Event 1", clientID: user.requireID())
-        let archivedEvent2 = try await createEvent(name: "Archived Event 2", clientID: user.requireID())
-        try await archiveEvent(archivedEvent1)
-        try await archiveEvent(archivedEvent2)
+        let activeEvent = try await Event.create(name: "Active Event", clientID: user.requireID(), on: app.db)
+        let archivedEvent1 = try await Event.create(name: "Archived Event 1", clientID: user.requireID(), on: app.db)
+        let archivedEvent2 = try await Event.create(name: "Archived Event 2", clientID: user.requireID(), on: app.db)
+        try await Event.archive(archivedEvent1, on: app.db)
+        try await Event.archive(archivedEvent2, on: app.db)
 
         let path = "api/events/archived"
 
@@ -139,12 +140,12 @@ extension EventControllerTests {
             XCTAssertTrue(events.allSatisfy { $0.deletedAt != nil })  // Assuming 'deletedAt' marks archived events
         }
         
-        try await deleteAll()
+        try await Event.deleteAll(on: app.db)
     }
 
     func testGetArchivedEventsEmpty() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         let path = "api/events/archived"
         try app.test(.GET, path) { req in
@@ -155,37 +156,23 @@ extension EventControllerTests {
             XCTAssertTrue(events.isEmpty)
         }
         
-        try await deleteAll()
+        try await Event.deleteAll(on: app.db)
     }
 }
 
 // MARK: - Get Archived Events for Client
 extension EventControllerTests {
-//    func getArchivedEventsForClient(req: Request) async throws -> [Event] {
-//        guard let clientID = req.parameters.get("clientID"),
-//            let uuid = UUID(uuidString: clientID) else {
-//            throw Abort(.badRequest, reason: "badRequest.uuid")
-//        }
-//        
-//        return try await Event
-//            .query(on: req.db)
-//            .withDeleted()
-//            .filter(\.$client.$id == uuid)
-//            .filter(\.$deletedAt != nil)
-//            .all()
-//    }
-    
     func testGetArchivedEventsForClientSuccessfully() async throws {
-        let user = try await createUser(userType: .admin)
-        let clientOne = try await createUser(userType: .client)
-        let clientTwo = try await createUser(userType: .client)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let clientOne = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let clientTwo = try await User.create(username: expectedUsername, userType: .client, on: app.db)
         
-        let activeEvent = try await createEvent(name: "Active Event", clientID: user.requireID())
-        let archivedEvent1 = try await createEvent(name: "Archived Event 1", clientID: clientOne.requireID())
-        let archivedEvent2 = try await createEvent(name: "Archived Event 2", clientID: clientTwo.requireID())
-        try await archiveEvent(archivedEvent1)
-        try await archiveEvent(archivedEvent2)
+        let activeEvent = try await Event.create(name: "Active Event", clientID: user.requireID(), on: app.db)
+        let archivedEvent1 = try await Event.create(name: "Archived Event 1", clientID: clientOne.requireID(), on: app.db)
+        let archivedEvent2 = try await Event.create(name: "Archived Event 2", clientID: clientTwo.requireID(), on: app.db)
+        try await Event.archive(archivedEvent1, on: app.db)
+        try await Event.archive(archivedEvent2, on: app.db)
 
         let clientID = try clientOne.requireID()
         let path = "api/events/client/archived/\(clientID)"
@@ -197,12 +184,12 @@ extension EventControllerTests {
             XCTAssertEqual(events.count, 1)
         }
         
-        try await deleteAll()
+        try await Event.deleteAll(on: app.db)
     }
     
     func testGetArchivedEventsForClientBadUUID() async throws {
-        let user = try await createUser(userType: .admin)
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
         let uuid = "1234"
         
         let path = "api/events/client/archived/\(uuid)"

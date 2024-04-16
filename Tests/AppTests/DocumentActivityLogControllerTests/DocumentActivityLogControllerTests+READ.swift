@@ -12,9 +12,9 @@ import XCTVapor
 extension DocumentActivityLogControllerTests {
     // Happy Path: When the database has multiple logs stored.
     func testGetAllDocumentActivityLogs() async throws {
-        let user = try await createUser()
-        let token = try await createToken(user: user)
-        let document = try await createDocument()
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let document = try await Document.create(name: expectedDocumentName, path: expectedDocPath, on: app.db)
 
         for _ in 0..<3 {
             let log = DocumentActivityLog(name: document.name, actorUsername: user.username,
@@ -38,8 +38,8 @@ extension DocumentActivityLogControllerTests {
     
     // No Logs Available: When there are no logs in the database.
     func testGetAllDocumentActivityLogsNoLogsAvailable() async throws {
-        let user = try await createUser()
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
         
         try app.test(.GET, "api/documentActivityLogs", beforeRequest: { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -68,9 +68,9 @@ extension DocumentActivityLogControllerTests {
     func testGetLogsForClientWithLogsAvailable() async throws {
         // Arrange
         let clientID = UUID()
-        let user = try await createUser()
-        let token = try await createToken(user: user)
-        let document = try await createDocument()
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let document = try await Document.create(name: expectedDocumentName, path: expectedDocPath, on: app.db)
 
         for _ in 0..<3 {
             let log = DocumentActivityLog(name: document.name,
@@ -100,8 +100,8 @@ extension DocumentActivityLogControllerTests {
     func testGetLogsForClientWithNoLogsAvailable() async throws {
         // Arrange
         let clientID = UUID()  // A client ID with no associated logs
-        let user = try await createUser()
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         // Act & Assert
         try app.test(.GET, "api/documentActivityLogs/\(clientID)", beforeRequest: { req in
@@ -117,8 +117,8 @@ extension DocumentActivityLogControllerTests {
     func testGetLogsForClientWithInvalidClientID() async throws {
         // Arrange
         let invalidClientID = "invalid-uuid"
-        let user = try await createUser()
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         // Act & Assert
         try app.test(.GET, "api/documentActivityLogs/\(invalidClientID)", beforeRequest: { req in
@@ -136,9 +136,9 @@ extension DocumentActivityLogControllerTests {
     func testGetPaginatedLogsForClientWithLogsAvailable() async throws {
         // Arrange
         let clientID = UUID()
-        let user = try await createUser()
-        let token = try await createToken(user: user)
-        let document = try await createDocument()
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let document = try await Document.create(name: expectedDocumentName, path: expectedDocPath, on: app.db)
 
         // Create 5 logs to ensure pagination can be tested
         for _ in 0..<5 {
@@ -167,8 +167,8 @@ extension DocumentActivityLogControllerTests {
     func testGetPaginatedLogsForClientWithNoLogsAvailable() async throws {
         // Arrange
         let clientID = UUID()  // A client ID with no associated logs
-        let user = try await createUser()
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
         
         // Act & Assert
         try app.test(.GET, "api/documentActivityLogs/\(clientID)/paginate?page=1&perPage=3", beforeRequest: { req in
@@ -186,8 +186,8 @@ extension DocumentActivityLogControllerTests {
     func testGetPaginatedLogsForClientWithInvalidClientID() async throws {
         // Arrange
         let invalidClientID = "invalid-uuid"
-        let user = try await createUser()
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
         
         // Act & Assert
         try app.test(.GET, "api/documentActivityLogs/\(invalidClientID)/paginate?page=1&perPage=3", beforeRequest: { req in
@@ -201,8 +201,8 @@ extension DocumentActivityLogControllerTests {
     func testGetPaginatedLogsForClientMissingPaginationParameters() async throws {
         // Arrange
         let clientID = UUID()
-        let user = try await createUser()
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
 
         // Missing both 'page' and 'perPage' parameters
         try app.test(.GET, "api/documentActivityLogs/\(clientID)/paginate", beforeRequest: { req in

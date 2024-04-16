@@ -10,8 +10,8 @@ import XCTVapor
 
 extension DocumentActivityLogControllerTests {
     func testDeleteAllDocumentActivityLogs() async throws {
-        let user = try await createUser()
-        let token = try await createToken(user: user)
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
         
         try app.test(.DELETE, "api/documentActivityLogs") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
