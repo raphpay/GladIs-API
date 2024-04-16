@@ -11,14 +11,21 @@ import Fluent
 
 
 extension User {
-    static func create(username: String, userType: User.UserType = .admin, on database: Database) async throws -> User {
+    static func create(username: String, userType: User.UserType = .admin, email: String = "test@test.com", on database: Database) async throws -> User {
         let user = User(firstName: "testFirstName", lastName: "testLastName",
                         phoneNumber: "0601234567", username: username,
-                        password: "PasswordTest15", email: "test@test.com",
+                        password: "PasswordTest15", email: email,
                         firstConnection: true, userType: userType)
         try await user.save(on: database)
         
         return user
+    }
+    
+    static func deleteAll(on database: Database) async throws {
+        try await User.query(on: database)
+            .withDeleted()
+            .all()
+            .delete(force: true, on: database)
     }
 }
 
@@ -93,6 +100,22 @@ extension Module {
     
     static func deleteAll(on database: Database) async throws {
         try await Module.query(on: database)
+            .withDeleted()
+            .all()
+            .delete(force: true, on: database)
+    }
+}
+
+extension PasswordResetToken {
+    static func create(for user: User, expiresAt date: Date = Date().addingTimeInterval(3600), on database: Database) async throws -> PasswordResetToken {
+        let token = PasswordResetToken.generate()
+        let resetToken = PasswordResetToken(token: token, userId: try user.requireID(), userEmail: user.email, expiresAt: date)
+        try await resetToken.save(on: database)
+        return resetToken
+    }
+    
+    static func deleteAll(on database: Database) async throws {
+        try await PasswordResetToken.query(on: database)
             .withDeleted()
             .all()
             .delete(force: true, on: database)
