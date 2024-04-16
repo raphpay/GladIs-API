@@ -121,3 +121,31 @@ extension PasswordResetToken {
             .delete(force: true, on: database)
     }
 }
+
+extension PendingUser {
+    static func create(
+        firstName: String, lastName: String,
+        phoneNumber: String, companyName: String,
+        email: String, products: String,
+        numberOfEmployees: Int?, numberOfUsers: Int?,
+        salesAmount: Double?, on database: Database) async throws -> PendingUser {
+            let pendingUser = PendingUser(firstName: firstName, lastName: lastName,
+                                          phoneNumber: phoneNumber, companyName: companyName,
+                                          email: email, products: products,
+                                          numberOfEmployees: numberOfEmployees, numberOfUsers: numberOfUsers,
+                                          salesAmount: salesAmount)
+            try await pendingUser.save(on: database)
+            return pendingUser
+    }
+    
+    static func addModule(_ module: Module, to pendingUser: PendingUser, on database: Database) async throws {
+        try await pendingUser.$modules.attach(module, on: database)
+    }
+    
+    static func deleteAll(on database: Database) async throws {
+        try await PendingUser.query(on: database)
+            .withDeleted()
+            .all()
+            .delete(force: true, on: database)
+    }
+}
