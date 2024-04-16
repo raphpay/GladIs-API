@@ -83,3 +83,18 @@ extension Message {
             .delete(force: true, on: database)
     }
 }
+
+extension Module {
+    static func create(name: String, index: Int, on database: Database) async throws -> Module {
+        let module = Module(name: name, index: index)
+        try await module.save(on: database)
+        return module
+    }
+    
+    static func deleteAll(on database: Database) async throws {
+        try await Module.query(on: database)
+            .withDeleted()
+            .all()
+            .delete(force: true, on: database)
+    }
+}
