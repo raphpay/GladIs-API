@@ -54,7 +54,7 @@ struct TokenController: RouteCollection {
         }
         
         guard user.isBlocked != true else {
-            throw Abort(.unauthorized, reason: "login.account.blocked")
+            throw Abort(.unauthorized, reason: "unauthorized.login.account.blocked")
         }
         
         // Delete existing tokens

@@ -11,10 +11,11 @@ import Fluent
 
 
 extension User {
-    static func create(username: String, userType: User.UserType = .admin, email: String = "test@test.com", on database: Database) async throws -> User {
+    static func create(username: String, userType: User.UserType = .admin, email: String = "test@test.com", password: String = "Passwordtest123(", on database: Database) async throws -> User {
+        let hashedPassword = try Bcrypt.hash(password)
         let user = User(firstName: "testFirstName", lastName: "testLastName",
                         phoneNumber: "0601234567", username: username,
-                        password: "PasswordTest15", email: email,
+                        password: hashedPassword, email: email,
                         firstConnection: true, userType: userType)
         try await user.save(on: database)
         
@@ -34,6 +35,13 @@ extension Token {
         let token = try Token.generate(for: user)
         try await token.save(on: database)
         return token
+    }
+    
+    static func deleteAll(on database: Database) async throws {
+        try await Token.query(on: database)
+            .withDeleted()
+            .all()
+            .delete(force: true, on: database)
     }
 }
 
