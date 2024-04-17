@@ -120,7 +120,7 @@ struct PendingUserController: RouteCollection {
         return employees
     }
     
-    // MARK: - UPDATE
+    // MARK: - UPDATE    
     func updateStatus(req: Request) async throws -> PendingUser {
         let user = try req.auth.require(User.self)
         
@@ -128,7 +128,8 @@ struct PendingUserController: RouteCollection {
             throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
-        let newStatus = try req.content.decode(PendingUser.Status.self)
+        let newStatus = try req.content.decode(PendingUser.StatusInput.self)
+        
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFount.pendingUser")
         }

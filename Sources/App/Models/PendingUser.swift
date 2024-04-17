@@ -84,6 +84,10 @@ final class PendingUser: Model, Content {
         let numberOfUsers: Int?
         let salesAmount: Double?
     }
+    
+    struct StatusInput: Content {
+        let type: StatusEnum
+    }
 }
 
 extension PendingUser {
