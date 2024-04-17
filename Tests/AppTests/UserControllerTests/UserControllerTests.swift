@@ -27,6 +27,9 @@ final class UserControllerTests: XCTestCase {
     // Doc Tab
     let expectedDocTabName = "expectedDocTabName"
     let expectedDocTabArea = "expectedDocTabArea"
+    // Message
+    let expectedMessageTitle = "expectedMessageTitle"
+    let expectedMessageContent = "expectedMessageContent"
     
     override func setUp() async throws {
         try await super.setUp()

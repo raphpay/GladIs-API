@@ -1,5 +1,5 @@
 //
-//  UserControllerTests+CREATE.swift
+//  UserControllerTests+DELETE.swift
 //
 //
 //  Created by Raphaël Payet on 17/04/2024.
@@ -9,7 +9,6 @@
 import XCTVapor
 
 // MARK: - Remove
-//tokenAuthGroup.delete(":userID", use: remove)
 extension UserControllerTests {
     func testRemoveUserSucceed() async throws {
         let user = try await User.create(username: expectedAdminUsername, on: app.db)

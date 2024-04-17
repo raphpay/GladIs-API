@@ -294,6 +294,7 @@ extension UserControllerTests {
             XCTAssertTrue(res.body.string.contains("unauthorized.password.invalidCurrent"))
         }
     }
+    
     func testVerifyPasswordWithDifferentUserFails() async throws {
         let user = try await User.create(username: expectedUsername, userType: .client, password: expectedPassword, on: app.db)
         let admin = try await User.create(username: expectedAdminUsername, on: app.db)
@@ -308,6 +309,41 @@ extension UserControllerTests {
         } afterResponse: { res in
             XCTAssertEqual(res.status, .forbidden)
             XCTAssertTrue(res.body.string.contains("forbidden.access"))
+        }
+    }
+}
+
+// MARK: - Get User By Mail
+extension UserControllerTests {
+    func testGetUserByMailSucceed() async throws {
+        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
+        let user = try await User.create(username: expectedUsername, userType: .client, email: expectedEmail, on: app.db)
+        let token = try await Token.create(for: admin, on: app.db)
+        let userEmailInput = User.EmailInput(email: expectedEmail)
+        
+        let path = "\(baseRoute)/byMail"
+        try app.test(.POST, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(userEmailInput)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let foundUser = try res.content.decode(User.Public.self)
+            XCTAssertEqual(foundUser.id, user.id)
+        }
+    }
+    
+    func testGetUserByMailWithInexistantUserFails() async throws {
+        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
+        let token = try await Token.create(for: admin, on: app.db)
+        let userEmailInput = User.EmailInput(email: expectedEmail)
+        
+        let path = "\(baseRoute)/byMail"
+        try app.test(.POST, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(userEmailInput)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.user"))
         }
     }
 }

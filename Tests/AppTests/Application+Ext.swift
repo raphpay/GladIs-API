@@ -32,6 +32,10 @@ extension User {
     static func attachModule(_ module: Module, to user: User, on database: Database) async throws {
         try await user.$modules.attach(module, on: database)
     }
+    
+    static func attachTechnicalTab(_ tab: TechnicalDocumentationTab, to user: User, on database: Database) async throws {
+        try await user.$technicalDocumentationTabs.attach(tab, on: database)
+    }
 }
 
 extension Token {

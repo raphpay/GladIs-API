@@ -213,16 +213,12 @@ struct UserController: RouteCollection {
         return try await user.$modules.query(on: req.db).all()
     }
     
-    func getTechnicalDocumentationTabs(req: Request) throws -> EventLoopFuture<[TechnicalDocumentationTab]> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user
-                    .$technicalDocumentationTabs
-                    .query(on: req.db)
-                    .all()
-            }
+    func getTechnicalDocumentationTabs(req: Request) async throws -> [TechnicalDocumentationTab] {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        return try await user.$technicalDocumentationTabs.query(on: req.db).all()
     }
     
     func getManager(req: Request) async throws -> User.Public {
