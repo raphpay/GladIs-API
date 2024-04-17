@@ -8,7 +8,7 @@
 @testable import App
 import XCTVapor
 
-// MARK: - Get All
+// MARK: - Update Status
 extension PendingUserControllerTests {
     func testUpdateStatusSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
@@ -25,6 +25,8 @@ extension PendingUserControllerTests {
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
+            let updatedUser = try res.content.decode(PendingUser.self)
+            XCTAssertEqual(updatedUser.status, newStatus.type)
         }
     }
 }

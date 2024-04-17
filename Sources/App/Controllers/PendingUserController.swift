@@ -120,7 +120,7 @@ struct PendingUserController: RouteCollection {
         return employees
     }
     
-    // MARK: - UPDATE    
+    // MARK: - UPDATE
     func updateStatus(req: Request) async throws -> PendingUser {
         let user = try req.auth.require(User.self)
         
