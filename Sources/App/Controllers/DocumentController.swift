@@ -7,6 +7,7 @@
 
 import Fluent
 import Vapor
+import ZIPFoundation
 
 struct DocumentController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
@@ -22,6 +23,10 @@ struct DocumentController: RouteCollection {
         tokenAuthGroup.get(use: getAllDocuments)
         tokenAuthGroup.get(":documentID", use: getDocument)
         tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
+        tokenAuthGroup.get("zip", ":documentID", use: zipDocument)
+        tokenAuthGroup.post("zipDirectory", use: zipDirectory)
+        tokenAuthGroup.get("unzip", ":documentID", use: unzipDocument)
+        tokenAuthGroup.post("unzipDirectory", use: unzipDirectory)
         tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
         tokenAuthGroup.post("paginated", "path", use: getPaginatedDocumentsAtPath)
         // Update
@@ -140,6 +145,93 @@ struct DocumentController: RouteCollection {
 
         return req.fileio.streamFile(at: filePath)
     }
+
+    // MARK: - Archive
+    func zipDocument(req: Request) async throws -> HTTPResponseStatus {
+        let document = try await getDocument(req: req)
+        let publicDirectory = req.application.directory.publicDirectory
+        let sourcePath = publicDirectory +  document.path + document.name
+        let destinationZipPath = publicDirectory + document.path + document.name + ".archive.zip"
+        
+        let sourceURL = URL(fileURLWithPath: sourcePath)
+        let destinationZipURL = URL(fileURLWithPath: destinationZipPath)
+        
+        do {
+            try FileManager.default.zipItem(at: sourceURL, to: destinationZipURL)
+            try FileManager.default.removeItem(at: sourceURL)
+            return .ok
+        } catch {
+            throw Abort(.internalServerError, reason: "internalServerError.unableToZipFile")
+        }
+    }
+    
+    func unzipDocument(req: Request) async throws -> HTTPResponseStatus {
+        let document = try await getDocument(req: req)
+        let publicDirectory = req.application.directory.publicDirectory
+        let sourcePath = publicDirectory +  document.path + document.name + ".archive.zip"
+        let destinationUnzipPath = publicDirectory + document.path
+
+        if !FileManager.default.fileExists(atPath: destinationUnzipPath) {
+            do {
+                try FileManager.default.createDirectory(atPath: destinationUnzipPath, withIntermediateDirectories: true)
+            } catch {
+                throw Abort(.internalServerError, reason: "internalServerError.failedToCreateDirectory")
+            }
+        }
+        
+        do {
+            let sourceURL = URL(fileURLWithPath: sourcePath)
+            let destinationUnzipURL = URL(fileURLWithPath: destinationUnzipPath)
+            try FileManager.default.unzipItem(at: sourceURL, to: destinationUnzipURL)
+            try FileManager.default.removeItem(atPath: sourcePath)
+            return .ok
+        } catch {
+            throw Abort(.notFound)
+            throw Abort(.internalServerError, reason: "internalServerError.unableToUnzipFile")
+        }
+    }
+    
+    func zipDirectory(req: Request) async throws -> HTTPResponseStatus {
+        let pathInput = try req.content.decode(Document.PathInput.self)
+        let publicDirectory = req.application.directory.publicDirectory
+        let sourcePath = publicDirectory + pathInput.value
+        let destinationZipPath = publicDirectory + pathInput.value + ".archive.zip"
+        
+        let sourceURL = URL(fileURLWithPath: sourcePath)
+        let destinationZipURL = URL(fileURLWithPath: destinationZipPath)
+        
+        do {
+            try FileManager.default.zipItem(at: sourceURL, to: destinationZipURL)
+            try FileManager.default.removeItem(at: sourceURL)
+            return .ok
+        } catch {
+            throw Abort(.internalServerError, reason: "internalServerError.unableToZipDirectory")
+        }
+    }
+    
+    func unzipDirectory(req: Request) async throws -> HTTPResponseStatus {
+        let pathInput = try req.content.decode(Document.PathInput.self)
+        let publicDirectory = req.application.directory.publicDirectory
+        let sourcePath = publicDirectory + pathInput.value + ".archive.zip"
+        
+        guard let unzippedDestination = pathInput.unzippedValue else {
+            throw Abort(.badRequest, reason: "badRequest.missingUnzippedDestinationParameter")
+        }
+        
+        let unzipPath = publicDirectory + unzippedDestination
+        
+        let sourceURL = URL(fileURLWithPath: sourcePath)
+        let unzipURL = URL(fileURLWithPath: unzipPath)
+        
+        do {
+            try FileManager.default.unzipItem(at: sourceURL, to: unzipURL)
+            try FileManager.default.removeItem(at: sourceURL)
+            return .ok
+        } catch {
+            throw Abort(.internalServerError, reason: "internalServerError.unableToUnzipDirectory")
+        }
+    }
+
     
     // MARK: - Update
     func changeDocumentStatus(req: Request) async throws -> Document {
