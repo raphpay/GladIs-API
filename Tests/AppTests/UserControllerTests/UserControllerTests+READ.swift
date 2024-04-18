@@ -389,6 +389,111 @@ extension UserControllerTests {
     }
 }
 
+// MARK: - Get Received Messages
+extension UserControllerTests {
+    func testGetReceivedMessagesWithMessagesSucceed() async throws {
+        let sender = try await User.create(username: expectedUsername, on: app.db)
+        let receiver = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: sender, on: app.db)
+        let _ = try await Message.create(title: expectedMessageTitle, content: expectedMessageContent, sender: sender, receiver: receiver, on: app.db)
+        
+        let userID = try receiver.requireID()
+        let path = "\(baseRoute)/\(userID)/messages/received"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let messages = try res.content.decode([Message].self)
+            XCTAssertEqual(messages.count, 1)
+            XCTAssertEqual(messages[0].title, expectedMessageTitle)
+            XCTAssertEqual(messages[0].content, expectedMessageContent)
+        }
+    }
+    
+    func testGetReceivedMessagesWithoutMessagesSucceedWithEmptyResponse() async throws {
+        let sender = try await User.create(username: expectedUsername, on: app.db)
+        let receiver = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: sender, on: app.db)
+        let _ = try await Message.create(title: expectedMessageTitle, content: expectedMessageContent, sender: sender, receiver: receiver, on: app.db)
+        
+        let userID = try sender.requireID()
+        let path = "\(baseRoute)/\(userID)/messages/received"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let messages = try res.content.decode([Message].self)
+            XCTAssertEqual(messages.count, 0)
+        }
+    }
+    
+    func testGetReceivedMessagesWithWrongUUIDFails() async throws {
+        let sender = try await User.create(username: expectedUsername, on: app.db)
+        let receiver = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: sender, on: app.db)
+        let _ = try await Message.create(title: expectedMessageTitle, content: expectedMessageContent, sender: sender, receiver: receiver, on: app.db)
+        
+        let userID = try sender.requireID()
+        let path = "\(baseRoute)/1/messages/received"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+            XCTAssertTrue(res.body.string.contains("badRequest.emptyUserID"))
+        }
+    }
+}
 
-//tokenAuthGroup.get(":userID", "messages", "received", use: getReceivedMessages)
-//tokenAuthGroup.get(":userID", "messages", "sent", use: getSentMessages)
+// MARK: - Get Sent Messages
+extension UserControllerTests {
+    func testGetSentMessagesWithMessagesSucceed() async throws {
+        let sender = try await User.create(username: expectedUsername, on: app.db)
+        let receiver = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: sender, on: app.db)
+        let _ = try await Message.create(title: expectedMessageTitle, content: expectedMessageContent, sender: sender, receiver: receiver, on: app.db)
+        
+        let userID = try sender.requireID()
+        let path = "\(baseRoute)/\(userID)/messages/sent"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let messages = try res.content.decode([Message].self)
+            XCTAssertEqual(messages.count, 1)
+            XCTAssertEqual(messages[0].title, expectedMessageTitle)
+            XCTAssertEqual(messages[0].content, expectedMessageContent)
+        }
+    }
+    
+    func testGetSentMessagesWithoutMessagesSucceedWithEmptyResponse() async throws {
+        let sender = try await User.create(username: expectedUsername, on: app.db)
+        let receiver = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: sender, on: app.db)
+        let _ = try await Message.create(title: expectedMessageTitle, content: expectedMessageContent, sender: sender, receiver: receiver, on: app.db)
+        
+        let userID = try receiver.requireID()
+        let path = "\(baseRoute)/\(userID)/messages/sent"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let messages = try res.content.decode([Message].self)
+            XCTAssertEqual(messages.count, 0)
+        }
+    }
+    
+    func testGetSentMessagesWithInexistantUserFails() async throws {
+        let sender = try await User.create(username: expectedUsername, on: app.db)
+        let receiver = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: sender, on: app.db)
+        let _ = try await Message.create(title: expectedMessageTitle, content: expectedMessageContent, sender: sender, receiver: receiver, on: app.db)
+        
+        let path = "\(baseRoute)/1/messages/sent"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+            XCTAssertTrue(res.body.string.contains("badRequest.emptyUserID"))
+        }
+    }
+}
