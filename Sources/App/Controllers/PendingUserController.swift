@@ -46,9 +46,12 @@ struct PendingUserController: RouteCollection {
     }
     
     func addModule(req: Request) async throws -> Module {
-        guard let pendingUserQuery = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db),
-              let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFount.pendingUser")
+        guard let pendingUserQuery = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.pendingUser")
+        }
+        
+        guard let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.module")
         }
         
         try await pendingUserQuery.$modules.attach(moduleQuery, on: req.db)
@@ -63,7 +66,7 @@ struct PendingUserController: RouteCollection {
         }
         
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFount.pendingUser")
+            throw Abort(.notFound, reason: "notFound.pendingUser")
         }
         
         let newUser = pendingUser.convertToUser()
@@ -99,7 +102,7 @@ struct PendingUserController: RouteCollection {
     
     func getModules(req: Request) async throws -> [Module] {
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFount.pendingUser")
+            throw Abort(.notFound, reason: "notFound.pendingUser")
         }
 
         return try await pendingUser.$modules.query(on: req.db).all()
@@ -107,7 +110,7 @@ struct PendingUserController: RouteCollection {
     
     func getEmployees(req: Request) async throws -> [PotentialEmployee] {
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFount.pendingUser")
+            throw Abort(.notFound, reason: "notFound.pendingUser")
         }
         
         let employees = try await pendingUser.$potentialEmployees
@@ -125,7 +128,8 @@ struct PendingUserController: RouteCollection {
             throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
-        let newStatus = try req.content.decode(PendingUser.Status.self)
+        let newStatus = try req.content.decode(PendingUser.StatusInput.self)
+        
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFount.pendingUser")
         }

@@ -5,7 +5,6 @@
 //  Created by Raphaël Payet on 27/03/2024.
 //
 
-
 import Fluent
 import Vapor
 

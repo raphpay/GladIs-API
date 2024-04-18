@@ -49,7 +49,7 @@ struct TechnicalDocumentationTabController: RouteCollection {
     // MARK: - DELETE
     func remove(req: Request) async throws -> HTTPResponseStatus {
         guard let tab = try await TechnicalDocumentationTab.find(req.parameters.get("tabID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
+            throw Abort(.notFound, reason: "notFound.technicalTab")
         }
         try await tab.delete(force: true, on: req.db)
         return .noContent

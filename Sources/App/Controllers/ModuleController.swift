@@ -32,9 +32,8 @@ struct ModuleController: RouteCollection {
         let input = try req.content.decode(Module.Input.self)
         let user = try req.auth.require(User.self)
         
-        guard user.id != nil,
-              user.userType == .admin else {
-            throw Abort(.unauthorized, reason: "User not authenticated")
+        guard user.userType == .admin else {
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
         let module = Module(name: input.name, index: input.index)
@@ -63,7 +62,6 @@ struct ModuleController: RouteCollection {
             .all()
     }
 
-    // Update index
     // MARK: - Update
     func update(req: Request) async throws -> Module {
         let newModule = try req.content.decode(Module.Input.self)

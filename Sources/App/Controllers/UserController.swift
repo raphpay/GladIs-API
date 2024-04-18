@@ -61,11 +61,7 @@ struct UserController: RouteCollection {
             throw Abort(.badRequest, reason: "badRequest.password")
         }
         
-        do {
-            try PasswordValidation().validatePassword(inputPassword)
-        } catch {
-            throw error
-        }
+        try PasswordValidation().validatePassword(inputPassword)
         let passwordHash = try Bcrypt.hash(inputPassword)
         
         let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, on: req)
@@ -86,23 +82,18 @@ struct UserController: RouteCollection {
         let input = try req.content.decode(User.Input.self)
         let adminUser = try req.auth.require(User.self)
         
-        var password = "Passwordlong1("
-        
-        if let inputPassword = input.password,
-            !inputPassword.isEmpty {
-            password = inputPassword
+        guard let inputPassword = input.password,
+              !inputPassword.isEmpty else {
+            throw Abort(.badRequest, reason: "badRequest.password")
         }
         
         guard adminUser.userType == .admin else {
             throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
         
-        do {
-            try PasswordValidation().validatePassword(password)
-        } catch {
-            throw error
-        }
-        let passwordHash = try Bcrypt.hash(password)
+
+        try PasswordValidation().validatePassword(inputPassword)
+        let passwordHash = try Bcrypt.hash(inputPassword)
         
         let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, on: req)
         let uniqueEmail = try await User.verifyUniqueEmail(input.email, on: req)
@@ -133,10 +124,15 @@ struct UserController: RouteCollection {
     }
     
     func removeModule(req: Request) async throws -> [Module] {
-        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
-              let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.user")
         }
+        
+        guard let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.module")
+        }
+        
+        
         
         try await userQuery.$modules.detach(moduleQuery, on: req.db)
         
@@ -144,9 +140,12 @@ struct UserController: RouteCollection {
     }
     
     func addTechnicalDocTab(req: Request) async throws -> TechnicalDocumentationTab {
-        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db),
-              let tabQuery = try await TechnicalDocumentationTab.find(req.parameters.get("tabID"), on: req.db) else {
+        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.user")
+        }
+                
+          guard let tabQuery = try await TechnicalDocumentationTab.find(req.parameters.get("tabID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.technicalTab")
         }
         
         try await userQuery.$technicalDocumentationTabs.attach(tabQuery, on: req.db)
@@ -214,16 +213,12 @@ struct UserController: RouteCollection {
         return try await user.$modules.query(on: req.db).all()
     }
     
-    func getTechnicalDocumentationTabs(req: Request) throws -> EventLoopFuture<[TechnicalDocumentationTab]> {
-        User
-            .find(req.parameters.get("userID"), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user
-                    .$technicalDocumentationTabs
-                    .query(on: req.db)
-                    .all()
-            }
+    func getTechnicalDocumentationTabs(req: Request) async throws -> [TechnicalDocumentationTab] {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        return try await user.$technicalDocumentationTabs.query(on: req.db).all()
     }
     
     func getManager(req: Request) async throws -> User.Public {
@@ -363,25 +358,6 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Update
-    func updateUserInfos(req: Request) async throws -> User.Public {
-        try User.Input.validate(content: req)
-        
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
-        
-        let updatedUser = try req.content.decode(User.Input.self)
-        
-        user.firstName = updatedUser.firstName
-        user.lastName = updatedUser.lastName
-        user.email = updatedUser.email
-        user.phoneNumber = updatedUser.phoneNumber
-        
-        try await user.update(on: req.db)
-        
-        return user.convertToPublic()
-    }
-    
     func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.user")
@@ -410,11 +386,7 @@ struct UserController: RouteCollection {
             throw Abort(.unauthorized, reason: "unauthorized.password.invalidCurrent")
         }
         
-        do {
-            try PasswordValidation().validatePassword(changeRequest.newPassword)
-        } catch {
-            throw error
-        }
+        try PasswordValidation().validatePassword(changeRequest.newPassword)
         
         // Hash the new password
         let hashedNewPassword = try Bcrypt.hash(changeRequest.newPassword)
@@ -475,6 +447,25 @@ struct UserController: RouteCollection {
         try await client.save(on: req.db)
         
         return client.convertToPublic()
+    }
+    
+    func updateUserInfos(req: Request) async throws -> User.Public {
+        try User.Input.validate(content: req)
+        
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        let updatedUser = try req.content.decode(User.Input.self)
+        
+        user.firstName = updatedUser.firstName
+        user.lastName = updatedUser.lastName
+        user.email = updatedUser.email
+        user.phoneNumber = updatedUser.phoneNumber
+        
+        try await user.update(on: req.db)
+        
+        return user.convertToPublic()
     }
     
     func removeEmployee(req: Request) async throws -> User.Public {
