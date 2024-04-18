@@ -340,7 +340,6 @@ extension UserControllerTests {
         let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: admin, on: app.db)
-        let resetToken = try await PasswordResetToken.create(for: user, on: app.db)
         
         let path = "\(baseRoute)/12345/resetToken"
         try app.test(.GET, path) { req in
@@ -354,7 +353,6 @@ extension UserControllerTests {
     func testGetResetTokenWithoutAdminPermissionFails() async throws {
         let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
-        let resetToken = try await PasswordResetToken.create(for: user, on: app.db)
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/resetToken"
@@ -433,7 +431,6 @@ extension UserControllerTests {
         let token = try await Token.create(for: sender, on: app.db)
         let _ = try await Message.create(title: expectedMessageTitle, content: expectedMessageContent, sender: sender, receiver: receiver, on: app.db)
         
-        let userID = try sender.requireID()
         let path = "\(baseRoute)/1/messages/received"
         try app.test(.GET, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)

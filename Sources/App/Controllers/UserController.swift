@@ -358,25 +358,6 @@ struct UserController: RouteCollection {
     }
     
     // MARK: - Update
-    func updateUserInfos(req: Request) async throws -> User.Public {
-        try User.Input.validate(content: req)
-        
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
-        
-        let updatedUser = try req.content.decode(User.Input.self)
-        
-        user.firstName = updatedUser.firstName
-        user.lastName = updatedUser.lastName
-        user.email = updatedUser.email
-        user.phoneNumber = updatedUser.phoneNumber
-        
-        try await user.update(on: req.db)
-        
-        return user.convertToPublic()
-    }
-    
     func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.user")
@@ -405,11 +386,7 @@ struct UserController: RouteCollection {
             throw Abort(.unauthorized, reason: "unauthorized.password.invalidCurrent")
         }
         
-        do {
-            try PasswordValidation().validatePassword(changeRequest.newPassword)
-        } catch {
-            throw error
-        }
+        try PasswordValidation().validatePassword(changeRequest.newPassword)
         
         // Hash the new password
         let hashedNewPassword = try Bcrypt.hash(changeRequest.newPassword)
@@ -470,6 +447,25 @@ struct UserController: RouteCollection {
         try await client.save(on: req.db)
         
         return client.convertToPublic()
+    }
+    
+    func updateUserInfos(req: Request) async throws -> User.Public {
+        try User.Input.validate(content: req)
+        
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        let updatedUser = try req.content.decode(User.Input.self)
+        
+        user.firstName = updatedUser.firstName
+        user.lastName = updatedUser.lastName
+        user.email = updatedUser.email
+        user.phoneNumber = updatedUser.phoneNumber
+        
+        try await user.update(on: req.db)
+        
+        return user.convertToPublic()
     }
     
     func removeEmployee(req: Request) async throws -> User.Public {
