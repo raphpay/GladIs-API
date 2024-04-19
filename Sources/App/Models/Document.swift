@@ -31,7 +31,7 @@ final class Document: Model, Content {
     
     init() {}
     
-    init(id: UUID? = nil, name: String, path: String, lastModified: Date? = .now,  status: Status, isArchived: Bool) {
+    init(id: UUID? = nil, name: String, path: String, lastModified: Date? = .now,  status: Status, isArchived: Bool = false) {
         self.id = id
         self.name = name
         self.path = path

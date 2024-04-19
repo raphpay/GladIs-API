@@ -147,8 +147,9 @@ struct DocumentController: RouteCollection {
     }
 
     // MARK: - Archive
-    func zipDocument(req: Request) async throws -> HTTPResponseStatus {
+    func zipDocument(req: Request) async throws -> Document {
         let document = try await getDocument(req: req)
+        
         let publicDirectory = req.application.directory.publicDirectory
         let sourcePath = publicDirectory +  document.path + document.name
         let destinationZipPath = publicDirectory + document.path + document.name + ".archive.zip"
@@ -158,14 +159,28 @@ struct DocumentController: RouteCollection {
         
         do {
             try FileManager.default.zipItem(at: sourceURL, to: destinationZipURL)
-            try FileManager.default.removeItem(at: sourceURL)
-            return .ok
         } catch {
             throw Abort(.internalServerError, reason: "internalServerError.unableToZipFile")
         }
+        
+        let updatedDocument = try await updateArchiveStatus(document, isArchived: true, on: req.db)
+        
+        do {
+            try FileManager.default.removeItem(at: sourceURL)
+        } catch {
+            throw Abort(.internalServerError, reason: "internalServerError.unableToRemoveItem")
+        }
+        
+        return updatedDocument
     }
     
-    func unzipDocument(req: Request) async throws -> HTTPResponseStatus {
+    private func updateArchiveStatus(_ document: Document, isArchived: Bool, on db: Database) async throws -> Document {
+        document.isArchived = isArchived
+        try await document.update(on: db)
+        return document
+    }
+    
+    func unzipDocument(req: Request) async throws -> Document {
         let document = try await getDocument(req: req)
         let publicDirectory = req.application.directory.publicDirectory
         let sourcePath = publicDirectory +  document.path + document.name + ".archive.zip"
@@ -183,12 +198,19 @@ struct DocumentController: RouteCollection {
             let sourceURL = URL(fileURLWithPath: sourcePath)
             let destinationUnzipURL = URL(fileURLWithPath: destinationUnzipPath)
             try FileManager.default.unzipItem(at: sourceURL, to: destinationUnzipURL)
-            try FileManager.default.removeItem(atPath: sourcePath)
-            return .ok
         } catch {
-            throw Abort(.notFound)
             throw Abort(.internalServerError, reason: "internalServerError.unableToUnzipFile")
         }
+        
+        let updatedDocument = try await updateArchiveStatus(document, isArchived: false, on: req.db)
+        
+        do {
+            try FileManager.default.removeItem(atPath: sourcePath)
+        } catch {
+            throw Abort(.internalServerError, reason: "internalServerError.unableToRemoveItem")
+        }
+        
+        return updatedDocument
     }
     
     func zipDirectory(req: Request) async throws -> HTTPResponseStatus {
