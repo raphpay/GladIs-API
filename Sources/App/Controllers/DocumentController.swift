@@ -91,11 +91,7 @@ struct DocumentController: RouteCollection {
     }
     
     func getDocumentsAtPath(req: Request) async throws -> [Document] {
-        struct Path: Codable {
-            var value: String
-        }
-        
-        let path = try req.content.decode(Path.self)
+        let path = try req.content.decode(Document.PathInput.self)
         
         return try await Document
             .query(on: req.db)
@@ -104,11 +100,7 @@ struct DocumentController: RouteCollection {
     }
     
     func getPaginatedDocumentsAtPath(req: Request) async throws -> Document.PaginatedOutput {
-        struct Path: Codable {
-            var value: String
-        }
-        
-        let path = try req.content.decode(Path.self)
+        let path = try req.content.decode(Document.PathInput.self)
         
         guard let page = req.query[Int.self, at: "page"],
               let perPage = req.query[Int.self, at: "perPage"] else {
@@ -172,12 +164,6 @@ struct DocumentController: RouteCollection {
         }
         
         return updatedDocument
-    }
-    
-    private func updateArchiveStatus(_ document: Document, isArchived: Bool, on db: Database) async throws -> Document {
-        document.isArchived = isArchived
-        try await document.update(on: db)
-        return document
     }
     
     func unzipDocument(req: Request) async throws -> Document {
@@ -305,6 +291,12 @@ struct DocumentController: RouteCollection {
         return .noContent
     }
     
+    // MARK: - Helper
+    private func updateArchiveStatus(_ document: Document, isArchived: Bool, on db: Database) async throws -> Document {
+        document.isArchived = isArchived
+        try await document.update(on: db)
+        return document
+    }
 }
 
 
