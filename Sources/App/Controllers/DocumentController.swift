@@ -24,9 +24,7 @@ struct DocumentController: RouteCollection {
         tokenAuthGroup.get(":documentID", use: getDocument)
         tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
         tokenAuthGroup.get("zip", ":documentID", use: zipDocument)
-        tokenAuthGroup.post("zipDirectory", use: zipDirectory)
         tokenAuthGroup.get("unzip", ":documentID", use: unzipDocument)
-        tokenAuthGroup.post("unzipDirectory", use: unzipDirectory)
         tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
         tokenAuthGroup.post("paginated", "path", use: getPaginatedDocumentsAtPath)
         // Update
@@ -197,47 +195,6 @@ struct DocumentController: RouteCollection {
         }
         
         return updatedDocument
-    }
-    
-    func zipDirectory(req: Request) async throws -> HTTPResponseStatus {
-        let pathInput = try req.content.decode(Document.PathInput.self)
-        let publicDirectory = req.application.directory.publicDirectory
-        let sourcePath = publicDirectory + pathInput.value
-        let destinationZipPath = publicDirectory + pathInput.value + ".archive.zip"
-        
-        let sourceURL = URL(fileURLWithPath: sourcePath)
-        let destinationZipURL = URL(fileURLWithPath: destinationZipPath)
-        
-        do {
-            try FileManager.default.zipItem(at: sourceURL, to: destinationZipURL)
-            try FileManager.default.removeItem(at: sourceURL)
-            return .ok
-        } catch {
-            throw Abort(.internalServerError, reason: "internalServerError.unableToZipDirectory")
-        }
-    }
-    
-    func unzipDirectory(req: Request) async throws -> HTTPResponseStatus {
-        let pathInput = try req.content.decode(Document.PathInput.self)
-        let publicDirectory = req.application.directory.publicDirectory
-        let sourcePath = publicDirectory + pathInput.value + ".archive.zip"
-        
-        guard let unzippedDestination = pathInput.unzippedValue else {
-            throw Abort(.badRequest, reason: "badRequest.missingUnzippedDestinationParameter")
-        }
-        
-        let unzipPath = publicDirectory + unzippedDestination
-        
-        let sourceURL = URL(fileURLWithPath: sourcePath)
-        let unzipURL = URL(fileURLWithPath: unzipPath)
-        
-        do {
-            try FileManager.default.unzipItem(at: sourceURL, to: unzipURL)
-            try FileManager.default.removeItem(at: sourceURL)
-            return .ok
-        } catch {
-            throw Abort(.internalServerError, reason: "internalServerError.unableToUnzipDirectory")
-        }
     }
 
     
