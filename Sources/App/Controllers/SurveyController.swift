@@ -16,6 +16,7 @@ struct SurveyController: RouteCollection {
         // Read
         surveys.get(use: getAll)
         // Delete
+        surveys.delete(":surveyID", use: remove)
         surveys.delete(use: removeAll)
     }
     
@@ -37,6 +38,14 @@ struct SurveyController: RouteCollection {
     }
     
     // MARK: - Delete
+    func remove(req: Request) async throws -> HTTPResponseStatus {
+        guard let survey = try await Survey.find(req.parameters.get("surveyID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        try await survey.delete(force: true, on: req.db)
+        return .noContent
+    }
+    
     func removeAll(req: Request) async throws -> HTTPResponseStatus {
         try await Survey
             .query(on: req.db)
