@@ -10,11 +10,13 @@ import Vapor
 
 struct SurveyController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
-        let surveys = routes.grouped("api", "survey")
+        let surveys = routes.grouped("api", "surveys")
         // Create
         surveys.post(use: create)
         // Read
         surveys.get(use: getAll)
+        // Update
+        surveys.put(":surveyID", use: update)
         // Delete
         surveys.delete(":surveyID", use: remove)
         surveys.delete(use: removeAll)
@@ -35,6 +37,20 @@ struct SurveyController: RouteCollection {
         try await Survey
             .query(on: req.db)
             .all()
+    }
+    
+    // MARK: - Update
+    func update(req: Request) async throws -> Survey {
+        let input = try req.content.decode(Survey.UpdateInput.self)
+        guard let survey = try await Survey.find(req.parameters.get("surveyID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        survey.value = input.value
+        
+        try await survey.update(on: req.db)
+        
+        return survey
     }
     
     // MARK: - Delete

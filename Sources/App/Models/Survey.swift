@@ -35,9 +35,12 @@ final class Survey: Model, Content {
     }
     
     struct Input: Content {
-        var id: UUID?
         let value: String
         let clientID: User.IDValue
+    }
+    
+    struct UpdateInput: Content {
+        let value: String
     }
 }
 
