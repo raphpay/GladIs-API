@@ -21,4 +21,5 @@ func routes(_ app: Application) throws {
     try app.register(collection: EventController())
     try app.register(collection: PasswordResetTokenController())
     try app.register(collection: MessageController())
+    try app.register(collection: SurveyController())
 }

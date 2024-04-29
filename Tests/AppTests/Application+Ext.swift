@@ -199,3 +199,18 @@ extension TechnicalDocumentationTab {
             .delete(force: true, on: database)
     }
 }
+
+extension Survey {
+    static func create(value: String, clientID: User.IDValue, on database: Database) async throws -> Survey {
+        let survey = Survey(value: value, clientID: clientID)
+        try await survey.save(on: database)
+        return survey
+    }
+    
+    static func deleteAll(on database: Database) async throws {
+        try await Survey.query(on: database)
+            .withDeleted()
+            .all()
+            .delete(force: true, on: database)
+    }
+}

@@ -350,6 +350,7 @@ extension UserControllerTests {
         }
     }
     
+    // TODO: Check this test -> it fails
     func testGetResetTokenWithoutAdminPermissionFails() async throws {
         let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
