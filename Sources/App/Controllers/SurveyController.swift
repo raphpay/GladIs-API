@@ -11,15 +11,18 @@ import Vapor
 struct SurveyController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let surveys = routes.grouped("api", "surveys")
+        let tokenAuthMiddleware = Token.authenticator()
+        let guardAuthMiddleware = User.guardMiddleware()
+        let tokenAuthGroup = surveys.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
-        surveys.post(use: create)
+        tokenAuthGroup.post(use: create)
         // Read
-        surveys.get(use: getAll)
+        tokenAuthGroup.get(use: getAll)
         // Update
-        surveys.put(":surveyID", use: update)
+        tokenAuthGroup.put(":surveyID", use: update)
         // Delete
-        surveys.delete(":surveyID", use: remove)
-        surveys.delete(use: removeAll)
+        tokenAuthGroup.delete(":surveyID", use: remove)
+        tokenAuthGroup.delete(use: removeAll)
     }
     
     // MARK: - Create
