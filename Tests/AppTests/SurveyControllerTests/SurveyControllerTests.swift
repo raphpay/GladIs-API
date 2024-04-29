@@ -15,6 +15,7 @@ final class SurveyControllerTests: XCTestCase {
     let baseRoute = "api/surveys"
     let expectedValue = "{hello: new}"
     let expectedUsername = "expectedUsername"
+    let expectedAdminUsername = "expectedAdminUsername"
     
     override func setUp() async throws {
         try await super.setUp()
