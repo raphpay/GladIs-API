@@ -39,6 +39,7 @@ struct SurveyController: RouteCollection {
     func getAll(req: Request) async throws -> [Survey] {
         try await Survey
             .query(on: req.db)
+            .sort(\.$createdAt, .descending)
             .all()
     }
     
