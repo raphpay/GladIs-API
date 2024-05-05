@@ -31,23 +31,32 @@ final class Form: Model, Content {
     
     @Field(key: Form.v20240207.value)
     var value: String
+
+    @Field(key: Form.v20240207.clientID)
+    var clientID: String
     
     init() {}
     
-    init(id: UUID? = nil, title: String, createdBy: String? = nil, createdAt: Date? = nil, updatedBy: String? = nil, updatedAt: Date? = nil, value: String) {
+    init(
+        id: UUID? = nil,
+        title: String, value: String, clientID: String,
+        createdBy: String? = nil, createdAt: Date? = nil,
+        updatedBy: String? = nil, updatedAt: Date? = nil) {
         self.id = id
         self.title = title
+        self.value = value
+        self.clientID = clientID
         self.createdBy = createdBy
         self.createdAt = createdAt
         self.updatedBy = updatedBy
         self.updatedAt = updatedAt
-        self.value = value
     }
     
     struct CreationInput: Content {
         let title: String
         let createdBy: String
         let value: String
+        let clientID: String
     }
     
     struct UpdateInput: Content {
@@ -61,10 +70,11 @@ extension Form {
         static let schemaName = "forms"
         static let id = FieldKey(stringLiteral: "id")
         static let title = FieldKey(stringLiteral: "title")
+        static let value = FieldKey(stringLiteral: "value")
+        static let clientID = FieldKey(stringLiteral: "clientID")
         static let createdAt = FieldKey(stringLiteral: "createdAt")
         static let createdBy = FieldKey(stringLiteral: "createdBy")
         static let updatedAt = FieldKey(stringLiteral: "updatedAt")
         static let updatedBy = FieldKey(stringLiteral: "updatedBy")
-        static let value = FieldKey(stringLiteral: "value")
     }
 }

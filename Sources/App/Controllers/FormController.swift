@@ -29,7 +29,11 @@ struct FormController: RouteCollection {
     // MARK: - Create
     func create(req: Request) async throws -> Form {
         let input = try req.content.decode(Form.CreationInput.self)
-        let form = Form(title: input.title, createdBy: input.createdBy, value: input.value)
+        let form = Form(
+            title: input.title,
+            value: input.value,
+            clientID: input.clientID,
+            createdBy: input.createdBy)
         
         try await form.save(on: req.db)
         return form

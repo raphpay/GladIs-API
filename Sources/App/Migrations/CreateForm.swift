@@ -13,6 +13,7 @@ struct CreateForm: AsyncMigration {
             .id()
             .field(Form.v20240207.title, .string, .required)
             .field(Form.v20240207.value, .string, .required)
+            .field(Form.v20240207.clientID, .string, .required)
             .field(Form.v20240207.createdBy, .string)
             .field(Form.v20240207.createdAt, .date)
             .field(Form.v20240207.updatedBy, .string)
