@@ -19,6 +19,7 @@ struct FormController: RouteCollection {
         tokenAuthGroup.post(use: create)
         // Read
         tokenAuthGroup.get(use: getAll)
+        tokenAuthGroup.get(":clientID", use: getByClient)
         // Update
         tokenAuthGroup.put(":formID", use: update)
         // Delete
@@ -42,6 +43,16 @@ struct FormController: RouteCollection {
     // MARK: - Read
     func getAll(req: Request) async throws -> [Form] {
         try await Form.query(on: req.db).all()
+    }
+
+    func getByClient(req: Request) async throws -> [Form] {
+        guard let clientID = req.parameters.get("clientID") else {
+            throw Abort(.badRequest, reason: "notFound.user")
+        }
+
+        return try await Form.query(on: req.db)
+            .filter(\.$clientID == clientID)
+            .all()
     }
     
     // MARK: - Update
