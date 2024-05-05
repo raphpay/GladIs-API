@@ -28,6 +28,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreatePasswordResetToken())
     app.migrations.add(CreateMessage())
     app.migrations.add(CreateSurvey())
+    app.migrations.add(CreateForm())
     
     switch app.environment {
         case .development:
