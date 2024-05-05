@@ -16,6 +16,15 @@ final class Form: Model, Content {
 
     @Field(key: Form.v20240207.title)
     var title: String
+
+    @Field(key: Form.v20240207.value)
+    var value: String
+
+    @Field(key: Form.v20240207.clientID)
+    var clientID: String
+
+    @Field(key: Form.v20240207.path)
+    var path: String
     
     @Field(key: Form.v20240207.createdBy)
     var createdBy: String?
@@ -29,23 +38,18 @@ final class Form: Model, Content {
     @Timestamp(key: Form.v20240207.updatedAt, on: .update)
     var updatedAt: Date?
     
-    @Field(key: Form.v20240207.value)
-    var value: String
-
-    @Field(key: Form.v20240207.clientID)
-    var clientID: String
-    
     init() {}
     
     init(
         id: UUID? = nil,
-        title: String, value: String, clientID: String,
+        title: String, value: String, clientID: String, path: String,
         createdBy: String? = nil, createdAt: Date? = nil,
         updatedBy: String? = nil, updatedAt: Date? = nil) {
         self.id = id
         self.title = title
         self.value = value
         self.clientID = clientID
+        self.path = path
         self.createdBy = createdBy
         self.createdAt = createdAt
         self.updatedBy = updatedBy
@@ -56,11 +60,16 @@ final class Form: Model, Content {
         let title: String
         let createdBy: String
         let value: String
+        let path: String
         let clientID: String
     }
     
     struct UpdateInput: Content {
         let updatedBy: String
+        let value: String
+    }
+
+    struct PathInput: Content {
         let value: String
     }
 }
@@ -72,6 +81,7 @@ extension Form {
         static let title = FieldKey(stringLiteral: "title")
         static let value = FieldKey(stringLiteral: "value")
         static let clientID = FieldKey(stringLiteral: "clientID")
+        static let path = FieldKey(stringLiteral: "path")
         static let createdAt = FieldKey(stringLiteral: "createdAt")
         static let createdBy = FieldKey(stringLiteral: "createdBy")
         static let updatedAt = FieldKey(stringLiteral: "updatedAt")
