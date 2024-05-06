@@ -25,6 +25,12 @@ final class Form: Model, Content {
 
     @Field(key: Form.v20240207.path)
     var path: String
+
+    @Field(key: Form.v20240207.approvedByAdmin)
+    var approvedByAdmin: Bool
+
+    @Field(key: Form.v20240207.approvedByClient)
+    var approvedByClient: Bool
     
     @Field(key: Form.v20240207.createdBy)
     var createdBy: String?
@@ -43,13 +49,18 @@ final class Form: Model, Content {
     init(
         id: UUID? = nil,
         title: String, value: String, clientID: String, path: String,
+        approvedByAdmin: Bool = false, approvedByClient: Bool = false,
         createdBy: String? = nil, createdAt: Date? = nil,
         updatedBy: String? = nil, updatedAt: Date? = nil) {
         self.id = id
+        // Required fields
         self.title = title
         self.value = value
         self.clientID = clientID
         self.path = path
+        self.approvedByAdmin = approvedByAdmin
+        self.approvedByClient = approvedByClient
+        // Optional fields
         self.createdBy = createdBy
         self.createdAt = createdAt
         self.updatedBy = updatedBy
@@ -67,6 +78,8 @@ final class Form: Model, Content {
     struct UpdateInput: Content {
         let updatedBy: String
         let value: String
+        let title: String?
+        let createdBy: String?
     }
 
     struct PathInput: Content {
@@ -77,11 +90,16 @@ final class Form: Model, Content {
 extension Form {
     enum v20240207 {
         static let schemaName = "forms"
+        // Required fields
         static let id = FieldKey(stringLiteral: "id")
         static let title = FieldKey(stringLiteral: "title")
         static let value = FieldKey(stringLiteral: "value")
         static let clientID = FieldKey(stringLiteral: "clientID")
         static let path = FieldKey(stringLiteral: "path")
+        static let approvedByAdmin = FieldKey(stringLiteral: "approvedByAdmin")
+        static let approvedByClient = FieldKey(stringLiteral: "approvedByClient")
+
+        // Optional fields
         static let createdAt = FieldKey(stringLiteral: "createdAt")
         static let createdBy = FieldKey(stringLiteral: "createdBy")
         static let updatedAt = FieldKey(stringLiteral: "updatedAt")

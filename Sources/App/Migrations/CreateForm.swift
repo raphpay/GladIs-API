@@ -15,6 +15,8 @@ struct CreateForm: AsyncMigration {
             .field(Form.v20240207.value, .string, .required)
             .field(Form.v20240207.clientID, .string, .required)
             .field(Form.v20240207.path, .string, .required)
+            .field(Form.v20240207.approvedByAdmin, .bool, .required)
+            .field(Form.v20240207.approvedByClient, .bool, .required)
             .field(Form.v20240207.createdBy, .string)
             .field(Form.v20240207.createdAt, .date)
             .field(Form.v20240207.updatedBy, .string)
