@@ -19,6 +19,8 @@ final class FormControllerTests: XCTestCase {
     let expectedClientID = "expectedClientID"
     let expectedUsername = "expectedUsername"
     let expectedClientUsername = "expectedClientUsername"
+    let expectedUpdatedTitle = "expectedUpdatedTitle"
+    let expectedUpdatedValue = "expectedUpdatedValue"
     
     override func setUp() async throws {
         try await super.setUp()

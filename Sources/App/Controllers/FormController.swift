@@ -70,6 +70,9 @@ struct FormController: RouteCollection {
         
         let updateInput = try req.content.decode(Form.UpdateInput.self)
         
+        if let title = updateInput.title {
+            form.title = title
+        }
         form.updatedBy = updateInput.updatedBy
         form.value = updateInput.value
 
