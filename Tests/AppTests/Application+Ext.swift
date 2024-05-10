@@ -214,3 +214,22 @@ extension Survey {
             .delete(force: true, on: database)
     }
 }
+
+extension Form {
+    static func create(
+        title: String, value: String,
+        clientID: String, path: String,
+        on database: Database
+    ) async throws -> Form {
+        let form = Form(title: title, value: value, clientID: clientID, path: path)
+        try await form.save(on: database)
+        return form
+    }
+    
+    static func deleteAll(on database: Database) async throws {
+        try await Form.query(on: database)
+            .withDeleted()
+            .all()
+            .delete(force: true, on: database)
+    }
+}

@@ -49,12 +49,13 @@ struct FormController: RouteCollection {
     }
 
     func getByClientAtPath(req: Request) async throws -> [Form] {
-        guard let clientID = req.parameters.get("clientID") else {
-            throw Abort(.badRequest, reason: "notFound.user")
+        guard let client = try await User.find(req.parameters.get("clientID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
         }
 
         let pathInput = try req.content.decode(Form.PathInput.self)
 
+        let clientID = try client.requireID().uuidString
         return try await Form.query(on: req.db)
             .filter(\.$clientID == clientID)
             .filter(\.$path == pathInput.value)
