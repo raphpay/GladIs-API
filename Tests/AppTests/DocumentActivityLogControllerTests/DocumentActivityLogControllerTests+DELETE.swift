@@ -19,4 +19,16 @@ extension DocumentActivityLogControllerTests {
             XCTAssertEqual(res.status, .noContent)
         }
     }
+
+    func testDeleteAllDocumentActivityLogsWithoutPermissionFails() async throws {
+        let user = try await User.create(username: expectedClientUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+
+        try app.test(.DELETE, "api/documentActivityLogs") { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .forbidden)
+            XCTAssertTrue(res.body.string.contains("forbidden.userShouldBeAdmin"))
+        }
+    }
 }

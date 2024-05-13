@@ -13,8 +13,12 @@ final class DocumentActivityLogControllerTests: XCTestCase {
     var app: Application!
     // Expected Properties
     let expectedUsername = "testuser"
+    let expectedClientUsername = "expectedClientUsername"
     let expectedDocPath = "test/test"
     let expectedDocumentName = "Test Document"
+    let expectedFormTitle = "Test Form"
+    let expectedFormValue = "Test Value"
+    let expectedAction: DocumentActivityLog.ActionEnum = .creation
     
     override func setUp() async throws {
         try await super.setUp()
