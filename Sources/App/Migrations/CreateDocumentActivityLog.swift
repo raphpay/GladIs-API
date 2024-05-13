@@ -27,8 +27,10 @@ struct CreateDocumentActivityLog: AsyncMigration {
             .field(DocumentActivityLog.v20240207.actionDate, .date, .required)
             .field(DocumentActivityLog.v20240207.actorIsAdmin, .bool, .required)
             .field(DocumentActivityLog.v20240207.actionEnum, action, .required)
-            .field(DocumentActivityLog.v20240207.documentID, .uuid, .required,
+            .field(DocumentActivityLog.v20240207.documentID, .uuid,
                    .references(Document.v20240207.schemaName, Document.v20240207.id, onDelete: .cascade))
+            .field(DocumentActivityLog.v20240207.documentID, .uuid,
+                   .references(Form.v20240207.schemaName, Form.v20240207.id, onDelete: .cascade))
             .field(DocumentActivityLog.v20240207.clientID, .uuid, .required,
                    .references(User.v20240207.schemaName, User.v20240207.id, onDelete: .cascade))
             .create()
