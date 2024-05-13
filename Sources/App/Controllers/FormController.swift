@@ -22,8 +22,10 @@ struct FormController: RouteCollection {
         tokenAuthGroup.post("client", ":clientID", "path", use: getByClientAtPath)
         // Update
         tokenAuthGroup.put(":formID", use: update)
-        tokenAuthGroup.put("admin", ":formID", "approval", use: changeApprovalStatusByAdmin)
-        tokenAuthGroup.put("client", ":formID", "approval", use: changeApprovalStatusByClient)
+        tokenAuthGroup.put("admin", ":formID", "approve", use: approveFormByAdmin)
+        tokenAuthGroup.put("admin", ":formID", "deapprove", use: deapproveFormByAdmin)
+        tokenAuthGroup.put("client", ":formID", "approve", use: approveFormByClient)
+        tokenAuthGroup.put("client", ":formID", "deapprove", use: deapproveFormByClient)
         // Delete
         tokenAuthGroup.delete(":formID", use: delete)
         tokenAuthGroup.delete("all", use: deleteAll)
@@ -81,24 +83,48 @@ struct FormController: RouteCollection {
         return form
     }
 
-    func changeApprovalStatusByAdmin(req: Request) async throws -> Form {
+    func approveFormByAdmin(req: Request) async throws -> Form {
         guard let form = try await Form.find(req.parameters.get("formID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.form")
         }
 
-        form.approvedByAdmin.toggle()
+        form.approvedByAdmin = true
 
         try await form.update(on: req.db)
 
         return form
     }
 
-    func changeApprovalStatusByClient(req: Request) async throws -> Form {
+    func deapproveFormByAdmin(req: Request) async throws -> Form {
         guard let form = try await Form.find(req.parameters.get("formID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.form")
         }
 
-        form.approvedByClient.toggle()
+        form.approvedByAdmin = false
+
+        try await form.update(on: req.db)
+
+        return form
+    }
+
+    func approveFormByClient(req: Request) async throws -> Form {
+        guard let form = try await Form.find(req.parameters.get("formID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.form")
+        }
+
+        form.approvedByClient = true
+
+        try await form.update(on: req.db)
+
+        return form
+    }
+
+    func deapproveFormByClient(req: Request) async throws -> Form {
+        guard let form = try await Form.find(req.parameters.get("formID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.form")
+        }
+
+        form.approvedByClient = false
 
         try await form.update(on: req.db)
 
