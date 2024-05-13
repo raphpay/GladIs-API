@@ -232,4 +232,24 @@ extension Form {
             .all()
             .delete(force: true, on: database)
     }
+
+    static func approveByAdmin(_ form: Form, on database: Database) async throws {
+        form.approvedByAdmin = true
+        try await form.update(on: database)
+    }
+
+    static func deapproveByAdmin(_ form: Form, on database: Database) async throws {
+        form.approvedByAdmin = false
+        try await form.update(on: database)
+    }
+
+    static func approveByClient(_ form: Form, on database: Database) async throws {
+        form.approvedByClient = true
+        try await form.update(on: database)
+    }
+
+    static func deapproveByClient(_ form: Form, on database: Database) async throws {
+        form.approvedByClient = false
+        try await form.update(on: database)
+    }
 }
