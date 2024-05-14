@@ -26,8 +26,11 @@ final class DocumentActivityLog: Model, Content {
     @Field(key: DocumentActivityLog.v20240207.actorIsAdmin)
     var actorIsAdmin: Bool
     
-    @Parent(key: DocumentActivityLog.v20240207.documentID)
-    var document: Document
+    @OptionalParent(key: DocumentActivityLog.v20240207.documentID)
+    var document: Document?
+    
+    @OptionalParent(key: DocumentActivityLog.v20240207.formID)
+    var form: Form?
     
     @Parent(key: DocumentActivityLog.v20240207.clientID)
     var client: User
@@ -39,7 +42,7 @@ final class DocumentActivityLog: Model, Content {
     
     init(id: UUID? = nil, name: String, actorUsername: String,
          action: DocumentActivityLog.ActionEnum, actionDate: Date, actorIsAdmin: Bool,
-         documentID: Document.IDValue, clientID: User.IDValue) {
+         documentID: Document.IDValue? = nil, formID: Form.IDValue? = nil, clientID: User.IDValue) {
         self.id = id
         self.name = name
         self.actorUsername = actorUsername
@@ -47,6 +50,7 @@ final class DocumentActivityLog: Model, Content {
         self.actionDate = actionDate
         self.actorIsAdmin = actorIsAdmin
         self.$document.id = documentID
+        self.$form.id = formID
         self.$client.id = clientID
     }
     
@@ -55,8 +59,9 @@ final class DocumentActivityLog: Model, Content {
         let action: DocumentActivityLog.ActionEnum
         let actorIsAdmin: Bool
         let actorID: UUID
-        let documentID: UUID
-        let clientID: UUID
+        let documentID: Document.IDValue?
+        let formID: Form.IDValue?
+        let clientID: User.IDValue
     }
 
     struct PaginatedOutput: Content {
@@ -74,6 +79,7 @@ extension DocumentActivityLog {
         static let actionDate = FieldKey(stringLiteral: "actionDate")
         static let actorIsAdmin = FieldKey(stringLiteral: "actorIsAdmin")
         static let documentID = FieldKey(stringLiteral: "documentID")
+        static let formID = FieldKey(stringLiteral: "formID")
         static let clientID = FieldKey(stringLiteral: "clientID")
         
         static let actionEnum = FieldKey(stringLiteral: "actionEnum")

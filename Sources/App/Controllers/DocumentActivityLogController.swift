@@ -28,26 +28,48 @@ struct DocumentActivityLogController: RouteCollection {
     // MARK: - CREATE
     func create(req: Request) async throws -> DocumentActivityLog {
         let logInput = try req.content.decode(DocumentActivityLog.Input.self)
-        
-        guard let docQuery = try await Document.find(logInput.documentID, on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.document")
-        }
-        
+        var log: DocumentActivityLog?
+        var logName = ""
+
         guard let userQuery = try await User.find(logInput.actorID, on: req.db) else {
             throw Abort(.notFound, reason: "notFound.user")
         }
-        
-        let docID = try docQuery.requireID()
-        let log = DocumentActivityLog(name: docQuery.name,
+
+        if logInput.documentID != nil {
+            guard let docQuery = try await Document.find(logInput.documentID, on: req.db) else {
+                throw Abort(.notFound, reason: "notFound.document")
+            }
+            logName = docQuery.name
+            log = DocumentActivityLog(name: logName,
                                       actorUsername: userQuery.username,
                                       action: logInput.action,
                                       actionDate: Date.now,
                                       actorIsAdmin: logInput.actorIsAdmin,
-                                      documentID: docID,
+                                      documentID: logInput.documentID,
                                       clientID: logInput.clientID)
-        
-        try await log.save(on: req.db)
-        return log
+
+        } else if logInput.formID != nil {
+            guard let formQuery = try await Form.find(logInput.formID, on: req.db) else {
+                throw Abort(.notFound, reason: "notFound.form")
+            }
+            logName = formQuery.title
+            log = DocumentActivityLog(name: logName,
+                                      actorUsername: userQuery.username,
+                                      action: logInput.action,
+                                      actionDate: Date.now,
+                                      actorIsAdmin: logInput.actorIsAdmin,
+                                      formID: logInput.formID,
+                                      clientID: logInput.clientID)
+        } else {
+            throw Abort(.badRequest, reason: "badRequest.documentOrForm")
+        }
+
+        if let log = log {
+            try await log.save(on: req.db)
+            return log
+        } else {
+            throw Abort(.internalServerError, reason: "internalServerError")
+        }
     }
     
     // MARK: - READ
