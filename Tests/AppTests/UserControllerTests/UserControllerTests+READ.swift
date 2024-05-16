@@ -97,39 +97,42 @@ extension UserControllerTests {
 
 // MARK: - Get Modules
 extension UserControllerTests {
-    // func testGetUserModulesSucceed() async throws {
-    //     let user = try await User.create(username: expectedUsername, on: app.db)
-    //     let token = try await Token.create(for: user, on: app.db)
-    //     let module = try await Module.create(name: expectedModuleName, index: expectedModuleIndex, on: app.db)
-    //     try await User.attachModule(module, to: user, on: app.db)
+    func testGetUserModulesSucceed() async throws {
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
+        let userID = try user.requireID()
+
+        let addPath = "\(baseRoute)/\(userID)/modules"
+        try app.test(.PUT, addPath) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(moduleInput)
+        }
         
-    //     let userID = try user.requireID()
-    //     let path = "\(baseRoute)/\(userID)/modules"
-    //     try app.test(.GET, path) { req in
-    //         req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-    //     } afterResponse: { res in
-    //         XCTAssertEqual(res.status, .ok)
-    //         let modules = try res.content.decode([Module].self)
-    //         XCTAssertEqual(modules.count, 1)
-    //         XCTAssertEqual(modules[0].name, expectedModuleName)
-    //         XCTAssertEqual(modules[0].index, expectedModuleIndex)
-    //     }
-    // }
+        let path = "\(baseRoute)/\(userID)/modules"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let modules = try res.content.decode([Module].self)
+            XCTAssertEqual(modules.count, 1)
+            XCTAssertEqual(modules[0].name, expectedModuleName)
+            XCTAssertEqual(modules[0].index, expectedModuleIndex)
+        }
+    }
     
-    // func testGetUserModuleWithInexistantUserFails() async throws {
-    //     let user = try await User.create(username: expectedUsername, on: app.db)
-    //     let token = try await Token.create(for: user, on: app.db)
-    //     let module = try await Module.create(name: expectedModuleName, index: expectedModuleIndex, on: app.db)
-    //     try await User.attachModule(module, to: user, on: app.db)
+    func testGetUserModuleWithInexistantUserFails() async throws {
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
         
-    //     let path = "\(baseRoute)/21345/modules"
-    //     try app.test(.GET, path) { req in
-    //         req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-    //     } afterResponse: { res in
-    //         XCTAssertEqual(res.status, .notFound)
-    //         XCTAssertTrue(res.body.string.contains("notFound.user"))
-    //     }
-    // }
+        let path = "\(baseRoute)/21345/modules"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.user"))
+        }
+    }
 }
 
 // MARK: - Get Technical Doc Tabs

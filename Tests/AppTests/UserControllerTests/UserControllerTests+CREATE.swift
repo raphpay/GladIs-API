@@ -266,7 +266,6 @@ extension UserControllerTests {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let input = User.UsernameInput(username: "hello")
         
-        let userID = try user.requireID()
         let path = "\(baseRoute)/byUsername"
         try app.test(.POST, path) { req in
             try req.content.encode(input)
