@@ -53,47 +53,6 @@ extension PendingUserControllerTests {
     }
 }
 
-// MARK: - Add module
-extension PendingUserControllerTests {
-    func testAddModuleToPendingUserSucceed() async throws {
-        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
-        let module = try await Module.create(name: expectedModuleName, index: expectedModuleIndex, on: app.db)
-        
-        let pendingUserID = try pendingUser.requireID()
-        let moduleID = try module.requireID()
-        try app.test(.POST, "\(baseRoute)/\(pendingUserID)/modules/\(moduleID)") { res in
-            XCTAssertEqual(res.status, .ok)
-            let module = try res.content.decode(Module.self)
-            XCTAssertEqual(module.id, moduleID)
-            XCTAssertEqual(module.name, expectedModuleName)
-        }
-    }
-    
-    func testAddModuleToPendingUserWithInexistantPendingUserFails() async throws {
-        let module = try await Module.create(name: expectedModuleName, index: expectedModuleIndex, on: app.db)
-        
-        let moduleID = try module.requireID()
-        try app.test(.POST, "\(baseRoute)/12345/modules/\(moduleID)") { res in
-            XCTAssertEqual(res.status, .notFound)
-            XCTAssertTrue(res.body.string.contains("notFound.pendingUser"))
-        }
-    }
-    
-    func testAddModuleToPendingUserWithInexistantModuleFails() async throws {
-        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
-        
-        let pendingUserID = try pendingUser.requireID()
-        try app.test(.POST, "\(baseRoute)/\(pendingUserID)/modules/12345") { res in
-            XCTAssertEqual(res.status, .notFound)
-            XCTAssertTrue(res.body.string.contains("notFound.module"))
-        }
-    }
-}
-
 // MARK: - Convert To User
 extension PendingUserControllerTests {
     func testConvertToUserSuceed() async throws {

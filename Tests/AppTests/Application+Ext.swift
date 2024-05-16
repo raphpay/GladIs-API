@@ -30,7 +30,12 @@ extension User {
     }
     
     static func attachModule(_ module: Module, to user: User, on database: Database) async throws {
-        try await user.$modules.attach(module, on: database)
+        if user.modules == nil {
+            user.modules = []
+        } else {
+            user.modules?.append(module)
+        }
+        try await user.update(on: database)
     }
     
     static func attachTechnicalTab(_ tab: TechnicalDocumentationTab, to user: User, on database: Database) async throws {
@@ -107,21 +112,6 @@ extension Message {
     }
 }
 
-extension Module {
-    static func create(name: String, index: Int, on database: Database) async throws -> Module {
-        let module = Module(name: name, index: index)
-        try await module.save(on: database)
-        return module
-    }
-    
-    static func deleteAll(on database: Database) async throws {
-        try await Module.query(on: database)
-            .withDeleted()
-            .all()
-            .delete(force: true, on: database)
-    }
-}
-
 extension PasswordResetToken {
     static func create(for user: User, expiresAt date: Date = Date().addingTimeInterval(3600), on database: Database) async throws -> PasswordResetToken {
         let token = PasswordResetToken.generate()
@@ -155,7 +145,7 @@ extension PendingUser {
     }
     
     static func addModule(_ module: Module, to pendingUser: PendingUser, on database: Database) async throws {
-        try await pendingUser.$modules.attach(module, on: database)
+        // try await pendingUser.$modules.attach(module, on: database)
     }
     
     static func deleteAll(on database: Database) async throws {

@@ -58,7 +58,7 @@ struct PendingUserController: RouteCollection {
         } else {
             // Don't add the module if the index alreay exists
             if pendingUserQuery.modules?.contains(where: { $0.index == module.index }) == true {
-                throw Abort(.badRequest, reason: "badRequest.moduleIndexAlreadyExists")
+                throw Abort(.badRequest, reason: "badRequest.moduleAlreadyExists")
             }
             
             pendingUserQuery.modules?.append(module)

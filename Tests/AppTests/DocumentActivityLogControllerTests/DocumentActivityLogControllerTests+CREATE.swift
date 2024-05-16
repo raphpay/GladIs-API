@@ -12,29 +12,30 @@ import XCTVapor
 extension DocumentActivityLogControllerTests {
     
     func testCreateDocumentActivityLogForDocumentSucceed() async throws {
-       let user = try await User.create(username: expectedUsername, on: app.db)
-       let client = try await User.create(username: expectedClientUsername, userType: .client, on: app.db)
-       let token = try await Token.create(for: user, on: app.db)
-       let document = try await Document.create(name: expectedDocumentName, path: expectedDocPath, on: app.db)
-       let actorIsAdmin = true
-       let logInput = DocumentActivityLog.Input(action: expectedAction,
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let client = try await User.create(username: expectedClientUsername, userType: .client, on: app.db)
+        let clientID = try client.requireID()
+        let token = try await Token.create(for: user, on: app.db)
+        let document = try await Document.create(name: expectedDocumentName, path: expectedDocPath, on: app.db)
+        let actorIsAdmin = true
+        let logInput = DocumentActivityLog.Input(action: expectedAction,
                                                 actorIsAdmin: actorIsAdmin,
                                                 actorID: try user.requireID(),
                                                 documentID: try document.requireID(), formID: nil,
                                                 clientID: try client.requireID())
 
-       try app.test(.POST, "api/documentActivityLogs", beforeRequest: { req in
-           try req.content.encode(logInput)
-           req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-       }, afterResponse: { res in
-           XCTAssertEqual(res.status, .ok)
-           let receivedLog = try res.content.decode(DocumentActivityLog.self)
-           XCTAssertEqual(receivedLog.actorUsername, expectedUsername)
-           XCTAssertEqual(receivedLog.name, expectedDocumentName)
-           XCTAssertEqual(receivedLog.action, expectedAction)
-           XCTAssertEqual(receivedLog.actorIsAdmin, actorIsAdmin)
-           XCTAssertEqual(receivedLog.$document.id, try document.requireID())
-           XCTAssertEqual(receivedLog.$client.id, try user.requireID())
+        try app.test(.POST, "api/documentActivityLogs", beforeRequest: { req in
+            try req.content.encode(logInput)
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let receivedLog = try res.content.decode(DocumentActivityLog.self)
+            XCTAssertEqual(receivedLog.actorUsername, expectedUsername)
+            XCTAssertEqual(receivedLog.name, expectedDocumentName)
+            XCTAssertEqual(receivedLog.action, expectedAction)
+            XCTAssertEqual(receivedLog.actorIsAdmin, actorIsAdmin)
+            XCTAssertEqual(receivedLog.$document.id, try document.requireID())
+            XCTAssertEqual(receivedLog.$client.id, clientID)
        })
     }
 
@@ -61,7 +62,7 @@ extension DocumentActivityLogControllerTests {
            XCTAssertEqual(receivedLog.action, expectedAction)
            XCTAssertEqual(receivedLog.actorIsAdmin, actorIsAdmin)
            XCTAssertEqual(receivedLog.$form.id, try form.requireID())
-           XCTAssertEqual(receivedLog.$client.id, try user.requireID())
+           XCTAssertEqual(receivedLog.$client.id, clientID)
        })
     }
     

@@ -475,7 +475,7 @@ struct UserController: RouteCollection {
         } else {
             // Don't add the module if the index alreay exists
             if userQuery.modules?.contains(where: { $0.index == module.index }) == true {
-                throw Abort(.badRequest, reason: "badRequest.moduleIndexAlreadyExists")
+                throw Abort(.badRequest, reason: "badRequest.moduleAlreadyExists")
             }
 
             userQuery.modules?.append(module)
