@@ -58,14 +58,12 @@ final class User: Model, Content {
     
     @OptionalField(key: User.v20240207.isBlocked)
     var isBlocked: Bool?
+
+    @OptionalField(key: User.v20240207.modules)
+    var modules: [Module]?
     
     @Enum(key: "userType")
     var userType: UserType
-    
-    @Siblings(through: ModuleUserPivot.self,
-              from: \.$user,
-              to: \.$module)
-    var modules: [Module]
     
     @Siblings(through: UserTabPivot.self,
               from: \.$user,
@@ -132,6 +130,7 @@ final class User: Model, Content {
         var employeesIDs: [String]?
         var managerID: String?
         var isBlocked: Bool?
+        var modules: [Module]?
     }
     
     
@@ -206,7 +205,7 @@ extension User {
                     username: username, firstConnection: firstConnection, userType: userType,
                     companyName: companyName, products: products, numberOfEmployees: numberOfEmployees,
                     numberOfUsers: numberOfUsers, salesAmount: salesAmount, employeesIDs: employeesIDs,
-                    managerID: managerID, isBlocked: isBlocked
+                    managerID: managerID, isBlocked: isBlocked, modules: modules
         )
     }
 }

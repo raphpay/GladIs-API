@@ -14,11 +14,8 @@ public func configure(_ app: Application) async throws {
     ), as: .mongo)
 
     app.migrations.add(CreateUser())
-    app.migrations.add(CreateModule())
-    app.migrations.add(CreateModuleUserPivot())
     app.migrations.add(CreateToken())
     app.migrations.add(CreatePendingUser())
-    app.migrations.add(CreateModulePendingUserPivot())
     app.migrations.add(CreateDocument())
     app.migrations.add(CreateTechnicalDocumentationTab())
     app.migrations.add(CreateUserTabPivot())

@@ -12,8 +12,8 @@ struct PendingUserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let pendingUsers = routes.grouped("api", "pendingUsers")
         pendingUsers.post(use: create)
-        pendingUsers.post(":pendingUserID", "modules", ":moduleID", use: addModule)
         pendingUsers.get(":pendingUserID", "modules", use: getModules)
+        pendingUsers.put(":pendingUserID", "modules", use: addModule)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -45,17 +45,28 @@ struct PendingUserController: RouteCollection {
         return user
     }
     
-    func addModule(req: Request) async throws -> Module {
+    func addModule(req: Request) async throws -> PendingUser {
         guard let pendingUserQuery = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.pendingUser")
         }
         
-        guard let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.module")
+        let moduleInput = try req.content.decode(Module.Input.self)
+        let module = Module(name: moduleInput.name, index: moduleInput.index)
+        
+        if pendingUserQuery.modules == nil {
+            pendingUserQuery.modules = [module]
+        } else {
+            // Don't add the module if the index alreay exists
+            if pendingUserQuery.modules?.contains(where: { $0.index == module.index }) == true {
+                throw Abort(.badRequest, reason: "badRequest.moduleIndexAlreadyExists")
+            }
+            
+            pendingUserQuery.modules?.append(module)
         }
         
-        try await pendingUserQuery.$modules.attach(moduleQuery, on: req.db)
-        return moduleQuery
+        try await pendingUserQuery.update(on: req.db)
+        
+        return pendingUserQuery
     }
     
     func convertToUser(req: Request) async throws -> User.Public {
@@ -100,13 +111,19 @@ struct PendingUserController: RouteCollection {
             .all()
     }
     
-    func getModules(req: Request) async throws -> [Module] {
-        guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.pendingUser")
+   func getModules(req: Request) async throws -> [Module] {
+       guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+           throw Abort(.notFound, reason: "notFound.pendingUser")
+       }
+
+        var usersModules: [Module] = []
+
+        if let modules = pendingUser.modules {
+            usersModules = modules
         }
 
-        return try await pendingUser.$modules.query(on: req.db).all()
-    }
+        return usersModules
+   }
     
     func getEmployees(req: Request) async throws -> [PotentialEmployee] {
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
