@@ -144,10 +144,6 @@ extension PendingUser {
             return pendingUser
     }
     
-    static func addModule(_ module: Module, to pendingUser: PendingUser, on database: Database) async throws {
-        // try await pendingUser.$modules.attach(module, on: database)
-    }
-    
     static func deleteAll(on database: Database) async throws {
         try await PendingUser.query(on: database)
             .withDeleted()
