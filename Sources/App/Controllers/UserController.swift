@@ -45,8 +45,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.put(":userID", "unblock", use: unblockUser)
         tokenAuthGroup.put(":userID", "updateInfos", use: updateUserInfos)
         tokenAuthGroup.put(":userID", "remove", ":employeeID", use: removeEmployee)
-        tokenAuthGroup.put(":userID", "modules", use: addModule)
-        tokenAuthGroup.put(":userID", "remove", "modules", use: removeModule)
+        tokenAuthGroup.put(":userID", "modules", use: updateModules)
         // Delete
         tokenAuthGroup.delete(":userID", use: remove)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -461,47 +460,25 @@ struct UserController: RouteCollection {
         
         return manager.convertToPublic()
     }
-    
-    func addModule(req: Request) async throws -> User.Public {
-        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db) else {
+
+    func updateModules(req: Request) async throws -> User.Public {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.user")
         }
-
-        let moduleInput = try req.content.decode(Module.Input.self)
-        let module = Module(name: moduleInput.name, index: moduleInput.index)
-
-        if userQuery.modules == nil {
-            userQuery.modules = [module]
-        } else {
-            // Don't add the module if the index alreay exists
-            if userQuery.modules?.contains(where: { $0.index == module.index }) == true {
-                throw Abort(.badRequest, reason: "badRequest.moduleAlreadyExists")
-            }
-
-            userQuery.modules?.append(module)
-        }
-
-        try await userQuery.update(on: req.db)
         
-        return userQuery.convertToPublic()
-    }
-    
-    func removeModule(req: Request) async throws -> User.Public {
-        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
+        let moduleInputs = try req.content.decode([Module.Input].self)
+        var modules: [Module] = []
+
+        for mod in moduleInputs {
+            let module = Module(name: mod.name, index: mod.index)
+            modules.append(module)    
         }
-
-        let removeInput = try req.content.decode(Module.RemoveInput.self)        
-
-        guard let moduleToRemoveIndex = userQuery.modules?.firstIndex(where: { $0.name == removeInput.name }) else {
-            throw Abort(.notFound, reason: "notFound.module")
-        }
-
-        userQuery.modules?.remove(at: moduleToRemoveIndex)
-
-        try await userQuery.update(on: req.db)
         
-        return userQuery.convertToPublic()
+        user.modules = modules
+        
+        try await user.update(on: req.db)
+        
+        return user.convertToPublic()
     }
 
     // MARK: - Delete

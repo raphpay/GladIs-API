@@ -368,139 +368,108 @@ extension UserControllerTests {
     }
 }
 
-// MARK: - Add module
+// MARK: - Update Modules
 extension UserControllerTests {
-    func testAddModuleSucceed() async throws {
+    func testAddModulesToUserSuceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let userID = try user.requireID()
         let token = try await Token.create(for: user, on: app.db)
 
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
+        let modules: [Module] = [moduleToAdd, moduleToAddTwo]
+        
         let path = "\(baseRoute)/\(userID)/modules"
+
         try app.test(.PUT, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
+            try req.content.encode(modules)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let updatedUser = try res.content.decode(User.Public.self)
+            XCTAssertEqual(updatedUser.id?.uuidString, userID.uuidString)
+            XCTAssertEqual(updatedUser.modules?.count, 2)
+            XCTAssertEqual(updatedUser.modules?[0].name, expectedModuleName)
+            XCTAssertEqual(updatedUser.modules?[0].index, expectedModuleIndex)
+            XCTAssertEqual(updatedUser.modules?[1].name, "\(expectedModuleName)2")
+            XCTAssertEqual(updatedUser.modules?[1].index, expectedModuleIndex + 1)
+        }
+    }
+
+    func testRemoveModulesToUserSuceed() async throws {
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let userID = try user.requireID()
+        let token = try await Token.create(for: user, on: app.db)
+
+        let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
+        var modules: [Module] = [moduleToAdd, moduleToAddTwo]
+        
+        let path = "\(baseRoute)/\(userID)/modules"
+
+        // Add Modules
+        try app.test(.PUT, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(modules)
+        }
+
+        modules.remove(at: 0)
+
+        // Remove modules and test
+        try app.test(.PUT, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(modules)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
             let updatedUser = try res.content.decode(User.Public.self)
             XCTAssertEqual(updatedUser.id?.uuidString, userID.uuidString)
             XCTAssertEqual(updatedUser.modules?.count, 1)
-            XCTAssertEqual(updatedUser.modules?.first?.name, expectedModuleName)
-            XCTAssertEqual(updatedUser.modules?.first?.index, expectedModuleIndex)
+            XCTAssertEqual(updatedUser.modules?[0].name, "\(expectedModuleName)2")
+            XCTAssertEqual(updatedUser.modules?[0].index, expectedModuleIndex + 1)
         }
     }
 
-    func testAddModuleToInexistantUserFails() async throws {
+    func testAddModulesToUserWithWrongUserFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
 
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
+        let modules: [Module] = [moduleToAdd, moduleToAddTwo]
+
         let path = "\(baseRoute)/12345/modules"
         try app.test(.PUT, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
-        } afterResponse: { res in
+            try req.content.encode(modules)
+        } afterResponse: { res in 
             XCTAssertEqual(res.status, .notFound)
             XCTAssertTrue(res.body.string.contains("notFound.user"))
         }
     }
 
-    func testAddModuleWithAlreadyExistingModuleFails() async throws {
+    func testRemoveModulesToUserWithWrongUserFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let userID = try user.requireID()
         let token = try await Token.create(for: user, on: app.db)
 
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
-        
-        let path = "\(baseRoute)/\(userID)/modules"
+        let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
+        var modules: [Module] = [moduleToAdd, moduleToAddTwo]
+
+        var path = "\(baseRoute)/\(userID)/modules"
         try app.test(.PUT, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
+            try req.content.encode(modules)
         }
 
+        modules.remove(at: 0)
+        path = "\(baseRoute)/1234567/modules"
         try app.test(.PUT, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
-        } afterResponse: { res in
-            XCTAssertEqual(res.status, .badRequest)
-            XCTAssertTrue(res.body.string.contains("badRequest.moduleAlreadyExists"))
-        }
-    }
-}
-
-// MARK: - Remove module
-extension UserControllerTests {
-    func testRemoveModuleSuceed() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let userID = try user.requireID()
-        let token = try await Token.create(for: user, on: app.db)
-
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
-        
-        let addPath = "\(baseRoute)/\(userID)/modules"
-        try app.test(.PUT, addPath) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
-        }
-
-        let removeInput = Module.RemoveInput(name: expectedModuleName)
-        let path = "\(baseRoute)/\(userID)/remove/modules"
-        try app.test(.PUT, path) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(removeInput)
-        } afterResponse: { res in
-            XCTAssertEqual(res.status, .ok)
-            let updatedUser = try res.content.decode(User.Public.self)
-            XCTAssertEqual(updatedUser.id?.uuidString, userID.uuidString)
-            XCTAssertEqual(updatedUser.modules?.count, 0)
-        }
-    }
-
-    func testRemoveModuleWithInexistantUserFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let userID = try user.requireID()
-        let token = try await Token.create(for: user, on: app.db)
-
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
-        
-        let addPath = "\(baseRoute)/\(userID)/modules"
-        try app.test(.PUT, addPath) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
-        }
-
-        let removeInput = Module.RemoveInput(name: expectedModuleName)
-        let path = "\(baseRoute)/12345/remove/modules"
-        try app.test(.PUT, path) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(removeInput)
-        } afterResponse: { res in
+            try req.content.encode(modules)
+        } afterResponse: { res in 
             XCTAssertEqual(res.status, .notFound)
             XCTAssertTrue(res.body.string.contains("notFound.user"))
-        }
-    }
-
-    func testRemoveModuleWithInexistantModuleFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let userID = try user.requireID()
-        let token = try await Token.create(for: user, on: app.db)
-
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
-        
-        let addPath = "\(baseRoute)/\(userID)/modules"
-        try app.test(.PUT, addPath) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
-        }
-
-        let removeInput = Module.RemoveInput(name: "unexpectedModuleName")
-        let path = "\(baseRoute)/\(userID)/remove/modules"
-        try app.test(.PUT, path) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(removeInput)
-        } afterResponse: { res in
-            XCTAssertEqual(res.status, .notFound)
-            XCTAssertTrue(res.body.string.contains("notFound.module"))
         }
     }
 }
