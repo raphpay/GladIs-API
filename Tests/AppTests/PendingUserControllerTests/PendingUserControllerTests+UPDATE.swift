@@ -31,67 +31,93 @@ extension PendingUserControllerTests {
     }
 }
 
-// MARK: - Add module
+// MARK: - Update modules
 extension PendingUserControllerTests {
-    func testAddModuleSucceed() async throws  {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
+    func testAddPendingUserModulesSucceed() async throws {
         let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
                                                        phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
                                                        email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
         let pendingUserID = try pendingUser.requireID()
+        let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
+        let moduleInputs = [Module.Input(name: moduleToAdd.name, index: moduleToAdd.index),
+                            Module.Input(name: moduleToAddTwo.name, index: moduleToAddTwo.index)]
+        
         let path = "\(baseRoute)/\(pendingUserID)/modules"
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
-
         try app.test(.PUT, path) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
+            try req.content.encode(moduleInputs)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let updatedUser = try res.content.decode(PendingUser.self)
+            XCTAssertEqual(updatedUser.modules?.count, 2)
+            XCTAssertEqual(updatedUser.modules?[0].name, moduleToAdd.name)
+            XCTAssertEqual(updatedUser.modules?[1].name, moduleToAddTwo.name)
+        }
+    }
+
+    func testRemovePendingUsersModulesSucceed() async throws {
+        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
+                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
+                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
+        let pendingUserID = try pendingUser.requireID()
+        let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
+        var moduleInputs = [Module.Input(name: moduleToAdd.name, index: moduleToAdd.index),
+                            Module.Input(name: moduleToAddTwo.name, index: moduleToAddTwo.index)]
+        
+        let path = "\(baseRoute)/\(pendingUserID)/modules"
+        try app.test(.PUT, path) { req in
+            try req.content.encode(moduleInputs)
+        }
+
+        moduleInputs.remove(at: 0)
+        try app.test(.PUT, path) { req in
+            try req.content.encode(moduleInputs)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
             let updatedUser = try res.content.decode(PendingUser.self)
             XCTAssertEqual(updatedUser.modules?.count, 1)
-            XCTAssertEqual(updatedUser.modules?[0].name, expectedModuleName)
-            XCTAssertEqual(updatedUser.modules?[0].index, expectedModuleIndex)
+            XCTAssertEqual(updatedUser.modules?[0].name, moduleToAddTwo.name)
         }
     }
 
-    func testAddModuleToInexistantPendingUserFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-
+    func testAddPendingUsersModulesToInexistantPendingUserFails() async throws {
+        let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
+        let moduleInputs = [Module.Input(name: moduleToAdd.name, index: moduleToAdd.index),
+                            Module.Input(name: moduleToAddTwo.name, index: moduleToAddTwo.index)]
+        
         let path = "\(baseRoute)/123456/modules"
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
-
         try app.test(.PUT, path) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
+            try req.content.encode(moduleInputs)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .notFound)
             XCTAssertTrue(res.body.string.contains("notFound.pendingUser"))
         }
     }
 
-    func testAddModuleThatIsAlreadyAddedFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
+    func testRemovePendingUsersModulesToInexistantPendingUserFails() async throws {
         let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
                                                        phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
                                                        email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
         let pendingUserID = try pendingUser.requireID()
+        let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
+        let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
+        var moduleInputs = [Module.Input(name: moduleToAdd.name, index: moduleToAdd.index),
+                            Module.Input(name: moduleToAddTwo.name, index: moduleToAddTwo.index)]
+        
         let path = "\(baseRoute)/\(pendingUserID)/modules"
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
-
         try app.test(.PUT, path) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
+            try req.content.encode(moduleInputs)
         }
 
-        try app.test(.PUT, path) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
+        moduleInputs.remove(at: 0)
+        let newPath = "\(baseRoute)/12345/modules"
+        try app.test(.PUT, newPath) { req in
+            try req.content.encode(moduleInputs)
         } afterResponse: { res in
-            XCTAssertEqual(res.status, .badRequest)
-            XCTAssertTrue(res.body.string.contains("badRequest.moduleAlreadyExists"))
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.pendingUser"))
         }
     }
 }

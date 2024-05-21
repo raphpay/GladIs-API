@@ -13,7 +13,7 @@ struct PendingUserController: RouteCollection {
         let pendingUsers = routes.grouped("api", "pendingUsers")
         pendingUsers.post(use: create)
         pendingUsers.get(":pendingUserID", "modules", use: getModules)
-        pendingUsers.put(":pendingUserID", "modules", use: addModule)
+        pendingUsers.put(":pendingUserID", "modules", use: updateModules)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -44,29 +44,25 @@ struct PendingUserController: RouteCollection {
         try await user.save(on: req.db)
         return user
     }
-    
-    func addModule(req: Request) async throws -> PendingUser {
-        guard let pendingUserQuery = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+
+    func updateModules(req: Request) async throws -> PendingUser {
+        guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.pendingUser")
         }
         
-        let moduleInput = try req.content.decode(Module.Input.self)
-        let module = Module(name: moduleInput.name, index: moduleInput.index)
-        
-        if pendingUserQuery.modules == nil {
-            pendingUserQuery.modules = [module]
-        } else {
-            // Don't add the module if the index alreay exists
-            if pendingUserQuery.modules?.contains(where: { $0.index == module.index }) == true {
-                throw Abort(.badRequest, reason: "badRequest.moduleAlreadyExists")
-            }
-            
-            pendingUserQuery.modules?.append(module)
+        let moduleInputs = try req.content.decode([Module.Input].self)
+        var modules: [Module] = []
+
+        for mod in moduleInputs {
+            let module = Module(name: mod.name, index: mod.index)
+            modules.append(module)    
         }
         
-        try await pendingUserQuery.update(on: req.db)
+        pendingUser.modules = modules
         
-        return pendingUserQuery
+        try await pendingUser.update(on: req.db)
+        
+        return pendingUser
     }
     
     func convertToUser(req: Request) async throws -> User.Public {
