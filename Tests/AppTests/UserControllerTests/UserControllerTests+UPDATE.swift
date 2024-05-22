@@ -473,3 +473,86 @@ extension UserControllerTests {
         }
     }
 }
+
+// MARK: - Block User Connection
+extension UserControllerTests {
+    func testBlockUserConnectionSucceed() async throws {
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        
+        let userID = try user.requireID()
+        let path = "\(baseRoute)/\(userID)/block/connection"
+        try app.test(.PUT, path, afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let updatedUser = try res.content.decode(User.Public.self)
+            XCTAssertEqual(updatedUser.id?.uuidString, userID.uuidString)
+            XCTAssertEqual(updatedUser.isConnectionBlocked, true)
+        })
+    }
+    
+    func testBlockUserConnectionWithWrongUserFails() async throws {
+        let path = "\(baseRoute)/1234/block/connection"
+        try app.test(.PUT, path, afterResponse: { res in
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.user"))
+        })
+    }
+}
+
+// MARK: - Unblock User Connection
+extension UserControllerTests {
+    func testUnblockUserConnectionSucceed() async throws {
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let client = try await User.create(username: expectedClientUsername, on: app.db)
+
+        let clientID = try client.requireID()
+        let blockPath = "\(baseRoute)/\(clientID)/block/connection"
+        try await app.test(.PUT, blockPath)
+        
+        let path = "\(baseRoute)/\(clientID)/unblock/connection"
+        try app.test(.PUT, path) { req in 
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let updatedUser = try res.content.decode(User.Public.self)
+            XCTAssertEqual(updatedUser.id?.uuidString, clientID.uuidString)
+            XCTAssertEqual(updatedUser.isConnectionBlocked, false)
+        }
+    }
+    
+    func testUnblockUserConnectionWithWrongUserFails() async throws {
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let client = try await User.create(username: expectedClientUsername, userType: .client, on: app.db)
+
+        let clientID = try client.requireID()
+        let blockPath = "\(baseRoute)/\(clientID)/block/connection"
+        try await app.test(.PUT, blockPath)
+        
+        let path = "\(baseRoute)/12345/unblock/connection"
+        try app.test(.PUT, path) { req in 
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.user"))
+        }
+    }
+
+    func testUnblockUserConnectionWithoutAdminPermissionFails() async throws {
+        let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let client = try await User.create(username: expectedClientUsername, userType: .client, on: app.db)
+
+        let clientID = try client.requireID()
+        let blockPath = "\(baseRoute)/\(clientID)/block/connection"
+        try await app.test(.PUT, blockPath)
+        
+        let path = "\(baseRoute)/12345/unblock/connection"
+        try app.test(.PUT, path) { req in 
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .forbidden)
+            XCTAssertTrue(res.body.string.contains("forbidden.userShouldBeAdmin"))
+        }
+    }
+}

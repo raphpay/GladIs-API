@@ -61,13 +61,14 @@ extension PendingUserControllerTests {
         let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
                                                        phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
                                                        email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
+        
         let pendingUserID = try pendingUser.requireID()
         let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
         
         let path = "\(baseRoute)/\(pendingUserID)/modules"
         try app.test(.PUT, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
+            try req.content.encode([moduleInput])
         }
 
         try app.test(.GET, path) { req in
