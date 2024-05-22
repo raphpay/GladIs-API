@@ -14,6 +14,7 @@ struct UserController: RouteCollection {
         let users = routes.grouped("api", "users")
         users.post("noToken", use: createWithoutToken)
         users.post("byUsername", use: getUserByUsername)
+        users.put(":userID", "block", "connection", use: blockUserConnection)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -46,6 +47,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.put(":userID", "updateInfos", use: updateUserInfos)
         tokenAuthGroup.put(":userID", "remove", ":employeeID", use: removeEmployee)
         tokenAuthGroup.put(":userID", "modules", use: updateModules)
+        tokenAuthGroup.put(":userID", "unblock", "connection", use: unblockUserConnection)
         // Delete
         tokenAuthGroup.delete(":userID", use: remove)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -479,6 +481,33 @@ struct UserController: RouteCollection {
         try await user.update(on: req.db)
         
         return user.convertToPublic()
+    }
+
+    func blockUserConnection(req: Request) async throws -> User.Public {
+        guard let client = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        client.isConnectionBlocked = true
+        try await client.save(on: req.db)
+        
+        return client.convertToPublic()
+    }
+
+    func unblockUserConnection(req: Request) async throws -> User.Public {
+        let authUser = try req.auth.require(User.self)
+        guard authUser.userType == .admin else {
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
+        }
+
+        guard let client = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        client.isConnectionBlocked = false
+        try await client.save(on: req.db)
+        
+        return client.convertToPublic()
     }
 
     // MARK: - Delete
