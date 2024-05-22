@@ -41,10 +41,8 @@ final class PendingUser: Model, Content {
     @OptionalField(key: PendingUser.v20240207.salesAmount)
     var salesAmount: Double?
     
-    @Siblings(through: ModulePendingUserPivot.self,
-              from: \.$pendingUser,
-              to: \.$module)
-    var modules: [Module]
+    @OptionalField(key: PendingUser.v20240207.modules)
+    var modules: [Module]?
     
     @Enum(key: PendingUser.v20240207.statusEnum)
     var status: PendingUser.StatusEnum

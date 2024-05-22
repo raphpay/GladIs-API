@@ -20,8 +20,6 @@ struct UserController: RouteCollection {
         let tokenAuthGroup = users.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: create)
-        tokenAuthGroup.post(":userID", "modules", ":moduleID", use: addModule)
-        tokenAuthGroup.post(":userID", "remove", "modules", ":moduleID", use: removeModule)
         tokenAuthGroup.post(":userID", "technicalDocumentationTabs", ":tabID", use: addTechnicalDocTab)
         tokenAuthGroup.post(":userID", "verifyPassword", use: verifyPassword)
         tokenAuthGroup.post("byMail", use: getUserByMail)
@@ -47,6 +45,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.put(":userID", "unblock", use: unblockUser)
         tokenAuthGroup.put(":userID", "updateInfos", use: updateUserInfos)
         tokenAuthGroup.put(":userID", "remove", ":employeeID", use: removeEmployee)
+        tokenAuthGroup.put(":userID", "modules", use: updateModules)
         // Delete
         tokenAuthGroup.delete(":userID", use: remove)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -108,35 +107,6 @@ struct UserController: RouteCollection {
         
         try await user.save(on: req.db)
         return user.convertToPublic()
-    }
-    
-    func addModule(req: Request) async throws -> Module {
-        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
-        
-        guard let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.module")
-        }
-        
-        try await userQuery.$modules.attach(moduleQuery, on: req.db)
-        return moduleQuery
-    }
-    
-    func removeModule(req: Request) async throws -> [Module] {
-        guard let userQuery = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
-        
-        guard let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.module")
-        }
-        
-        
-        
-        try await userQuery.$modules.detach(moduleQuery, on: req.db)
-        
-        return try await userQuery.$modules.query(on: req.db).all()
     }
     
     func addTechnicalDocTab(req: Request) async throws -> TechnicalDocumentationTab {
@@ -209,8 +179,14 @@ struct UserController: RouteCollection {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.user")
         }
+
+        var usersModules: [Module] = []
+
+        if let modules = user.modules {
+            usersModules = modules
+        }
         
-        return try await user.$modules.query(on: req.db).all()
+        return usersModules
     }
     
     func getTechnicalDocumentationTabs(req: Request) async throws -> [TechnicalDocumentationTab] {
@@ -484,7 +460,27 @@ struct UserController: RouteCollection {
         
         return manager.convertToPublic()
     }
-    
+
+    func updateModules(req: Request) async throws -> User.Public {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        let moduleInputs = try req.content.decode([Module.Input].self)
+        var modules: [Module] = []
+
+        for mod in moduleInputs {
+            let module = Module(name: mod.name, index: mod.index)
+            modules.append(module)    
+        }
+        
+        user.modules = modules
+        
+        try await user.update(on: req.db)
+        
+        return user.convertToPublic()
+    }
+
     // MARK: - Delete
     func remove(req: Request) async throws -> HTTPStatus {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {

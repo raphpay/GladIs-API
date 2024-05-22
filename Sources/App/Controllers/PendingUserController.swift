@@ -12,8 +12,8 @@ struct PendingUserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let pendingUsers = routes.grouped("api", "pendingUsers")
         pendingUsers.post(use: create)
-        pendingUsers.post(":pendingUserID", "modules", ":moduleID", use: addModule)
         pendingUsers.get(":pendingUserID", "modules", use: getModules)
+        pendingUsers.put(":pendingUserID", "modules", use: updateModules)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -44,18 +44,25 @@ struct PendingUserController: RouteCollection {
         try await user.save(on: req.db)
         return user
     }
-    
-    func addModule(req: Request) async throws -> Module {
-        guard let pendingUserQuery = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+
+    func updateModules(req: Request) async throws -> PendingUser {
+        guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.pendingUser")
         }
         
-        guard let moduleQuery = try await Module.find(req.parameters.get("moduleID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.module")
+        let moduleInputs = try req.content.decode([Module.Input].self)
+        var modules: [Module] = []
+
+        for mod in moduleInputs {
+            let module = Module(name: mod.name, index: mod.index)
+            modules.append(module)    
         }
         
-        try await pendingUserQuery.$modules.attach(moduleQuery, on: req.db)
-        return moduleQuery
+        pendingUser.modules = modules
+        
+        try await pendingUser.update(on: req.db)
+        
+        return pendingUser
     }
     
     func convertToUser(req: Request) async throws -> User.Public {
@@ -100,13 +107,19 @@ struct PendingUserController: RouteCollection {
             .all()
     }
     
-    func getModules(req: Request) async throws -> [Module] {
-        guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.pendingUser")
+   func getModules(req: Request) async throws -> [Module] {
+       guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {
+           throw Abort(.notFound, reason: "notFound.pendingUser")
+       }
+
+        var usersModules: [Module] = []
+
+        if let modules = pendingUser.modules {
+            usersModules = modules
         }
 
-        return try await pendingUser.$modules.query(on: req.db).all()
-    }
+        return usersModules
+   }
     
     func getEmployees(req: Request) async throws -> [PotentialEmployee] {
         guard let pendingUser = try await PendingUser.find(req.parameters.get("pendingUserID"), on: req.db) else {

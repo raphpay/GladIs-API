@@ -100,10 +100,15 @@ extension UserControllerTests {
     func testGetUserModulesSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
-        let module = try await Module.create(name: expectedModuleName, index: expectedModuleIndex, on: app.db)
-        try await User.attachModule(module, to: user, on: app.db)
-        
+        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
         let userID = try user.requireID()
+
+        let addPath = "\(baseRoute)/\(userID)/modules"
+        try app.test(.PUT, addPath) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(moduleInput)
+        }
+        
         let path = "\(baseRoute)/\(userID)/modules"
         try app.test(.GET, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -119,8 +124,6 @@ extension UserControllerTests {
     func testGetUserModuleWithInexistantUserFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
-        let module = try await Module.create(name: expectedModuleName, index: expectedModuleIndex, on: app.db)
-        try await User.attachModule(module, to: user, on: app.db)
         
         let path = "\(baseRoute)/21345/modules"
         try app.test(.GET, path) { req in
