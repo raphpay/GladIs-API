@@ -93,8 +93,18 @@ extension Validator where T == String {
     static var frenchPhoneNumber: Validator<T> {
         .init { input in
             let regex = #"^(0|\+33|0033)[1-9]([-. ]?[0-9]{2}){4}$"#
-            let predicate = NSPredicate(format: "SELF MATCHES %@", regex)
-            guard predicate.evaluate(with: input) else {
+//            let predicate = NSPredicate(format: "SELF MATCHES %@", regex)
+//            guard predicate.evaluate(with: input) else {
+//                return ValidatorResults.FrenchPhoneNumber(isValid: false)
+//            }
+            let regexPredicate = NSPredicate { input, _ in
+                guard let input = input as? String else {
+                    return false
+                }
+                return input.range(of: regex, options: .regularExpression) != nil
+            }
+
+            guard regexPredicate.evaluate(with: input) else {
                 return ValidatorResults.FrenchPhoneNumber(isValid: false)
             }
             return ValidatorResults.FrenchPhoneNumber(isValid: true)
@@ -104,7 +114,15 @@ extension Validator where T == String {
     static var customEmail: Validator<T> {
         .init { input in
             let regex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-            let isValid = NSPredicate(format: "SELF MATCHES %@", regex).evaluate(with: input)
+//            let isValid = NSPredicate(format: "SELF MATCHES %@", regex).evaluate(with: input)
+            let isValid = NSPredicate { input, _ in
+                guard let input = input as? String else {
+                    return false
+                }
+                
+                return input.range(of: regex, options: .regularExpression) != nil
+            }.evaluate(with: input)
+
             guard isValid else {
                 return ValidatorResults.CustomEmail(isValid: false)
             }
