@@ -16,10 +16,6 @@ struct PasswordValidation {
         
         // Check an uppercase presence
         let uppercaseRegex = ".*[A-Z]+.*"
-//        guard NSPredicate(format: "SELF MATCHES %@", uppercaseRegex).evaluate(with: password) else {
-//            throw Abort(.unauthorized, reason: "unauthorized.password.missingUppercase")
-//        }
-        
         let uppercasePredicate = NSPredicate { input, _ in
             guard let input = input as? String else {
                 return false
@@ -33,9 +29,6 @@ struct PasswordValidation {
         
         // Check a digit presence
         let digitRegex = ".*[0-9]+.*"
-//        guard NSPredicate(format: "SELF MATCHES %@", digitRegex).evaluate(with: password) else {
-//            throw Abort(.unauthorized, reason: "unauthorized.password.missingDigit")
-//        }
         let digitPredicate = NSPredicate { input, _ in
             guard let input = input as? String else {
                 return false
@@ -49,9 +42,6 @@ struct PasswordValidation {
         
         // Check a special character presence
         let specialCharRegex = ".*[!@#$%^&*()]+.*"
-//        guard NSPredicate(format: "SELF MATCHES %@", specialCharRegex).evaluate(with: password) else {
-//            throw Abort(.unauthorized, reason: "unauthorized.password.missingSpecialCharacter")
-//        }
         let specialCharPredicate = NSPredicate { input, _ in
             guard let input = input as? String else {
                 return false
