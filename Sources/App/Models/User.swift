@@ -172,7 +172,7 @@ final class User: Model, Content {
         let id: UUID?
         let connectionFailedAttempts: Int?
         let isConnectionBlocked: Bool?
-        let email: String?
+        let email: String
     }
 }
 

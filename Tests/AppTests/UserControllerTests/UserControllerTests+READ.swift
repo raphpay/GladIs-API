@@ -498,3 +498,34 @@ extension UserControllerTests {
         }
     }
 }
+
+// MARK: - Get User Login Output
+extension UserControllerTests {
+    func testGetUserLoginOutputSucceed() async throws {
+        let user = try await User.create(username: expectedUsername, email: expectedEmail, on: app.db)
+        let usernameInput = User.UsernameInput(username: expectedUsername)
+        
+        let userID = try user.requireID()
+        let path = "\(baseRoute)/userLoginTry"
+        try app.test(.POST, path) { req in
+            try req.content.encode(usernameInput)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let loginOutput = try res.content.decode(User.LoginTryOutput.self)
+            XCTAssertEqual(loginOutput.email, expectedEmail)
+            XCTAssertEqual(loginOutput.id, userID)
+        }
+    }
+    
+    func testGetUserLoginOutputWithInexistantUserFails() async throws {
+        let usernameInput = User.UsernameInput(username: expectedUsername)
+        
+        let path = "\(baseRoute)/userLoginTry"
+        try app.test(.POST, path) { req in
+            try req.content.encode(usernameInput)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.user"))
+        }
+    }
+}

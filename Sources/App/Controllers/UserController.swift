@@ -13,8 +13,6 @@ struct UserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let users = routes.grouped("api", "users")
         users.post("noToken", use: createWithoutToken)
-        // TODO: Next route to be removed ?
-        users.post("byUsername", use: getUserByUsername)
         users.put(":userID", "block", "connection", use: blockUserConnection)
         users.post("userLoginTry", use: getUserLoginTryOutput)
         // Token Protected
