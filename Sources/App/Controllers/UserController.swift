@@ -13,7 +13,10 @@ struct UserController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let users = routes.grouped("api", "users")
         users.post("noToken", use: createWithoutToken)
+        // TODO: Next route to be removed ?
         users.post("byUsername", use: getUserByUsername)
+        users.put(":userID", "block", "connection", use: blockUserConnection)
+        users.post("userLoginTry", use: getUserLoginTryOutput)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -46,6 +49,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.put(":userID", "updateInfos", use: updateUserInfos)
         tokenAuthGroup.put(":userID", "remove", ":employeeID", use: removeEmployee)
         tokenAuthGroup.put(":userID", "modules", use: updateModules)
+        tokenAuthGroup.put(":userID", "unblock", "connection", use: unblockUserConnection)
         // Delete
         tokenAuthGroup.delete(":userID", use: remove)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -332,6 +336,19 @@ struct UserController: RouteCollection {
         
         return sortedMessages
     }
+
+    func getUserLoginTryOutput(req: Request) async throws -> User.LoginTryOutput {
+        let username = try req.content.decode(User.UsernameInput.self).username
+
+        guard let user = try await User
+            .query(on: req.db)
+            .filter(\.$username == username)
+            .first() else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+
+        return user.convertToLoginTryOutput()
+    }
     
     // MARK: - Update
     func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
@@ -423,6 +440,42 @@ struct UserController: RouteCollection {
         try await client.save(on: req.db)
         
         return client.convertToPublic()
+    }
+
+    func blockUserConnection(req: Request) async throws -> User.Public {
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+
+        if let connectionFailedAttempts = user.connectionFailedAttempts {
+            user.connectionFailedAttempts = connectionFailedAttempts + 1
+            if connectionFailedAttempts + 1 >= 5 {
+                user.isConnectionBlocked = true
+            }
+        } else {
+            user.connectionFailedAttempts = 1
+        }
+        
+        try await user.update(on: req.db)
+        return user.convertToPublic()
+    }
+
+    func unblockUserConnection(req: Request) async throws -> User.Public {
+        let authUser = try req.auth.require(User.self)
+        guard authUser.userType == .admin else {
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
+        }
+
+        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+
+        user.isConnectionBlocked = false
+        user.connectionFailedAttempts = 0
+
+        try await user.update(on: req.db)
+
+        return user.convertToPublic()
     }
     
     func updateUserInfos(req: Request) async throws -> User.Public {

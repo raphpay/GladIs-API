@@ -61,6 +61,12 @@ final class User: Model, Content {
 
     @OptionalField(key: User.v20240207.modules)
     var modules: [Module]?
+
+    @OptionalField(key: User.v20240207.isConnectionBlocked)
+    var isConnectionBlocked: Bool?
+
+    @OptionalField(key: User.v20240207.connectionFailedAttempts)
+    var connectionFailedAttempts: Int?
     
     @Enum(key: "userType")
     var userType: UserType
@@ -131,6 +137,8 @@ final class User: Model, Content {
         var managerID: String?
         var isBlocked: Bool?
         var modules: [Module]?
+        var isConnectionBlocked: Bool?
+        var connectionFailedAttempts: Int?
     }
     
     
@@ -159,6 +167,13 @@ final class User: Model, Content {
     struct UsernameInput: Content {
         let username: String
     }
+
+    struct LoginTryOutput: Content {
+        let id: UUID?
+        let connectionFailedAttempts: Int?
+        let isConnectionBlocked: Bool?
+        let email: String?
+    }
 }
 
 
@@ -181,6 +196,8 @@ extension User {
         static let employeesIDs = FieldKey(stringLiteral: "employeesIDs")
         static let managerID = FieldKey(stringLiteral: "managerID")
         static let isBlocked = FieldKey(stringLiteral: "isBlocked")
+        static let isConnectionBlocked = FieldKey(stringLiteral: "isConnectionBlocked")
+        static let connectionFailedAttempts = FieldKey(stringLiteral: "connectionFailedAttempts")
         
         
         static let username = FieldKey(stringLiteral: "username")
@@ -205,7 +222,15 @@ extension User {
                     username: username, firstConnection: firstConnection, userType: userType,
                     companyName: companyName, products: products, numberOfEmployees: numberOfEmployees,
                     numberOfUsers: numberOfUsers, salesAmount: salesAmount, employeesIDs: employeesIDs,
-                    managerID: managerID, isBlocked: isBlocked, modules: modules
+                    managerID: managerID, isBlocked: isBlocked, modules: modules, isConnectionBlocked: isConnectionBlocked, connectionFailedAttempts: connectionFailedAttempts
+        )
+    }
+
+    func convertToLoginTryOutput() -> User.LoginTryOutput {
+        User.LoginTryOutput(id: id,
+            connectionFailedAttempts: connectionFailedAttempts,
+            isConnectionBlocked: isConnectionBlocked,
+            email: email
         )
     }
 }
