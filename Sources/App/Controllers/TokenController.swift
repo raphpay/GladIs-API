@@ -57,7 +57,7 @@ struct TokenController: RouteCollection {
             throw Abort(.unauthorized, reason: "unauthorized.login.accountBlocked")
         }
 
-        guard user.isConnectionBlocked == false else {
+        guard user.isConnectionBlocked != true else {
             throw Abort(.unauthorized, reason: "unauthorized.login.connectionBlocked")
         }
         
