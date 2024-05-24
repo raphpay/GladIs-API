@@ -51,7 +51,7 @@ extension TokenControllerTests {
             req.headers.basicAuthorization = BasicAuthorization(username: "wrongUser", password: "wrongPass")
         }, afterResponse: { res in
             XCTAssertEqual(res.status, .unauthorized)
-            XCTAssertTrue(res.body.string.contains("unauthorized.login"))
+            XCTAssertTrue(res.body.string.contains("unauthorized.login.invalidCredentials"))
         })
     }
 
@@ -67,7 +67,22 @@ extension TokenControllerTests {
             req.headers.basicAuthorization = BasicAuthorization(username: expectedUsername, password: expectedPassword)
         }, afterResponse: { res in
             XCTAssertEqual(res.status, .unauthorized)
-            XCTAssertTrue(res.body.string.contains("unauthorized.login.account.blocked"))
+            XCTAssertTrue(res.body.string.contains("unauthorized.login.accountBlocked"))
+        })
+    }
+
+    func testLoginWithConnectionBlockedUserFails() async throws {
+        try await User.deleteAll(on: app.db)
+        let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
+        user.isConnectionBlocked = true
+        try await user.update(on: app.db)
+
+        let path = "\(baseRoute)/login"
+        try app.test(.POST, path, beforeRequest: { req in
+            req.headers.basicAuthorization = BasicAuthorization(username: expectedUsername, password: expectedPassword)
+        }, afterResponse: { res in
+            XCTAssertEqual(res.status, .unauthorized)
+            XCTAssertTrue(res.body.string.contains("unauthorized.login.connectionBlocked"))
         })
     }
 }

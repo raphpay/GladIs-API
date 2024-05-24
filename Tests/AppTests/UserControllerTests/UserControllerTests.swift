@@ -21,6 +21,7 @@ final class UserControllerTests: XCTestCase {
     let expectedCompanyName = "expectedCompanyName"
     let expectedUsername = "expectedUsername"
     let expectedAdminUsername = "expectedAdminUsername"
+    let expectedClientUsername = "expectedClientUsername"
     // Module
     let expectedModuleName = "expectedModuleName"
     let expectedModuleIndex = 1

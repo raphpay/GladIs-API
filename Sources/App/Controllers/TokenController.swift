@@ -50,11 +50,15 @@ struct TokenController: RouteCollection {
             user = try req.auth.require(User.self)
             userID = try user.requireID()
         } catch {
-            throw Abort(.unauthorized, reason: "unauthorized.login")
+            throw Abort(.unauthorized, reason: "unauthorized.login.invalidCredentials")
         }
         
         guard user.isBlocked != true else {
-            throw Abort(.unauthorized, reason: "unauthorized.login.account.blocked")
+            throw Abort(.unauthorized, reason: "unauthorized.login.accountBlocked")
+        }
+
+        guard user.isConnectionBlocked != true else {
+            throw Abort(.unauthorized, reason: "unauthorized.login.connectionBlocked")
         }
         
         // Delete existing tokens
