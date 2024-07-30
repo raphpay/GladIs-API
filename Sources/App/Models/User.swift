@@ -252,3 +252,32 @@ struct ResetPasswordRequest: Content {
     let token: String
     let newPassword: String
 }
+
+extension User {
+    struct UpdateInput: Content {
+        var firstName: String?
+        var lastName: String?
+        var phoneNumber: String?
+        var email: String?
+        
+
+        func update(_ user: User) -> User {
+            var updatedUser = user
+            
+            if let firstName = firstName {
+                updatedUser.firstName = firstName
+            }
+            if let lastName = lastName {
+                updatedUser.lastName = lastName
+            }
+            if let phoneNumber = phoneNumber {
+                updatedUser.phoneNumber = phoneNumber
+            }
+            if let email = email {
+                updatedUser.email = email
+            }
+            
+            return updatedUser
+        }
+    }
+}
