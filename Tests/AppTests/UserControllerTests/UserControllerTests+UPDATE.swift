@@ -248,7 +248,8 @@ extension UserControllerTests {
         let newLastName = "newLastName"
         let newPhoneNumber = "0609876554"
         let newEmail = "newEmail@test.com"
-        let input = User.Input(firstName: newFirstName, lastName: newLastName, phoneNumber: newPhoneNumber, email: newEmail, password: nil, userType: .admin, companyName: nil, products: nil, numberOfEmployees: nil, numberOfUsers: nil, salesAmount: nil, employeesIDs: nil, managerID: nil)
+        let shouldUpdateUsername = false
+        let input = User.UpdateInput(firstName: newFirstName, lastName: newLastName, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: shouldUpdateUsername)
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/updateInfos"
@@ -259,6 +260,55 @@ extension UserControllerTests {
             XCTAssertEqual(res.status, .ok)
             let updatedUser = try res.content.decode(User.Public.self)
             XCTAssertEqual(updatedUser.id?.uuidString, userID.uuidString)
+            XCTAssertEqual(updatedUser.firstName, newFirstName)
+            XCTAssertEqual(updatedUser.lastName, newLastName)
+            XCTAssertEqual(updatedUser.phoneNumber, newPhoneNumber)
+            XCTAssertEqual(updatedUser.email, newEmail)
+        }
+    }
+    
+    func testUpdateUserInfosWithoutAllInfosSucceed() async throws {
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let newPhoneNumber = "0609876554"
+        let newEmail = "newEmail@test.com"
+        let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
+        
+        let userID = try user.requireID()
+        let path = "\(baseRoute)/\(userID)/updateInfos"
+        try app.test(.PUT, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(input)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let updatedUser = try res.content.decode(User.Public.self)
+            XCTAssertEqual(updatedUser.id?.uuidString, userID.uuidString)
+            XCTAssertEqual(updatedUser.phoneNumber, newPhoneNumber)
+            XCTAssertEqual(updatedUser.email, newEmail)
+        }
+    }
+    
+    func testUpdateUserInfosAndUsernameSucceed() async throws {
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let token = try await Token.create(for: user, on: app.db)
+        let newFirstName = "newFirstName"
+        let newLastName = "newLastName"
+        let newPhoneNumber = "0609876554"
+        let newEmail = "newEmail@test.com"
+        let shouldUpdateUsername = true
+        let expectedUpdatedUsername = "newfirstname.newlastname"
+        let input = User.UpdateInput(firstName: newFirstName, lastName: newLastName, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: shouldUpdateUsername)
+        
+        let userID = try user.requireID()
+        let path = "\(baseRoute)/\(userID)/updateInfos"
+        try app.test(.PUT, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(input)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let updatedUser = try res.content.decode(User.Public.self)
+            XCTAssertEqual(updatedUser.id?.uuidString, userID.uuidString)
+            XCTAssertEqual(updatedUser.username, expectedUpdatedUsername)
             XCTAssertEqual(updatedUser.firstName, newFirstName)
             XCTAssertEqual(updatedUser.lastName, newLastName)
             XCTAssertEqual(updatedUser.phoneNumber, newPhoneNumber)
