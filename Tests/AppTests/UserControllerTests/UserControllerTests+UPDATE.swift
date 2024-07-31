@@ -319,11 +319,9 @@ extension UserControllerTests {
     func testUpdateUserWithWrongPhoneNumberFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
-        let newFirstName = "newFirstName"
-        let newLastName = "newLastName"
         let newPhoneNumber = "09"
         let newEmail = "newEmail@test.com"
-        let input = User.Input(firstName: newFirstName, lastName: newLastName, phoneNumber: newPhoneNumber, email: newEmail, password: nil, userType: .admin, companyName: nil, products: nil, numberOfEmployees: nil, numberOfUsers: nil, salesAmount: nil, employeesIDs: nil, managerID: nil)
+        let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/updateInfos"
@@ -339,11 +337,9 @@ extension UserControllerTests {
     func testUpdateUserWithWrongEmailFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
-        let newFirstName = "newFirstName"
-        let newLastName = "newLastName"
         let newPhoneNumber = "0612345678"
         let newEmail = "newEmail"
-        let input = User.Input(firstName: newFirstName, lastName: newLastName, phoneNumber: newPhoneNumber, email: newEmail, password: nil, userType: .admin, companyName: nil, products: nil, numberOfEmployees: nil, numberOfUsers: nil, salesAmount: nil, employeesIDs: nil, managerID: nil)
+        let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/updateInfos"
@@ -359,11 +355,9 @@ extension UserControllerTests {
     func testUpdateUserInfosWithInexistantUserFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
-        let newFirstName = "newFirstName"
-        let newLastName = "newLastName"
         let newPhoneNumber = "0612345678"
         let newEmail = "newEmail@test.com"
-        let input = User.Input(firstName: newFirstName, lastName: newLastName, phoneNumber: newPhoneNumber, email: newEmail, password: nil, userType: .admin, companyName: nil, products: nil, numberOfEmployees: nil, numberOfUsers: nil, salesAmount: nil, employeesIDs: nil, managerID: nil)
+        let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
         
         let path = "\(baseRoute)/12345/updateInfos"
         try app.test(.PUT, path) { req in
