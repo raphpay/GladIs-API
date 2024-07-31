@@ -255,14 +255,15 @@ struct ResetPasswordRequest: Content {
 
 extension User {
     struct UpdateInput: Content {
-        var firstName: String?
-        var lastName: String?
-        var phoneNumber: String?
-        var email: String?
+        let firstName: String?
+        let lastName: String?
+        let phoneNumber: String?
+        let email: String?
+        let shouldUpdateUsername: Bool?
         
 
-        func update(_ user: User) -> User {
-            var updatedUser = user
+        func update(_ user: User, on req: Request) async throws -> User {
+            let updatedUser = user
             
             if let firstName = firstName {
                 updatedUser.firstName = firstName
@@ -275,6 +276,10 @@ extension User {
             }
             if let email = email {
                 updatedUser.email = email
+            }
+            if let value = shouldUpdateUsername, value == true {
+                let username = try await User.generateUniqueUsername(firstName: updatedUser.firstName, lastName: updatedUser.lastName, on: req)
+                updatedUser.username = username
             }
             
             return updatedUser

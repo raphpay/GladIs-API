@@ -484,7 +484,7 @@ struct UserController: RouteCollection {
         }
         
         let updatedUserInput = try req.content.decode(User.UpdateInput.self)
-        let updatedUser = updatedUserInput.update(user)
+        let updatedUser = try await updatedUserInput.update(user, on : req)
         try await updatedUser.update(on: req.db)
         
         return updatedUser.convertToPublic()
