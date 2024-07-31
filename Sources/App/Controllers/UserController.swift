@@ -483,16 +483,11 @@ struct UserController: RouteCollection {
             throw Abort(.notFound, reason: "notFound.user")
         }
         
-        let updatedUser = try req.content.decode(User.Input.self)
+        let updatedUserInput = try req.content.decode(User.UpdateInput.self)
+        let updatedUser = try await updatedUserInput.update(user, on : req)
+        try await updatedUser.update(on: req.db)
         
-        user.firstName = updatedUser.firstName
-        user.lastName = updatedUser.lastName
-        user.email = updatedUser.email
-        user.phoneNumber = updatedUser.phoneNumber
-        
-        try await user.update(on: req.db)
-        
-        return user.convertToPublic()
+        return updatedUser.convertToPublic()
     }
     
     func removeEmployee(req: Request) async throws -> User.Public {
