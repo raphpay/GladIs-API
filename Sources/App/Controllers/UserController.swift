@@ -38,6 +38,8 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "messages", "all", use: getUserMessages)
         tokenAuthGroup.get(":userID", "messages", "received", use: getReceivedMessages)
         tokenAuthGroup.get(":userID", "messages", "sent", use: getSentMessages)
+        tokenAuthGroup.get(":userID", "processes", "systemQuality", use: getSystemQualityFolders)
+        tokenAuthGroup.get(":userID", "processes", "records", use: getRecordsFolders)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
@@ -346,6 +348,30 @@ struct UserController: RouteCollection {
         }
 
         return user.convertToLoginTryOutput()
+    }
+    
+    func getSystemQualityFolders(req: Request) async throws -> [Process] {
+        guard let userID = req.parameters.get("userID", as: User.IDValue.self) else {
+            throw Abort(.badRequest, reason: "badRequest.emptyUserID")
+        }
+        
+        guard let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        return user.systemQualityFolders  ?? []
+    }
+    
+    func getRecordsFolders(req: Request) async throws -> [Process] {
+        guard let userID = req.parameters.get("userID", as: User.IDValue.self) else {
+            throw Abort(.badRequest, reason: "badRequest.emptyUserID")
+        }
+        
+        guard let user = try await User.find(userID, on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.user")
+        }
+        
+        return user.recordsFolders ?? []
     }
     
     // MARK: - Update

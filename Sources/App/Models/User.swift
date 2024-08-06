@@ -88,6 +88,12 @@ final class User: Model, Content {
     @Children(for: \.$receiver)
     var receivedMessages: [Message]
     
+    @OptionalField(key: User.v20240806.systemQualityFolders)
+    var systemQualityFolders: [Process]?
+    
+    @OptionalField(key: User.v20240806.recordsFolders)
+    var recordsFolders: [Process]?
+    
     init() {}
     
     init(id: UUID? = nil,
@@ -96,7 +102,9 @@ final class User: Model, Content {
          userType: UserType,
          companyName: String? = nil, products: String? = nil,
          numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
-         salesAmount: Double? = nil, employeesIDs: [String]? = nil, managerID: String? = nil) {
+         salesAmount: Double? = nil, employeesIDs: [String]? = nil, managerID: String? = nil,
+         systemQualityFolders: [Process]? = nil, recordsFolders: [Process]? = nil
+    ) {
         // Required
         self.id = id
         self.firstName = firstName
@@ -115,5 +123,7 @@ final class User: Model, Content {
         self.salesAmount = salesAmount
         self.employeesIDs = employeesIDs
         self.managerID = managerID
+        self.systemQualityFolders = systemQualityFolders
+        self.recordsFolders = recordsFolders
     }
 }
