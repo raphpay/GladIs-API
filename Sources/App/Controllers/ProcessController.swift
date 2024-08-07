@@ -58,19 +58,17 @@ struct ProcessController: RouteCollection {
     func getAll(req: Request) async throws -> [Process] {
         try await Process.query(on: req.db).all()
     }
+    
     // MARK: - DELETE
     @Sendable
     func deleteAllForUser(req: Request) async throws -> HTTPResponseStatus {
-        // TODO: Refactor this guard statement
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await UserController().getUserID(on: req)
+        let user = try await UserController().getUser(with: userID, on: req.db)
         
         user.recordsFolders?.removeAll()
         user.systemQualityFolders?.removeAll()
         try await user.update(on: req.db)
         
-        let userID = try user.requireID()
         try await Process
             .query(on: req.db)
             .filter(\.$user.$id == userID)
