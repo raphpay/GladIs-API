@@ -11,9 +11,8 @@ import Vapor
 // MARK: - Delete
 extension UserController {
     func remove(req: Request) async throws -> HTTPStatus {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
         try await user.delete(force: true, on: req.db)
         return .noContent
     }
