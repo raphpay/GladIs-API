@@ -34,18 +34,14 @@ extension UserController {
     }
     
     func getUser(req: Request) async throws -> User.Public {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
-        
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
         return user.convertToPublic()
     }
     
     func getModules(req: Request) async throws -> [Module] {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
-
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
         var usersModules: [Module] = []
 
         if let modules = user.modules {
@@ -56,9 +52,8 @@ extension UserController {
     }
     
     func getTechnicalDocumentationTabs(req: Request) async throws -> [TechnicalDocumentationTab] {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
         
         return try await user.$technicalDocumentationTabs.query(on: req.db).all()
     }
@@ -74,9 +69,8 @@ extension UserController {
     }
     
     func getEmployees(req: Request) async throws -> [User.Public] {
-        guard let manager = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let manager = try await getUser(with: userID, on: req.db)
         
         var employees: [User.Public] = []
         if let employeesIDs = manager.employeesIDs {
@@ -100,18 +94,20 @@ extension UserController {
     }
     
     func getToken(req: Request) async throws -> Token {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db),
-              let token = try await user.$tokens.query(on: req.db).first() else {
-            throw Abort(.notFound, reason: "notFound.user")
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
+        guard let token = try await user.$tokens.query(on: req.db).first() else {
+            throw Abort(.notFound, reason: "notFound.token")
         }
         
         return token
     }
     
     func getResetTokensForClient(req: Request) async throws -> PasswordResetToken {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db),
-              let resetToken = try await user.$resetTokens.query(on: req.db).first() else {
-            throw Abort(.notFound, reason: "notFound.user")
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
+        guard let resetToken = try await user.$resetTokens.query(on: req.db).first() else {
+            throw Abort(.notFound, reason: "notFound.resetToken")
         }
         
         let authUser = try req.auth.require(User.self)
@@ -152,14 +148,11 @@ extension UserController {
     }
     
     func getSentMessages(req: Request) async throws -> [Message] {
-        guard let userID = req.parameters.get("userID"),
-              let uuid = UUID(uuidString: userID) else {
-            throw Abort(.badRequest, reason: "badRequest.emptyUserID")
-        }
+        let userID = try await getUserID(on: req)
         
         let messages = try await Message
             .query(on: req.db)
-            .filter(\.$sender.$id == uuid)
+            .filter(\.$sender.$id == userID)
             .sort(\.$dateSent, .ascending)
             .all()
         
@@ -167,14 +160,11 @@ extension UserController {
     }
     
     func getReceivedMessages(req: Request) async throws -> [Message] {
-        guard let userID = req.parameters.get("userID"),
-              let uuid = UUID(uuidString: userID) else {
-            throw Abort(.badRequest, reason: "badRequest.emptyUserID")
-        }
+        let userID = try await getUserID(on: req)
         
         let messages = try await Message
             .query(on: req.db)
-            .filter(\.$receiver.$id == uuid)
+            .filter(\.$receiver.$id == userID)
             .sort(\.$dateSent, .ascending)
             .all()
         
@@ -213,26 +203,14 @@ extension UserController {
     }
     
     func getSystemQualityFolders(req: Request) async throws -> [Process] {
-        guard let userID = req.parameters.get("userID", as: User.IDValue.self) else {
-            throw Abort(.badRequest, reason: "badRequest.emptyUserID")
-        }
-        
-        guard let user = try await User.find(userID, on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
-        
-        return user.systemQualityFolders  ?? []
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
+        return user.systemQualityFolders ?? []
     }
     
     func getRecordsFolders(req: Request) async throws -> [Process] {
-        guard let userID = req.parameters.get("userID", as: User.IDValue.self) else {
-            throw Abort(.badRequest, reason: "badRequest.emptyUserID")
-        }
-        
-        guard let user = try await User.find(userID, on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
-        
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
         return user.recordsFolders ?? []
     }
 }
