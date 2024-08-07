@@ -60,7 +60,7 @@ struct TechnicalDocumentationTabController: RouteCollection {
 extension TechnicalDocumentationTabController {
     func getTabID(on req: Request) async throws -> TechnicalDocumentationTab.IDValue {
         guard let tabID = req.parameters.get("tabID", as: TechnicalDocumentationTab.IDValue.self) else {
-            throw Abort(.notFound, reason: "badRequest.missingOrIncorrectTabID")
+            throw Abort(.badRequest, reason: "badRequest.missingOrIncorrectTabID")
         }
         
         return tabID

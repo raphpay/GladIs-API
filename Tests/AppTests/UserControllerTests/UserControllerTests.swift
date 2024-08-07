@@ -11,6 +11,8 @@ import XCTVapor
 final class UserControllerTests: XCTestCase {
     
     var app: Application!
+    var admin: User!
+    var token: Token!
     // Expected Properties
     let baseRoute = "api/users"
     let expectedFirstName = "expectedFirstName"
@@ -34,13 +36,16 @@ final class UserControllerTests: XCTestCase {
     
     override func setUp() async throws {
         try await super.setUp()
-        
         app = Application(.testing)
         try! await configure(app)
+        admin = try await User.create(username: expectedAdminUsername, userType: .admin, on: app.db)
+        token = try await Token.create(for: admin, on: app.db)
     }
     
     override func tearDown() async throws {
         try await User.deleteAll(on: app.db)
+        try await admin.delete(force: true, on: app.db)
+        try await token.delete(force: true, on: app.db)
         app.shutdown()
         try await super.tearDown()
     }
