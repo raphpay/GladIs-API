@@ -55,3 +55,22 @@ struct TechnicalDocumentationTabController: RouteCollection {
         return .noContent
     }
 }
+
+// MARK: - Utils
+extension TechnicalDocumentationTabController {
+    func getTabID(on req: Request) async throws -> TechnicalDocumentationTab.IDValue {
+        guard let tabID = req.parameters.get("tabID", as: TechnicalDocumentationTab.IDValue.self) else {
+            throw Abort(.notFound, reason: "badRequest.missingOrIncorrectTabID")
+        }
+        
+        return tabID
+    }
+    
+    func getTab(with id: TechnicalDocumentationTab.IDValue, on db: Database) async throws -> TechnicalDocumentationTab {
+        guard let tab = try await TechnicalDocumentationTab.find(id, on: db) else {
+            throw Abort(.notFound, reason: "notFound.technicalTab")
+        }
+        
+        return tab
+    }
+}
