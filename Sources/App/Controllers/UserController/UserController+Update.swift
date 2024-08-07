@@ -11,9 +11,8 @@ import Vapor
 // MARK: - Update
 extension UserController {
     func setUserFirstConnectionToFalse(req: Request) async throws -> User.Public {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
         
         user.firstConnection = false
         try await user.save(on: req.db)
@@ -22,9 +21,9 @@ extension UserController {
     
     func changePassword(req: Request) async throws -> PasswordChangeResponse {
         let user = try req.auth.require(User.self)
-        let userId = try req.parameters.require("userID", as: UUID.self)
+        let userID = try await getUserID(on: req)
         
-        guard user.id == userId else {
+        guard user.id == userID else {
             throw Abort(.forbidden, reason: "forbidden.wrongUser")
         }
         
@@ -44,12 +43,10 @@ extension UserController {
         let hashedNewPassword = try Bcrypt.hash(changeRequest.newPassword)
         
         // Update the user's password in the database
-        guard let user = try await User.find(userId, on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userToUpdate = try await getUser(with: userID, on: req.db)
         
-        user.password = hashedNewPassword
-        try await user.save(on: req.db)
+        userToUpdate.password = hashedNewPassword
+        try await userToUpdate.save(on: req.db)
         
         return PasswordChangeResponse(message: "success.passwordChanged")
     }
@@ -80,9 +77,8 @@ extension UserController {
     }
     
     func blockUser(req: Request) async throws -> User.Public {
-        guard let client = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let client = try await getUser(with: userID, on: req.db)
         
         client.isBlocked = true
         try await client.save(on: req.db)
@@ -91,9 +87,8 @@ extension UserController {
     }
     
     func unblockUser(req: Request) async throws -> User.Public {
-        guard let client = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let client = try await getUser(with: userID, on: req.db)
         
         client.isBlocked = false
         try await client.save(on: req.db)
@@ -102,9 +97,8 @@ extension UserController {
     }
 
     func blockUserConnection(req: Request) async throws -> User.Public {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
 
         if let connectionFailedAttempts = user.connectionFailedAttempts {
             user.connectionFailedAttempts = connectionFailedAttempts + 1
@@ -124,10 +118,9 @@ extension UserController {
         guard authUser.userType == .admin else {
             throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
-
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
 
         user.isConnectionBlocked = false
         user.connectionFailedAttempts = 0
@@ -140,9 +133,8 @@ extension UserController {
     func updateUserInfos(req: Request) async throws -> User.Public {
         try User.Input.validate(content: req)
         
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
         
         let updatedUserInput = try req.content.decode(User.UpdateInput.self)
         let updatedUser = try await updatedUserInput.update(user, on : req)
@@ -152,9 +144,8 @@ extension UserController {
     }
     
     func removeEmployee(req: Request) async throws -> User.Public {
-        guard let manager = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let manager = try await getUser(with: userID, on: req.db)
         
         let employeeID = req.parameters.get("employeeID")
         
@@ -169,9 +160,8 @@ extension UserController {
     }
 
     func updateModules(req: Request) async throws -> User.Public {
-        guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
+        let userID = try await getUserID(on: req)
+        let user = try await getUser(with: userID, on: req.db)
         
         let moduleInputs = try req.content.decode([Module.Input].self)
         var modules: [Module] = []
