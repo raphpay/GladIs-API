@@ -1,5 +1,5 @@
 //
-//  UserControllerTests.swift
+//  ProcessusControllerTests.swift
 //
 //
 //  Created by Raphaël Payet on 17/04/2024.
@@ -8,44 +8,37 @@
 @testable import App
 import XCTVapor
 
-final class UserControllerTests: XCTestCase {
+final class ProcessusControllerTests: XCTestCase {
     
     var app: Application!
+    let baseURL = "api/processus"
     var admin: User!
+    var adminID: User.IDValue!
     var token: Token!
     // Expected Properties
-    let baseRoute = "api/users"
-    let expectedFirstName = "expectedFirstName"
-    let expectedLastName = "expectedLastName"
-    let expectedPhoneNumber = "0612345678"
-    let expectedEmail = "expectedEmail@test.com"
-    let expectedPassword = "expectedPassword1("
-    let expectedCompanyName = "expectedCompanyName"
-    let expectedUsername = "expectedUsername"
     let expectedAdminUsername = "expectedAdminUsername"
-    let expectedClientUsername = "expectedClientUsername"
-    // Module
-    let expectedModuleName = "expectedModuleName"
-    let expectedModuleIndex = 1
-    // Doc Tab
-    let expectedDocTabName = "expectedDocTabName"
-    let expectedDocTabArea = "expectedDocTabArea"
-    // Message
-    let expectedMessageTitle = "expectedMessageTitle"
-    let expectedMessageContent = "expectedMessageContent"
+    // Process
+    let expectedTitle = "expectedTitle"
+    let expectedNumber = 1
+    let expectedFolder = Processus.Folder.systemQuality
     
     override func setUp() async throws {
         try await super.setUp()
         app = Application(.testing)
         try! await configure(app)
         admin = try await User.create(username: expectedAdminUsername, userType: .admin, on: app.db)
+        adminID = try admin.requireID()
         token = try await Token.create(for: admin, on: app.db)
     }
     
     override func tearDown() async throws {
         try await User.deleteAll(on: app.db)
+        admin.systemQualityFolders = nil
+        admin.recordsFolders = nil
         try await admin.delete(force: true, on: app.db)
+        adminID = nil
         try await token.delete(force: true, on: app.db)
+        try await Processus.query(on: app.db).all().delete(force: true, on: app.db)
         app.shutdown()
         try await super.tearDown()
     }

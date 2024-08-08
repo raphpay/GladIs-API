@@ -40,6 +40,11 @@ extension User {
         static let employee = "employee"
     }
     
+    enum v20240806 {
+        static let systemQualityFolders = FieldKey(stringLiteral: "systemQualityFolders")
+        static let recordsFolders = FieldKey(stringLiteral: "recordsFolders")
+    }
+    
     enum UserType: String, Codable {
         case employee, admin, client
     }

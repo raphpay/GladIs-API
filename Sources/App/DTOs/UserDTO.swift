@@ -32,6 +32,8 @@ extension User {
         var modules: [Module]?
         var isConnectionBlocked: Bool?
         var connectionFailedAttempts: Int?
+        var systemQualityFolders: [Processus]?
+        var recordsFolders: [Processus]?
     }
     
     func convertToPublic() -> User.Public {
@@ -40,7 +42,8 @@ extension User {
                     username: username, firstConnection: firstConnection, userType: userType,
                     companyName: companyName, products: products, numberOfEmployees: numberOfEmployees,
                     numberOfUsers: numberOfUsers, salesAmount: salesAmount, employeesIDs: employeesIDs,
-                    managerID: managerID, isBlocked: isBlocked, modules: modules, isConnectionBlocked: isConnectionBlocked, connectionFailedAttempts: connectionFailedAttempts
+                    managerID: managerID, isBlocked: isBlocked, modules: modules, isConnectionBlocked: isConnectionBlocked, connectionFailedAttempts: connectionFailedAttempts,
+                    systemQualityFolders: systemQualityFolders, recordsFolders: recordsFolders
         )
     }
 }
