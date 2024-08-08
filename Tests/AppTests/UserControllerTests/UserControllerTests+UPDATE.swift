@@ -12,8 +12,6 @@ import XCTVapor
 extension UserControllerTests {
     func testSetUserConnectionToFalseSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/setFirstConnectionToFalse"
         try app.test(.PUT, path) { req in
@@ -38,9 +36,6 @@ extension UserControllerTests {
     }
     
     func testSetUserConnectionToFalseWithIncorrectIDFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        
         let path = "\(baseRoute)/12345/setFirstConnectionToFalse"
         try app.test(.PUT, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -55,7 +50,6 @@ extension UserControllerTests {
 extension UserControllerTests {
     func testChangePasswordSucceed() async throws {
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let changeRequest = PasswordChangeRequest(currentPassword: expectedPassword, newPassword: expectedPassword + "hello")
         
         let userID = try user.requireID()
@@ -71,9 +65,7 @@ extension UserControllerTests {
     }
     
     func testChangePasswordWithDifferentUserFails() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         let changeRequest = PasswordChangeRequest(currentPassword: expectedPassword, newPassword: expectedPassword + "hello")
         
         let userID = try user.requireID()
@@ -89,7 +81,6 @@ extension UserControllerTests {
     
     func testChangePasswordWithInvalidCurrentFails() async throws {
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let changeRequest = PasswordChangeRequest(currentPassword: "hello", newPassword: expectedPassword + "hello")
         
         let userID = try user.requireID()
@@ -183,7 +174,6 @@ extension UserControllerTests {
 extension UserControllerTests {
     func testBlockUserSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/block"
@@ -224,7 +214,6 @@ extension UserControllerTests {
 extension UserControllerTests {
     func testUnblockUserSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         
         user.isBlocked = true
         try await user.update(on: app.db)
@@ -273,7 +262,6 @@ extension UserControllerTests {
 extension UserControllerTests {
     func testUpdateUserInfosSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let newFirstName = "newFirstName"
         let newLastName = "newLastName"
         let newPhoneNumber = "0609876554"
@@ -299,7 +287,6 @@ extension UserControllerTests {
     
     func testUpdateUserInfosWithoutAllInfosSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let newPhoneNumber = "0609876554"
         let newEmail = "newEmail@test.com"
         let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
@@ -320,7 +307,6 @@ extension UserControllerTests {
     
     func testUpdateUserInfosAndUsernameSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let newFirstName = "newFirstName"
         let newLastName = "newLastName"
         let newPhoneNumber = "0609876554"
@@ -348,7 +334,6 @@ extension UserControllerTests {
     
     func testUpdateUserWithWrongPhoneNumberFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let newPhoneNumber = "09"
         let newEmail = "newEmail@test.com"
         let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
@@ -366,7 +351,6 @@ extension UserControllerTests {
     
     func testUpdateUserWithWrongEmailFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let newPhoneNumber = "0612345678"
         let newEmail = "newEmail"
         let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
@@ -400,7 +384,6 @@ extension UserControllerTests {
     
     func testUpdateUserInfosWithIncorrectIDFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let newPhoneNumber = "0612345678"
         let newEmail = "newEmail@test.com"
         let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
@@ -463,7 +446,6 @@ extension UserControllerTests {
     func testAddModulesToUserSuceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let userID = try user.requireID()
-        let token = try await Token.create(for: user, on: app.db)
 
         let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
         let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
@@ -489,7 +471,6 @@ extension UserControllerTests {
     func testRemoveModulesToUserSuceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let userID = try user.requireID()
-        let token = try await Token.create(for: user, on: app.db)
 
         let moduleToAdd = Module(name: expectedModuleName, index: expectedModuleIndex)
         let moduleToAddTwo = Module(name: "\(expectedModuleName)2", index: expectedModuleIndex + 1)
@@ -616,8 +597,6 @@ extension UserControllerTests {
 // MARK : - Unblock User Connection
 extension UserControllerTests {
     func testUnblockUserConnectionSucceed() async throws {
-        let admin = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         let client = try await User.create(username: expectedClientUsername, userType: .client, on: app.db)
         let clientID = try client.requireID()
         client.isConnectionBlocked = true
@@ -636,8 +615,6 @@ extension UserControllerTests {
     }
 
     func testUnblockUserConnectionWithoutAdminPermissionFails() async throws {
-        let admin = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         let client = try await User.create(username: expectedClientUsername, userType: .client, on: app.db)
         let clientID = try client.requireID()
         client.isConnectionBlocked = true

@@ -12,15 +12,14 @@ import XCTVapor
 extension UserControllerTests {
     func testGetAllSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         
         try app.test(.GET, baseRoute) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
             let users = try res.content.decode([User.Public].self)
-            XCTAssertEqual(users.count, 1)
-            XCTAssertEqual(users[0].username, expectedUsername)
+            XCTAssertEqual(users.count, 2)
+            XCTAssertEqual(users[1].username, expectedUsername)
         }
     }
 }
@@ -28,9 +27,7 @@ extension UserControllerTests {
 // MARK: - Get All Clients
 extension UserControllerTests {
     func testGetAllClientsSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let client = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         let path = "\(baseRoute)/clients"
         try app.test(.GET, path) { req in
@@ -47,9 +44,7 @@ extension UserControllerTests {
 // MARK: - Get Admins
 extension UserControllerTests {
     func testGetAllAdminsSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let _ = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         let path = "\(baseRoute)/admins"
         try app.test(.GET, path) { req in
@@ -201,10 +196,8 @@ extension UserControllerTests {
 // MARK: - Get Manager
 extension UserControllerTests {
     func testGetManagerSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let manager = try await User.create(username: expectedUsername, on: app.db)
         let employee = try await User.create(username: "employeeUsername", on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         let managerID = try manager.requireID()
         let employeeID = try employee.requireID()
@@ -225,10 +218,8 @@ extension UserControllerTests {
     }
     
     func testGetManagerWithInexistantEmployeeFails() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let manager = try await User.create(username: expectedUsername, on: app.db)
         let employee = try await User.create(username: "employeeUsername", on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         let managerID = try manager.requireID()
         let employeeID = try employee.requireID()
@@ -247,10 +238,8 @@ extension UserControllerTests {
     }
     
     func testGetManagerWithEmptyManagerFails() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let manager = try await User.create(username: expectedUsername, on: app.db)
         let employee = try await User.create(username: "employeeUsername", on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         let managerID = try manager.requireID()
         let employeeID = try employee.requireID()
@@ -273,10 +262,8 @@ extension UserControllerTests {
 // MARK: - Get Employees
 extension UserControllerTests {
     func testGetEmployeesSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let manager = try await User.create(username: expectedUsername, on: app.db)
         let employee = try await User.create(username: "employeeUsername", on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         let managerID = try manager.requireID()
         let employeeID = try employee.requireID()
@@ -311,9 +298,6 @@ extension UserControllerTests {
     }
     
     func testGetEmployeesWithIncorrectIDFails() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
-        
         let path = "\(baseRoute)/23456/employees"
         
         try app.test(.GET, path) { req in

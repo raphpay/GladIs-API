@@ -55,8 +55,6 @@ extension UserControllerTests {
                                    companyName: nil, products: nil,
                                    numberOfEmployees: nil, numberOfUsers: nil,
                                    salesAmount: nil, employeesIDs: nil, managerID: nil)
-        let admin = try await User.create(username: expectedAdminUsername, userType: .admin, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         try app.test(.POST, baseRoute) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -190,8 +188,6 @@ extension UserControllerTests {
     
     func testVerifyPasswordWithDifferentUserFails() async throws {
         let user = try await User.create(username: expectedUsername, userType: .client, password: expectedPassword, on: app.db)
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         let passwordValidationRequest = PasswordValidationRequest(currentPassword: expectedPassword)
         
         let userID = try user.requireID()
@@ -209,9 +205,7 @@ extension UserControllerTests {
 // MARK: - Get User By Mail
 extension UserControllerTests {
     func testGetUserByMailSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let user = try await User.create(username: expectedUsername, userType: .client, email: expectedEmail, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         let userEmailInput = User.EmailInput(email: expectedEmail)
         
         let path = "\(baseRoute)/byMail"
@@ -226,8 +220,6 @@ extension UserControllerTests {
     }
     
     func testGetUserByMailWithInexistantUserFails() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         let userEmailInput = User.EmailInput(email: expectedEmail)
         
         let path = "\(baseRoute)/byMail"
