@@ -32,8 +32,8 @@ extension User {
         var modules: [Module]?
         var isConnectionBlocked: Bool?
         var connectionFailedAttempts: Int?
-        var systemQualityFolders: [Process]?
-        var recordsFolders: [Process]?
+        var systemQualityFolders: [Processus]?
+        var recordsFolders: [Processus]?
     }
     
     func convertToPublic() -> User.Public {

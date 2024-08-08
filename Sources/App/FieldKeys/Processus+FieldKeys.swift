@@ -1,5 +1,5 @@
 //
-//  Process+FieldKeys.swift
+//  Processus+FieldKeys.swift
 //  
 //
 //  Created by Raphaël Payet on 06/08/2024.
@@ -7,7 +7,7 @@
 
 import Fluent
 
-extension Process {
+extension Processus {
     enum v20240806 {
         static let schemaName = "processes"
         static let id = FieldKey(stringLiteral: "id")

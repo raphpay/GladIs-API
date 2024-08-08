@@ -202,13 +202,13 @@ extension UserController {
         return user.convertToLoginTryOutput()
     }
     
-    func getSystemQualityFolders(req: Request) async throws -> [Process] {
+    func getSystemQualityFolders(req: Request) async throws -> [Processus] {
         let userID = try await getUserID(on: req)
         let user = try await getUser(with: userID, on: req.db)
         return user.systemQualityFolders ?? []
     }
     
-    func getRecordsFolders(req: Request) async throws -> [Process] {
+    func getRecordsFolders(req: Request) async throws -> [Processus] {
         let userID = try await getUserID(on: req)
         let user = try await getUser(with: userID, on: req.db)
         return user.recordsFolders ?? []

@@ -1,5 +1,5 @@
 //
-//  CreateProcess.swift
+//  CreateProcessus.swift
 //  
 //
 //  Created by Raphaël Payet on 06/08/2024.
@@ -8,13 +8,13 @@
 import Fluent
 import Vapor
 
-struct CreateProcess: AsyncMigration {
+struct CreateProcessus: AsyncMigration {
     func prepare(on database: Database) async throws {
-        try await database.schema(Process.v20240806.schemaName)
+        try await database.schema(Processus.v20240806.schemaName)
             .id()
-            .field(Process.v20240806.title, .string, .required)
-            .field(Process.v20240806.number, .int, .required)
-            .field(Process.v20240806.user, .uuid, .required,
+            .field(Processus.v20240806.title, .string, .required)
+            .field(Processus.v20240806.number, .int, .required)
+            .field(Processus.v20240806.user, .uuid, .required,
                    .references(User.v20240207.schemaName, User.v20240207.id, onDelete: .cascade))
             .update()
     }
@@ -24,5 +24,9 @@ struct CreateProcess: AsyncMigration {
             .deleteField(User.v20240806.systemQualityFolders)
             .deleteField(User.v20240806.recordsFolders)
             .update()
+        
+        try await database
+            .schema(Processus.v20240806.schemaName)
+            .delete()
     }
 }

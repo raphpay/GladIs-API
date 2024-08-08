@@ -89,10 +89,10 @@ final class User: Model, Content {
     var receivedMessages: [Message]
     
     @OptionalField(key: User.v20240806.systemQualityFolders)
-    var systemQualityFolders: [Process]?
+    var systemQualityFolders: [Processus]?
     
     @OptionalField(key: User.v20240806.recordsFolders)
-    var recordsFolders: [Process]?
+    var recordsFolders: [Processus]?
     
     init() {}
     
@@ -103,7 +103,7 @@ final class User: Model, Content {
          companyName: String? = nil, products: String? = nil,
          numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
          salesAmount: Double? = nil, employeesIDs: [String]? = nil, managerID: String? = nil,
-         systemQualityFolders: [Process]? = nil, recordsFolders: [Process]? = nil
+         systemQualityFolders: [Processus]? = nil, recordsFolders: [Processus]? = nil
     ) {
         // Required
         self.id = id

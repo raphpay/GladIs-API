@@ -9,7 +9,6 @@
 import XCTVapor
 import Fluent
 
-
 extension User {
     static func create(username: String, userType: User.UserType = .admin, email: String = "test@test.com", password: String = "Passwordtest123(", on database: Database) async throws -> User {
         let hashedPassword = try Bcrypt.hash(password)

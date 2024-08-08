@@ -8,7 +8,7 @@
 import Fluent
 import Vapor
 
-extension Process {
+extension Processus {
     enum Folder: String, Codable {
         case systemQuality, record
     }
@@ -19,15 +19,7 @@ extension Process {
         let userID: User.IDValue
         let folder: Folder
         
-        func validate(on db: Database) async throws -> User {
-            guard let user = try await User.find(userID, on: db) else {
-                throw Abort(.notFound, reason: "notFound.user")
-            }
-            
-            return user
-        }
-        
-        func toModel() -> Process {
+        func toModel() -> Processus {
             .init(title: title, number: number, folder: folder, userID: userID)
         }
     }

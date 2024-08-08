@@ -1,5 +1,5 @@
 //
-//  Process.swift
+//  Processus.swift
 //
 //
 //  Created by Raphaël Payet on 06/08/2024.
@@ -8,22 +8,22 @@
 import Vapor
 import Fluent
 
-final class Process: Model, Content, @unchecked Sendable {
-    static let schema = Process.v20240806.schemaName
+final class Processus: Model, Content, @unchecked Sendable {
+    static let schema = Processus.v20240806.schemaName
 
     @ID
     var id: UUID?
 
-    @Field(key: Process.v20240806.title)
+    @Field(key: Processus.v20240806.title)
     var title: String
     
-    @Field(key: Process.v20240806.number)
+    @Field(key: Processus.v20240806.number)
     var number: Int
     
-    @Field(key: Process.v20240806.folder)
+    @Field(key: Processus.v20240806.folder)
     var folder: Folder
     
-    @Parent(key: Process.v20240806.user)
+    @Parent(key: Processus.v20240806.user)
     var user: User
     
     init() {}

@@ -1,6 +1,6 @@
 //
-//  ProcessController.swift
-//  
+//  ProcessusController.swift
+//
 //
 //  Created by Raphaël Payet on 06/08/2024.
 //
@@ -8,9 +8,9 @@
 import Fluent
 import Vapor
 
-struct ProcessController: RouteCollection {
+struct ProcessusController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
-        let processes = routes.grouped("api", "processes")
+        let processes = routes.grouped("api", "processus")
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -24,10 +24,9 @@ struct ProcessController: RouteCollection {
     }
     
     // MARK: - Create
-    let logger = Logger(label: "process")
-    func create(req: Request) async throws -> Process {
-        let input = try req.content.decode(Process.Input.self)
-        let user = try await input.validate(on: req.db)
+    func create(req: Request) async throws -> Processus {
+        let input = try req.content.decode(Processus.Input.self)
+        let user = try await UserController().getUser(with: input.userID, on: req.db)
         let process = input.toModel()
         
         try await process.save(on: req.db)
@@ -35,7 +34,6 @@ struct ProcessController: RouteCollection {
         if process.folder == .systemQuality {
             if var systemQualityFolders = user.systemQualityFolders {
                 systemQualityFolders.append(process)
-                logger.info("systemQualityFolders \(systemQualityFolders)")
                 user.systemQualityFolders = systemQualityFolders
             } else {
                 user.systemQualityFolders = [process]
@@ -55,8 +53,8 @@ struct ProcessController: RouteCollection {
     
     // MARK: - READ
     @Sendable
-    func getAll(req: Request) async throws -> [Process] {
-        try await Process.query(on: req.db).all()
+    func getAll(req: Request) async throws -> [Processus] {
+        try await Processus.query(on: req.db).all()
     }
     
     // MARK: - DELETE
@@ -69,7 +67,7 @@ struct ProcessController: RouteCollection {
         user.systemQualityFolders?.removeAll()
         try await user.update(on: req.db)
         
-        try await Process
+        try await Processus
             .query(on: req.db)
             .filter(\.$user.$id == userID)
             .delete(force: true)
