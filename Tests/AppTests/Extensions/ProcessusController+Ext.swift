@@ -18,4 +18,10 @@ extension ProcessusControllerTests {
         }
         try await admin.update(on: db)
     }
+    
+    func createExpectedProcessus(with userID: User.IDValue, on db: Database) async throws -> Processus {
+        let processus = Processus(title: expectedTitle, number: expectedNumber, folder: expectedFolder, userID: userID)
+        try await processus.save(on: db)
+        return processus
+    }
 }
