@@ -106,6 +106,7 @@ extension UserController {
     func getResetTokensForClient(req: Request) async throws -> PasswordResetToken {
         let userID = try await getUserID(on: req)
         let user = try await getUser(with: userID, on: req.db)
+        
         guard let resetToken = try await user.$resetTokens.query(on: req.db).first() else {
             throw Abort(.notFound, reason: "notFound.resetToken")
         }
@@ -134,21 +135,9 @@ extension UserController {
         return user.convertToPublic()
     }
     
-    func getUserByUsername(req: Request) async throws -> User.Public {
-        let input = try req.content.decode(User.UsernameInput.self)
-        
-        guard let user = try await User
-            .query(on: req.db)
-            .filter(\.$username == input.username)
-            .first() else {
-            throw Abort(.notFound, reason: "notFound.user")
-        }
-        
-        return user.convertToPublic()
-    }
-    
     func getSentMessages(req: Request) async throws -> [Message] {
         let userID = try await getUserID(on: req)
+        let _ = try await getUser(with: userID, on: req.db)
         
         let messages = try await Message
             .query(on: req.db)
