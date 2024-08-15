@@ -19,8 +19,11 @@ struct ProcessusController: RouteCollection {
         tokenAuthGroup.post(use: create)
         // Read
         tokenAuthGroup.get(use: getAll)
+        // Update
+        tokenAuthGroup.put(":processusID", use: update)
         // Delete
-        tokenAuthGroup.delete(":userID", use: deleteAllForUser)
+        tokenAuthGroup.delete(":processusID", use: delete)
+        tokenAuthGroup.delete("all", "for", ":userID", use: deleteAllForUser)
     }
     
     // MARK: - Create
@@ -57,6 +60,18 @@ struct ProcessusController: RouteCollection {
         try await Processus.query(on: req.db).all()
     }
     
+    // MARK: - Update
+    @Sendable
+    func update(req: Request) async throws -> Processus {
+        let processusID = try getID(on: req)
+        let processus = try await get(with: processusID, on: req)
+        
+        let input = try req.content.decode(Processus.UpdateInput.self)
+        let updatedProcessus = try await input.update(processus, on: req)
+        
+        return updatedProcessus
+    }
+    
     // MARK: - DELETE
     @Sendable
     func deleteAllForUser(req: Request) async throws -> HTTPResponseStatus {
@@ -73,5 +88,34 @@ struct ProcessusController: RouteCollection {
             .delete(force: true)
         
         return .noContent
+    }
+    
+    @Sendable
+    func delete(req: Request) async throws -> HTTPResponseStatus {
+        let processusID = try getID(on: req)
+        let processus = try await get(with: processusID, on: req)
+        
+        try await processus.delete(force: true, on: req.db)
+        
+        return .noContent
+    }
+}
+
+// MARK: - Utils
+extension ProcessusController {
+    func getID(on req: Request) throws -> Processus.IDValue {
+        guard let processusID = req.parameters.get("processusID", as: Processus.IDValue.self) else {
+            throw Abort(.badRequest, reason: "badRequest.missingOrIncorrectProcessusID")
+        }
+        
+        return processusID
+    }
+    
+    func get(with id: Processus.IDValue, on req: Request) async throws -> Processus {
+        guard let processus = try await Processus.find(id, on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.processus")
+        }
+        
+        return processus
     }
 }
