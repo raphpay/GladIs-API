@@ -105,6 +105,15 @@ struct ProcessusController: RouteCollection {
         
         try await processus.delete(force: true, on: req.db)
         
+        let user = try await UserController().getUser(with: processus.$user.id, on: req.db)
+        
+        // Remove the Processus from the User's systemQualityFolders and recordsFolders
+        if processus.folder == .systemQuality {
+            try await UserController().removeSystemQualityProcessus(user: user, processusID: processusID, on: req)
+        } else if processus.folder == .record {
+            try await UserController().removeRecordProcessus(user: user, processusID: processusID, on: req)
+        }
+        
         return .noContent
     }
 }

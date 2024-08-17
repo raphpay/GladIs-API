@@ -69,4 +69,20 @@ extension UserController {
             user.recordsFolders = recordsFolders
         }
     }
+    
+    func removeSystemQualityProcessus(user: User, processusID: Processus.IDValue, on req: Request) async throws {
+        if let index = user.systemQualityFolders?.firstIndex(where: { $0.id == processusID }) {
+            user.systemQualityFolders?.remove(at: index)
+        }
+        
+        try await user.update(on: req.db)
+    }
+    
+    func removeRecordProcessus(user: User, processusID: Processus.IDValue, on req: Request) async throws {
+        if let index = user.recordsFolders?.firstIndex(where: { $0.id == processusID }) {
+            user.recordsFolders?.remove(at: index)
+        }
+        
+        try await user.update(on: req.db)
+    }
 }
