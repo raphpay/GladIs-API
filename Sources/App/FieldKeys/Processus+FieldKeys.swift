@@ -14,6 +14,6 @@ extension Processus {
         static let title = FieldKey(stringLiteral: "title")
         static let number = FieldKey(stringLiteral: "number")
         static let folder = FieldKey(stringLiteral: "folder")
-        static let user = FieldKey(stringLiteral: "user")
+        static let userID = FieldKey(stringLiteral: "userID")
     }
 }

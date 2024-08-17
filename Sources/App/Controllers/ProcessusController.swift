@@ -69,6 +69,14 @@ struct ProcessusController: RouteCollection {
         let input = try req.content.decode(Processus.UpdateInput.self)
         let updatedProcessus = try await input.update(processus, on: req)
         
+        let user = try await UserController().getUser(with: updatedProcessus.$user.id, on: req.db)
+        
+        if updatedProcessus.folder == .systemQuality {
+            try await UserController().updateUserSystemQualityFolder(user: user, processus: updatedProcessus, on: req)
+        } else if updatedProcessus.folder == .record {
+            try await UserController().updateUserRecordsFolder(user: user, processus: updatedProcessus, on: req)
+        }
+        
         return updatedProcessus
     }
     

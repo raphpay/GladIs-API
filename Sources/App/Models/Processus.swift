@@ -23,7 +23,7 @@ final class Processus: Model, Content, @unchecked Sendable {
     @Field(key: Processus.v20240806.folder)
     var folder: Folder
     
-    @Parent(key: Processus.v20240806.user)
+    @Parent(key: Processus.v20240806.userID)
     var user: User
     
     init() {}

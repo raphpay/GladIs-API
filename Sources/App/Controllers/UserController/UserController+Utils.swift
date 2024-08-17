@@ -49,4 +49,24 @@ extension UserController {
         
         return user
     }
+    
+    func updateUserSystemQualityFolder(user: User, processus: Processus, on req: Request) async throws {
+        if var systemQualityFolders = user.systemQualityFolders {
+            if let index = systemQualityFolders.firstIndex(where: { $0.id == processus.id }) {
+                systemQualityFolders[index] = processus
+            }
+            user.systemQualityFolders = systemQualityFolders
+        }
+        
+        try await user.update(on: req.db)
+    }
+    
+    func updateUserRecordsFolder(user: User, processus: Processus, on req: Request) async throws {
+        if var recordsFolders = user.recordsFolders {
+            if let index = recordsFolders.firstIndex(where: { $0.id == processus.id }) {
+                recordsFolders[index] = processus
+            }
+            user.recordsFolders = recordsFolders
+        }
+    }
 }
