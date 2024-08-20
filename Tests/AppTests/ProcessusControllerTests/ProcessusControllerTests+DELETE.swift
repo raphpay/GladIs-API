@@ -96,3 +96,20 @@ extension ProcessusControllerTests {
         }
     }
 }
+
+// MARK: - Delete All
+extension ProcessusControllerTests {
+    func testDeleteAll() async throws {
+        let processus = try await ProcessusControllerTests().createExpectedProcessus(with: adminID, on: app.db)
+        
+        try await app.test(.DELETE, "\(baseURL)/all") { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res async in
+            XCTAssertEqual(res.status, .noContent)
+            do {
+                let processes = try await Processus.query(on: app.db).all()
+                XCTAssertEqual(processes.count, 0)
+            } catch { }
+        }
+    }
+}
