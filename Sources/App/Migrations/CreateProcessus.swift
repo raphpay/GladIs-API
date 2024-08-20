@@ -14,7 +14,7 @@ struct CreateProcessus: AsyncMigration {
             .id()
             .field(Processus.v20240806.title, .string, .required)
             .field(Processus.v20240806.number, .int, .required)
-            .field(Processus.v20240806.user, .uuid, .required,
+            .field(Processus.v20240806.userID, .uuid, .required,
                    .references(User.v20240207.schemaName, User.v20240207.id, onDelete: .cascade))
             .update()
     }

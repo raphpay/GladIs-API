@@ -38,8 +38,8 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "messages", "all", use: getUserMessages)
         tokenAuthGroup.get(":userID", "messages", "received", use: getReceivedMessages)
         tokenAuthGroup.get(":userID", "messages", "sent", use: getSentMessages)
-        tokenAuthGroup.get(":userID", "processes", "systemQuality", use: getSystemQualityFolders)
-        tokenAuthGroup.get(":userID", "processes", "records", use: getRecordsFolders)
+        tokenAuthGroup.get(":userID", "processus", "systemQuality", use: getSystemQualityFolders)
+        tokenAuthGroup.get(":userID", "processus", "records", use: getRecordsFolders)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
