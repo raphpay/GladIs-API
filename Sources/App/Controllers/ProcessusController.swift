@@ -25,6 +25,7 @@ struct ProcessusController: RouteCollection {
         // Delete
         tokenAuthGroup.delete(":processusID", use: delete)
         tokenAuthGroup.delete("all", "for", ":userID", use: deleteAllForUser)
+        tokenAuthGroup.delete("all", use: deleteAll)
     }
     
     // MARK: - Create
@@ -109,28 +110,24 @@ struct ProcessusController: RouteCollection {
         
         return .noContent
     }
+    
+    @Sendable
+    func deleteAll(req: Request) async throws -> HTTPResponseStatus {
+        try await Processus
+            .query(on: req.db)
+            .all()
+            .delete(force: true, on: req.db)
+        return .noContent
+    }
 }
 
 // MARK: - Utils
 extension ProcessusController {
-    func getID(on req: Request) throws -> Processus.IDValue {
-        guard let processusID = req.parameters.get("processusID", as: Processus.IDValue.self) else {
-            throw Abort(.badRequest, reason: "badRequest.missingOrIncorrectProcessusID")
-        }
-        
-        return processusID
-    }
-    
-    func get(with id: Processus.IDValue, on req: Request) async throws -> Processus {
-        guard let processus = try await Processus.find(id, on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.processus")
-        }
-        
-        return processus
-    }
-    
+    // CREATE
     func create(_ input: Processus.Input, for user: User, on req: Request) async throws -> Processus {
         let process = input.toModel()
+        
+        try await checkProcessusNumberAvailability(process, for: user, on: req)
         
         try await process.save(on: req.db)
         
@@ -153,5 +150,44 @@ extension ProcessusController {
         }
         
         return process
+    }
+    
+    // GET
+    func getID(on req: Request) throws -> Processus.IDValue {
+        guard let processusID = req.parameters.get("processusID", as: Processus.IDValue.self) else {
+            throw Abort(.badRequest, reason: "badRequest.missingOrIncorrectProcessusID")
+        }
+        
+        return processusID
+    }
+    
+    func get(with id: Processus.IDValue, on req: Request) async throws -> Processus {
+        guard let processus = try await Processus.find(id, on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.processus")
+        }
+        
+        return processus
+    }
+    
+    // PRIVATE
+    private func checkProcessusNumberAvailability(_ process: Processus, for user: User, on req: Request) async throws {
+        let existingProcess = try await Processus.query(on: req.db)
+            .filter(\.$user.$id == user.id!)
+            .filter(\.$folder == process.folder)
+            .filter(\.$number == process.number)
+            .first()
+        
+        if existingProcess != nil {
+            if let maxNumberProcess = try await Processus.query(on: req.db)
+                .filter(\.$user.$id == user.id!)
+                .filter(\.$folder == process.folder)
+                .sort(\.$number, .descending)
+                .first() {
+                
+                process.number = maxNumberProcess.number + 1
+            } else {
+                process.number = 1
+            }
+        }
     }
 }
