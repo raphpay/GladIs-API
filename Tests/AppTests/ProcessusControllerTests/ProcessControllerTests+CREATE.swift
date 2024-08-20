@@ -134,6 +134,32 @@ extension ProcessusControllerTests {
             XCTAssertTrue(res.body.string.contains("notFound.user"))
         }
     }
+    
+    func testCreateWithSameNumberSucceed() async throws {
+        let _ = try await ProcessusControllerTests().createExpectedProcessus(for: admin, in: .systemQuality, on: app.db)
+        let input = Processus.Input(title: "\(expectedTitle)2", number: expectedNumber, userID: adminID, folder: expectedFolder)
+        
+        try await app.test(.POST, baseURL) { req in
+            try req.content.encode(input)
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res async in
+            XCTAssertEqual(res.status, .ok)
+            do {
+                let processus = try res.content.decode(Processus.self)
+                XCTAssertEqual(processus.title, "\(expectedTitle)2")
+                XCTAssertEqual(processus.number, expectedNumber + 1)
+                XCTAssertEqual(processus.folder, .systemQuality)
+                
+                let users = try await User.query(on: app.db).all()
+                XCTAssertNotNil(users[0].systemQualityFolders)
+                if let systemQualityFolders = users[0].systemQualityFolders {
+                    XCTAssertEqual(systemQualityFolders.count, 2)
+                    XCTAssertEqual(systemQualityFolders[1].title, "\(expectedTitle)2")
+                }
+                XCTAssertNil(users[0].recordsFolders)
+            } catch {}
+        }
+    }
 }
 
 // MARK: - Create Multiple

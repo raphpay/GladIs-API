@@ -24,4 +24,20 @@ extension ProcessusControllerTests {
         try await processus.save(on: db)
         return processus
     }
+    
+    func createExpectedProcessus(for user: User, in folder: Processus.Folder, on db: Database) async throws -> Processus {
+        let userID = try user.requireID()
+        let processus = Processus(title: expectedTitle, number: expectedNumber, folder: expectedFolder, userID: userID)
+        
+        if folder == .systemQuality {
+            user.systemQualityFolders = [processus]
+        } else if folder == .record {
+            user.recordsFolders = [processus]
+        }
+        
+        try await user.update(on: db)
+        
+        try await processus.save(on: db)
+        return processus
+    }
 }
