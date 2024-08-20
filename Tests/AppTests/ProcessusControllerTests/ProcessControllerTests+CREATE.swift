@@ -21,7 +21,6 @@ extension ProcessusControllerTests {
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .ok)
             do {
-                
                 let processus = try res.content.decode(Processus.self)
                 XCTAssertEqual(processus.title, expectedTitle)
                 XCTAssertEqual(processus.number, expectedNumber)
@@ -133,6 +132,40 @@ extension ProcessusControllerTests {
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .notFound)
             XCTAssertTrue(res.body.string.contains("notFound.user"))
+        }
+    }
+}
+
+// MARK: - Create Multiple
+extension ProcessusControllerTests {
+    func testCreateMultipleSucceed() async throws {
+        let processInput = Processus.Input(title: expectedTitle, number: expectedNumber, userID: adminID, folder: expectedFolder)
+        let processInputTwo = Processus.Input(title: "\(expectedTitle)2", number: expectedNumber + 1, userID: adminID, folder: expectedFolder)
+        let input = Processus.MultipleInput(inputs: [processInput, processInputTwo], userID: adminID)
+        
+        try await app.test(.POST, "\(baseURL)/multiple") { req in
+            try req.content.encode(input)
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res async in
+            XCTAssertEqual(res.status, .ok)
+            do {
+                let processus = try res.content.decode([Processus].self)
+                XCTAssertEqual(processus[0].title, expectedTitle)
+                XCTAssertEqual(processus[0].number, expectedNumber)
+                XCTAssertEqual(processus[0].folder, .systemQuality)
+                
+                XCTAssertEqual(processus[1].title, "\(expectedTitle)2")
+                XCTAssertEqual(processus[1].number, expectedNumber + 1)
+                XCTAssertEqual(processus[1].folder, .systemQuality)
+                
+                let users = try await User.query(on: app.db).all()
+                XCTAssertNotNil(users[0].systemQualityFolders)
+                if let systemQualityFolders = users[0].systemQualityFolders {
+                    XCTAssertEqual(systemQualityFolders.count, 2)
+                    XCTAssertEqual(systemQualityFolders[0].title, processus[0].title)
+                }
+                XCTAssertNil(users[0].recordsFolders)
+            } catch {}
         }
     }
 }
