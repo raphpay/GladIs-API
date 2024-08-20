@@ -17,6 +17,7 @@ struct ProcessusController: RouteCollection {
         let tokenAuthGroup = processes.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: create)
+        tokenAuthGroup.post("multiple", use: createMultiple)
         // Read
         tokenAuthGroup.get(use: getAll)
         // Update
@@ -30,28 +31,20 @@ struct ProcessusController: RouteCollection {
     func create(req: Request) async throws -> Processus {
         let input = try req.content.decode(Processus.Input.self)
         let user = try await UserController().getUser(with: input.userID, on: req.db)
-        let process = input.toModel()
-        
-        try await process.save(on: req.db)
-        
-        if process.folder == .systemQuality {
-            if var systemQualityFolders = user.systemQualityFolders {
-                systemQualityFolders.append(process)
-                user.systemQualityFolders = systemQualityFolders
-            } else {
-                user.systemQualityFolders = [process]
-            }
-            try await user.update(on: req.db)
-        } else if process.folder == .record {
-            if var records = user.recordsFolders {
-                records.append(process)
-                user.recordsFolders = records
-            } else {
-                user.recordsFolders = [process]
-            }
-            try await user.update(on: req.db)
-        }
+        let process = try await create(input, for: user, on: req)
         return process
+    }
+    
+    func createMultiple(req: Request) async throws -> [Processus] {
+        let input = try req.content.decode(Processus.MultipleInput.self)
+        let user = try await UserController().getUser(with: input.userID, on: req.db)
+        var createdProcessus: [Processus] = []
+        for inputProcess in input.inputs {
+            let process = try await create(inputProcess, for: user, on: req)
+            createdProcessus.append(process)
+        }
+        
+        return createdProcessus
     }
     
     // MARK: - READ
@@ -134,5 +127,31 @@ extension ProcessusController {
         }
         
         return processus
+    }
+    
+    func create(_ input: Processus.Input, for user: User, on req: Request) async throws -> Processus {
+        let process = input.toModel()
+        
+        try await process.save(on: req.db)
+        
+        if process.folder == .systemQuality {
+            if var systemQualityFolders = user.systemQualityFolders {
+                systemQualityFolders.append(process)
+                user.systemQualityFolders = systemQualityFolders
+            } else {
+                user.systemQualityFolders = [process]
+            }
+            try await user.update(on: req.db)
+        } else if process.folder == .record {
+            if var records = user.recordsFolders {
+                records.append(process)
+                user.recordsFolders = records
+            } else {
+                user.recordsFolders = [process]
+            }
+            try await user.update(on: req.db)
+        }
+        
+        return process
     }
 }

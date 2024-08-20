@@ -24,6 +24,14 @@ extension Processus {
         }
     }
     
+    struct MultipleInput: Content {
+        let inputs: [Input]
+        let userID: User.IDValue
+    }
+}
+
+// MARK: - Update
+extension Processus {
     struct UpdateInput: Content {
         let title: String?
         let number: Int?
