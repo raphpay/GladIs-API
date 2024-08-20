@@ -15,7 +15,7 @@ extension ProcessusControllerTests {
     func testDeleteAllForUserSucceed() async throws {
         let _ = try await ProcessusControllerTests().createExpectedProcessus(with: adminID, on: app.db)
         
-        try await app.test(.DELETE, "\(baseURL)/\(adminID!)") { req in
+        try await app.test(.DELETE, "\(baseURL)/all/for/\(adminID!)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .noContent)
@@ -27,7 +27,7 @@ extension ProcessusControllerTests {
     }
     
     func testDeleteAllWithIncorrectIDFails() async throws {
-        try await app.test(.DELETE, "\(baseURL)/12345") { req in
+        try await app.test(.DELETE, "\(baseURL)/all/for/12345") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .badRequest)
@@ -37,7 +37,7 @@ extension ProcessusControllerTests {
     
     func testDeleteAllWithInexistantUserFails() async throws {
         let falseUserID = UUID()
-        try await app.test(.DELETE, "\(baseURL)/\(falseUserID)") { req in
+        try await app.test(.DELETE, "\(baseURL)/all/for/\(falseUserID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .notFound)
