@@ -14,9 +14,11 @@ struct CreateFolder: AsyncMigration {
             .id()
             .field(Folder.v20240806.title, .string, .required)
             .field(Folder.v20240806.number, .int, .required)
+            .field(Folder.v20240806.sleeve, .string, .required)
             .field(Folder.v20240806.userID, .uuid, .required,
                    .references(User.v20240207.schemaName, User.v20240207.id, onDelete: .cascade))
-            .update()
+            .field(Folder.v20240806.path, .string)
+            .create()
     }
 
     func revert(on database: Database) async throws {
