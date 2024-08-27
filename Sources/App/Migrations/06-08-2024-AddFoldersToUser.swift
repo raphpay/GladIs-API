@@ -12,8 +12,8 @@ struct AddFoldersToUser: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(User.v20240207.schemaName)
             .id()
-            .field(User.v20240806.systemQualityFolders, .array(of: .custom([Process.self])))
-            .field(User.v20240806.recordsFolders, .array(of: .custom([Process.self])))
+            .field(User.v20240806.systemQualityFolders, .array(of: .custom([Folder.self])))
+            .field(User.v20240806.recordsFolders, .array(of: .custom([Folder.self])))
             .update()
     }
 
