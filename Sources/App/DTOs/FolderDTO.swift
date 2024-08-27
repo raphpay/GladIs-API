@@ -8,8 +8,8 @@
 import Fluent
 import Vapor
 
-extension Processus {
-    enum Folder: String, Codable {
+extension Folder {
+    enum Sleeve: String, Codable {
         case systemQuality, record
     }
     
@@ -17,10 +17,10 @@ extension Processus {
         let title: String
         let number: Int
         let userID: User.IDValue
-        let folder: Folder
+        let sleeve: Sleeve
         
-        func toModel() -> Processus {
-            .init(title: title, number: number, folder: folder, userID: userID)
+        func toModel() -> Folder {
+            .init(title: title, number: number, sleeve: sleeve, userID: userID)
         }
     }
     
@@ -31,24 +31,24 @@ extension Processus {
 }
 
 // MARK: - Update
-extension Processus {
+extension Folder {
     struct UpdateInput: Content {
         let title: String?
         let number: Int?
         
-        func update(_ processus: Processus, on req: Request) async throws -> Processus {
-            let updatedProcessus = processus
+        func update(_ folder: Folder, on req: Request) async throws -> Folder {
+            let updatedFolder = folder
             
             if let title = title {
-                updatedProcessus.title = title
+                updatedFolder.title = title
             }
             if let number = number {
-                updatedProcessus.number = number
+                updatedFolder.number = number
             }
             
-            try await updatedProcessus.update(on: req.db)
+            try await updatedFolder.update(on: req.db)
             
-            return updatedProcessus
+            return updatedFolder
         }
     }
 }

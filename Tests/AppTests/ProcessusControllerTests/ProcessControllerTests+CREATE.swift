@@ -11,9 +11,9 @@ import Fluent
 import Vapor
 
 // MARK: - Create
-extension ProcessusControllerTests {
+extension FolderControllerTests {
     func testCreateSystemQualityProcessSucceed() async throws {
-        let input = Processus.Input(title: expectedTitle, number: expectedNumber, userID: adminID, folder: .systemQuality)
+        let input = Folder.Input(title: expectedTitle, number: expectedNumber, userID: adminID, sleeve: .systemQuality)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -21,16 +21,16 @@ extension ProcessusControllerTests {
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .ok)
             do {
-                let processus = try res.content.decode(Processus.self)
-                XCTAssertEqual(processus.title, expectedTitle)
-                XCTAssertEqual(processus.number, expectedNumber)
-                XCTAssertEqual(processus.folder, .systemQuality)
+                let folder = try res.content.decode(Folder.self)
+                XCTAssertEqual(folder.title, expectedTitle)
+                XCTAssertEqual(folder.number, expectedNumber)
+                XCTAssertEqual(folder.sleeve, .systemQuality)
                 
                 let users = try await User.query(on: app.db).all()
                 XCTAssertNotNil(users[0].systemQualityFolders)
                 if let systemQualityFolders = users[0].systemQualityFolders {
                     XCTAssertEqual(systemQualityFolders.count, 1)
-                    XCTAssertEqual(systemQualityFolders[0].title, processus.title)
+                    XCTAssertEqual(systemQualityFolders[0].title, folder.title)
                 }
                 XCTAssertNil(users[0].recordsFolders)
             } catch {}
@@ -38,11 +38,11 @@ extension ProcessusControllerTests {
     }
     
     func testCreateSystemQualityFolderWithExistantFolderSucceed() async throws {
-        let newProcessTitle = "expectedProcessusTitle"
+        let newProcessTitle = "expectedFolderTitle"
         let newProcessNumber = 2
-        let process = Processus(title: expectedTitle, number: expectedNumber, folder: .systemQuality, userID: adminID)
-        let input = Processus.Input(title: newProcessTitle, number: 2, userID: adminID, folder: expectedFolder)
-        try await saveProcess(to: admin, processus: [process], folder: expectedFolder, on: app.db)
+        let folder = Folder(title: expectedTitle, number: expectedNumber, sleeve: .systemQuality, userID: adminID)
+        let input = Folder.Input(title: newProcessTitle, number: 2, userID: adminID, sleeve: expectedSleeve)
+        try await saveProcess(to: admin, folder: [folder], sleeve: expectedSleeve, on: app.db)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -50,10 +50,10 @@ extension ProcessusControllerTests {
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .ok)
             do {
-                let processus = try res.content.decode(Processus.self)
-                XCTAssertEqual(processus.title, newProcessTitle)
-                XCTAssertEqual(processus.number, newProcessNumber)
-                XCTAssertEqual(processus.folder, expectedFolder)
+                let folder = try res.content.decode(Folder.self)
+                XCTAssertEqual(folder.title, newProcessTitle)
+                XCTAssertEqual(folder.number, newProcessNumber)
+                XCTAssertEqual(folder.sleeve, expectedSleeve)
                 
                 let users = try await User.query(on: app.db).all()
                 XCTAssertNotNil(users[0].systemQualityFolders)
@@ -68,7 +68,7 @@ extension ProcessusControllerTests {
     }
     
     func testCreateRecordProcessSucceed() async throws {
-        let input = Processus.Input(title: expectedTitle, number: expectedNumber, userID: adminID, folder: .record)
+        let input = Folder.Input(title: expectedTitle, number: expectedNumber, userID: adminID, sleeve: .record)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -77,16 +77,16 @@ extension ProcessusControllerTests {
             XCTAssertEqual(res.status, .ok)
             do {
                 
-                let processus = try res.content.decode(Processus.self)
-                XCTAssertEqual(processus.title, expectedTitle)
-                XCTAssertEqual(processus.number, expectedNumber)
-                XCTAssertEqual(processus.folder, .record)
+                let folder = try res.content.decode(Folder.self)
+                XCTAssertEqual(folder.title, expectedTitle)
+                XCTAssertEqual(folder.number, expectedNumber)
+                XCTAssertEqual(folder.sleeve, .record)
                 
                 let users = try await User.query(on: app.db).all()
                 XCTAssertNotNil(users[0].recordsFolders)
                 if let recordsFolders = users[0].recordsFolders {
                     XCTAssertEqual(recordsFolders.count, 1)
-                    XCTAssertEqual(recordsFolders[0].title, processus.title)
+                    XCTAssertEqual(recordsFolders[0].title, folder.title)
                 }
                 XCTAssertNil(users[0].systemQualityFolders)
             } catch {}
@@ -94,11 +94,11 @@ extension ProcessusControllerTests {
     }
     
     func testCreateRecordFolderWithExistantFolderSucceed() async throws {
-        let newProcessTitle = "expectedProcessusTitle"
+        let newProcessTitle = "expectedFolderTitle"
         let newProcessNumber = 2
-        let input = Processus.Input(title: newProcessTitle, number: 2, userID: adminID, folder: .record)
-        let process = Processus(title: expectedTitle, number: expectedNumber, folder: .record, userID: adminID)
-        try await saveProcess(to: admin, processus: [process], folder: .record, on: app.db)
+        let input = Folder.Input(title: newProcessTitle, number: 2, userID: adminID, sleeve: .record)
+        let folder = Folder(title: expectedTitle, number: expectedNumber, sleeve: .record, userID: adminID)
+        try await saveProcess(to: admin, folder: [folder], sleeve: .record, on: app.db)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -106,10 +106,10 @@ extension ProcessusControllerTests {
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .ok)
             do {
-                let processus = try res.content.decode(Processus.self)
-                XCTAssertEqual(processus.title, newProcessTitle)
-                XCTAssertEqual(processus.number, newProcessNumber)
-                XCTAssertEqual(processus.folder, .record)
+                let folder = try res.content.decode(Folder.self)
+                XCTAssertEqual(folder.title, newProcessTitle)
+                XCTAssertEqual(folder.number, newProcessNumber)
+                XCTAssertEqual(folder.sleeve, .record)
                 
                 let users = try await User.query(on: app.db).all()
                 XCTAssertNotNil(users[0].recordsFolders)
@@ -124,7 +124,7 @@ extension ProcessusControllerTests {
     }
     
     func testCreateWithInexistantUserFails() async throws {
-        let input = Processus.Input(title: expectedTitle, number: expectedNumber, userID: UUID(), folder: expectedFolder)
+        let input = Folder.Input(title: expectedTitle, number: expectedNumber, userID: UUID(), sleeve: expectedSleeve)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -136,8 +136,8 @@ extension ProcessusControllerTests {
     }
     
     func testCreateWithSameNumberSucceed() async throws {
-        let _ = try await ProcessusControllerTests().createExpectedProcessus(for: admin, in: .systemQuality, on: app.db)
-        let input = Processus.Input(title: "\(expectedTitle)2", number: expectedNumber, userID: adminID, folder: expectedFolder)
+        let _ = try await FolderControllerTests().createExpectedFolder(for: admin, in: .systemQuality, on: app.db)
+        let input = Folder.Input(title: "\(expectedTitle)2", number: expectedNumber, userID: adminID, sleeve: expectedSleeve)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -145,10 +145,10 @@ extension ProcessusControllerTests {
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .ok)
             do {
-                let processus = try res.content.decode(Processus.self)
-                XCTAssertEqual(processus.title, "\(expectedTitle)2")
-                XCTAssertEqual(processus.number, expectedNumber + 1)
-                XCTAssertEqual(processus.folder, .systemQuality)
+                let folder = try res.content.decode(Folder.self)
+                XCTAssertEqual(folder.title, "\(expectedTitle)2")
+                XCTAssertEqual(folder.number, expectedNumber + 1)
+                XCTAssertEqual(folder.sleeve, .systemQuality)
                 
                 let users = try await User.query(on: app.db).all()
                 XCTAssertNotNil(users[0].systemQualityFolders)
@@ -163,11 +163,11 @@ extension ProcessusControllerTests {
 }
 
 // MARK: - Create Multiple
-extension ProcessusControllerTests {
+extension FolderControllerTests {
     func testCreateMultipleSucceed() async throws {
-        let processInput = Processus.Input(title: expectedTitle, number: expectedNumber, userID: adminID, folder: expectedFolder)
-        let processInputTwo = Processus.Input(title: "\(expectedTitle)2", number: expectedNumber + 1, userID: adminID, folder: expectedFolder)
-        let input = Processus.MultipleInput(inputs: [processInput, processInputTwo], userID: adminID)
+        let folderInput = Folder.Input(title: expectedTitle, number: expectedNumber, userID: adminID, sleeve: expectedSleeve)
+        let folderInputTwo = Folder.Input(title: "\(expectedTitle)2", number: expectedNumber + 1, userID: adminID, sleeve: expectedSleeve)
+        let input = Folder.MultipleInput(inputs: [folderInput, folderInputTwo], userID: adminID)
         
         try await app.test(.POST, "\(baseURL)/multiple") { req in
             try req.content.encode(input)
@@ -175,20 +175,20 @@ extension ProcessusControllerTests {
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .ok)
             do {
-                let processus = try res.content.decode([Processus].self)
-                XCTAssertEqual(processus[0].title, expectedTitle)
-                XCTAssertEqual(processus[0].number, expectedNumber)
-                XCTAssertEqual(processus[0].folder, .systemQuality)
+                let folder = try res.content.decode([Folder].self)
+                XCTAssertEqual(folder[0].title, expectedTitle)
+                XCTAssertEqual(folder[0].number, expectedNumber)
+                XCTAssertEqual(folder[0].sleeve, .systemQuality)
                 
-                XCTAssertEqual(processus[1].title, "\(expectedTitle)2")
-                XCTAssertEqual(processus[1].number, expectedNumber + 1)
-                XCTAssertEqual(processus[1].folder, .systemQuality)
+                XCTAssertEqual(folder[1].title, "\(expectedTitle)2")
+                XCTAssertEqual(folder[1].number, expectedNumber + 1)
+                XCTAssertEqual(folder[1].sleeve, .systemQuality)
                 
                 let users = try await User.query(on: app.db).all()
                 XCTAssertNotNil(users[0].systemQualityFolders)
                 if let systemQualityFolders = users[0].systemQualityFolders {
                     XCTAssertEqual(systemQualityFolders.count, 2)
-                    XCTAssertEqual(systemQualityFolders[0].title, processus[0].title)
+                    XCTAssertEqual(systemQualityFolders[0].title, folder[0].title)
                 }
                 XCTAssertNil(users[0].recordsFolders)
             } catch {}

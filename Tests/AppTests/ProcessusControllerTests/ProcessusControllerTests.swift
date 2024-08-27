@@ -1,5 +1,5 @@
 //
-//  ProcessusControllerTests.swift
+//  FolderControllerTests.swift
 //
 //
 //  Created by Raphaël Payet on 17/04/2024.
@@ -8,10 +8,10 @@
 @testable import App
 import XCTVapor
 
-final class ProcessusControllerTests: XCTestCase {
+final class FolderControllerTests: XCTestCase {
     
     var app: Application!
-    let baseURL = "api/processus"
+    let baseURL = "api/folders"
     var admin: User!
     var adminID: User.IDValue!
     var token: Token!
@@ -20,7 +20,7 @@ final class ProcessusControllerTests: XCTestCase {
     // Process
     let expectedTitle = "expectedTitle"
     let expectedNumber = 1
-    let expectedFolder = Processus.Folder.systemQuality
+    let expectedSleeve = Folder.Sleeve.systemQuality
     
     override func setUp() async throws {
         try await super.setUp()
@@ -38,7 +38,7 @@ final class ProcessusControllerTests: XCTestCase {
         try await admin.delete(force: true, on: app.db)
         adminID = nil
         try await token.delete(force: true, on: app.db)
-        try await Processus.query(on: app.db).all().delete(force: true, on: app.db)
+        try await Folder.query(on: app.db).all().delete(force: true, on: app.db)
         app.shutdown()
         try await super.tearDown()
     }
