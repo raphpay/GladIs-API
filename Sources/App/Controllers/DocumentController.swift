@@ -55,7 +55,6 @@ struct DocumentController: RouteCollection {
         return document
     }
     
-    
     func uploadLogo(req: Request) async throws -> Document {
         let input = try req.content.decode(Document.Input.self)
         let uploadDirectory = req.application.directory.publicDirectory + input.path
@@ -157,40 +156,49 @@ struct DocumentController: RouteCollection {
     // MARK: - Delete
     func remove(req: Request) async throws -> HTTPResponseStatus {
         let document = try await getDocument(req: req)
-        let filePath = req.application.directory.publicDirectory + document.path + document.name
-        
-        if FileManager.default.fileExists(atPath: filePath) {
-            try FileManager.default.removeItem(atPath: filePath)
-        }
-        
-        do {
-            try await document.delete(force: true, on: req.db)
-            return .noContent
-        } catch let error {
-            throw Abort(.badRequest, reason: error.localizedDescription)
-        }
+        return try await delete(document: document, on: req)
     }
     
     func removeAll(req: Request) async throws -> HTTPResponseStatus {
         let documents = try await getAllDocuments(req: req)
         
         for document in documents {
-            let filePath = req.application.directory.publicDirectory + document.path + document.name
-            
-            if FileManager.default.fileExists(atPath: filePath) {
-                try FileManager.default.removeItem(atPath: filePath)
-            }
-            
-            do {
-                try await document.delete(force: true, on: req.db)
-            } catch let error {
-                throw Abort(.badRequest, reason: error.localizedDescription)
-            }
+            let _ = try await delete(document: document, on: req)
         }
         
         return .noContent
     }
-    
 }
 
 
+// MARK: - Utils
+extension DocumentController {
+    func delete(document: Document, on req: Request) async throws -> HTTPResponseStatus {
+        let baseDirectory = req.application.directory.publicDirectory
+        let filePath = baseDirectory + document.path + document.name
+        if FileManager.default.fileExists(atPath: filePath) {
+            try FileManager.default.removeItem(atPath: filePath)
+        }
+        
+        // Delete empty directories
+        var currentPath = (filePath as NSString).deletingLastPathComponent
+        while currentPath.hasPrefix(baseDirectory) && currentPath != baseDirectory {
+            do {
+                let contents = try FileManager.default.contentsOfDirectory(atPath: currentPath)
+                if contents.isEmpty {
+                    try FileManager.default.removeItem(atPath: currentPath)
+                } else {
+                    break // Directory not empty, stop here
+                }
+            } catch {
+                // Failed to remove directory
+                break
+            }
+            currentPath = (currentPath as NSString).deletingLastPathComponent
+        }
+        
+        try await document.delete(force: true, on: req.db)
+        
+        return .noContent
+    }
+}
