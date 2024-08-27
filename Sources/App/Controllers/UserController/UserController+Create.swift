@@ -61,4 +61,20 @@ extension UserController {
         
         return .ok
     }
+    
+    func getRecordsFolders(req: Request) async throws -> [Folder] {
+        // Retrieve the user ID from the request.
+        let userID = try await getUserID(on: req)
+        
+        // Fetch the user from the database using the user ID.
+        let user = try await getUser(with: userID, on: req.db)
+        
+        // Decode the input from the request to get the desired path.
+        let inputPath = try req.content.decode(Folder.UserRecordPathInput.self).path
+        
+        // Filter the user's records folders to find folders matching the input path.
+        let folders = user.recordsFolders?.filter { $0.path == inputPath } ?? []
+
+        return folders
+    }
 }

@@ -196,10 +196,4 @@ extension UserController {
         let user = try await getUser(with: userID, on: req.db)
         return user.systemQualityFolders ?? []
     }
-    
-    func getRecordsFolders(req: Request) async throws -> [Folder] {
-        let userID = try await getUserID(on: req)
-        let user = try await getUser(with: userID, on: req.db)
-        return user.recordsFolders ?? []
-    }
 }

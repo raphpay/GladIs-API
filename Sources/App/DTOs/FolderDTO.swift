@@ -8,6 +8,7 @@
 import Fluent
 import Vapor
 
+// MARK: - Get
 extension Folder {
     enum Sleeve: String, Codable {
         case systemQuality, record
@@ -55,5 +56,12 @@ extension Folder {
             
             return updatedFolder
         }
+    }
+}
+
+// MARK: - Get
+extension Folder {
+    struct UserRecordPathInput: Content {
+        let path: String
     }
 }

@@ -24,6 +24,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.post(":userID", "technicalDocumentationTabs", ":tabID", use: addTechnicalDocTab)
         tokenAuthGroup.post(":userID", "verifyPassword", use: verifyPassword)
         tokenAuthGroup.post("byMail", use: getUserByMail)
+        tokenAuthGroup.post(":userID", "folders", "records", use: getRecordsFolders)
         // Read
         tokenAuthGroup.get(use: getAll)
         tokenAuthGroup.get("clients", use: getAllClients)
@@ -39,7 +40,6 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "messages", "received", use: getReceivedMessages)
         tokenAuthGroup.get(":userID", "messages", "sent", use: getSentMessages)
         tokenAuthGroup.get(":userID", "folders", "systemQuality", use: getSystemQualityFolders)
-        tokenAuthGroup.get(":userID", "folders", "records", use: getRecordsFolders)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
         tokenAuthGroup.put(":userID", "changePassword", use: changePassword)
