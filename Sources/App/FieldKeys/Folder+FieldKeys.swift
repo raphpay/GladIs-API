@@ -7,13 +7,14 @@
 
 import Fluent
 
-extension Processus {
+extension Folder {
     enum v20240806 {
-        static let schemaName = "processes"
+        static let schemaName = "folders"
         static let id = FieldKey(stringLiteral: "id")
         static let title = FieldKey(stringLiteral: "title")
         static let number = FieldKey(stringLiteral: "number")
-        static let folder = FieldKey(stringLiteral: "folder")
+        static let sleeve = FieldKey(stringLiteral: "sleeve")
+        static let path = FieldKey(stringLiteral: "path")
         static let userID = FieldKey(stringLiteral: "userID")
     }
 }

@@ -28,7 +28,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateForm())
     // 05-08-2024
     app.migrations.add(AddFoldersToUser())
-    app.migrations.add(CreateProcessus())
+    app.migrations.add(CreateFolder())
     
     switch app.environment {
         case .development:

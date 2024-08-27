@@ -50,10 +50,10 @@ extension UserController {
         return user
     }
     
-    func updateUserSystemQualityFolder(user: User, processus: Processus, on req: Request) async throws {
+    func updateUserSystemQualityFolder(user: User, folder: Folder, on req: Request) async throws {
         if var systemQualityFolders = user.systemQualityFolders {
-            if let index = systemQualityFolders.firstIndex(where: { $0.id == processus.id }) {
-                systemQualityFolders[index] = processus
+            if let index = systemQualityFolders.firstIndex(where: { $0.id == folder.id }) {
+                systemQualityFolders[index] = folder
             }
             user.systemQualityFolders = systemQualityFolders
         }
@@ -61,25 +61,25 @@ extension UserController {
         try await user.update(on: req.db)
     }
     
-    func updateUserRecordsFolder(user: User, processus: Processus, on req: Request) async throws {
+    func updateUserRecordsFolder(user: User, folder: Folder, on req: Request) async throws {
         if var recordsFolders = user.recordsFolders {
-            if let index = recordsFolders.firstIndex(where: { $0.id == processus.id }) {
-                recordsFolders[index] = processus
+            if let index = recordsFolders.firstIndex(where: { $0.id == folder.id }) {
+                recordsFolders[index] = folder
             }
             user.recordsFolders = recordsFolders
         }
     }
     
-    func removeSystemQualityProcessus(user: User, processusID: Processus.IDValue, on req: Request) async throws {
-        if let index = user.systemQualityFolders?.firstIndex(where: { $0.id == processusID }) {
+    func removeSystemQualityFolder(user: User, folderID: Folder.IDValue, on req: Request) async throws {
+        if let index = user.systemQualityFolders?.firstIndex(where: { $0.id == folderID }) {
             user.systemQualityFolders?.remove(at: index)
         }
         
         try await user.update(on: req.db)
     }
     
-    func removeRecordProcessus(user: User, processusID: Processus.IDValue, on req: Request) async throws {
-        if let index = user.recordsFolders?.firstIndex(where: { $0.id == processusID }) {
+    func removeRecordFolder(user: User, folderID: Folder.IDValue, on req: Request) async throws {
+        if let index = user.recordsFolders?.firstIndex(where: { $0.id == folderID }) {
             user.recordsFolders?.remove(at: index)
         }
         

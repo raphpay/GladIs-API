@@ -1,5 +1,5 @@
 //
-//  ProcessusControllerTests+DELETE.swift
+//  FolderControllerTests+DELETE.swift
 //  
 //
 //  Created by Raphaël Payet on 08/08/2024.
@@ -11,18 +11,18 @@ import Fluent
 import Vapor
 
 // MARK: - Delete
-extension ProcessusControllerTests {
+extension FolderControllerTests {
     func testDeleteSucceed() async throws {
-        let processus = try await ProcessusControllerTests().createExpectedProcessus(with: adminID, on: app.db)
-        let processusID = try processus.requireID()
+        let folder = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
+        let folderID = try folder.requireID()
         
-        try await app.test(.DELETE, "\(baseURL)/\(processusID)") { req in
+        try await app.test(.DELETE, "\(baseURL)/\(folderID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .noContent)
             do {
-                let processes = try await Processus.query(on: app.db).all()
-                XCTAssertEqual(processes.count, 0)
+                let folderes = try await Folder.query(on: app.db).all()
+                XCTAssertEqual(folderes.count, 0)
             } catch { }
         }
     }
@@ -32,27 +32,27 @@ extension ProcessusControllerTests {
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .badRequest)
-            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectProcessusID"))
+            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectFolderID"))
         }
     }
     
-    func testDeleteWithInexistantProcessusFails() async throws {
+    func testDeleteWithInexistantFolderFails() async throws {
         let falseID = UUID()
         
         try await app.test(.DELETE, "\(baseURL)/\(falseID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .notFound)
-            XCTAssertTrue(res.body.string.contains("notFound.processus"))
+            XCTAssertTrue(res.body.string.contains("notFound.folder"))
         }
     }
     
     func testDeleteWithInexistantUserFails() async throws {
         let falseUserID = UUID()
-        let processus = try await ProcessusControllerTests().createExpectedProcessus(with: falseUserID, on: app.db)
-        let processusID = try processus.requireID()
+        let folder = try await FolderControllerTests().createExpectedFolder(with: falseUserID, on: app.db)
+        let folderID = try folder.requireID()
         
-        try await app.test(.DELETE, "\(baseURL)/\(processusID)") { req in
+        try await app.test(.DELETE, "\(baseURL)/\(folderID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .notFound)
@@ -62,17 +62,17 @@ extension ProcessusControllerTests {
 }
 
 // MARK: - Delete All For User
-extension ProcessusControllerTests {
+extension FolderControllerTests {
     func testDeleteAllForUserSucceed() async throws {
-        let _ = try await ProcessusControllerTests().createExpectedProcessus(with: adminID, on: app.db)
+        let _ = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
         
         try await app.test(.DELETE, "\(baseURL)/all/for/\(adminID!)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .noContent)
             do {
-                let processes = try await Processus.query(on: app.db).all()
-                XCTAssertEqual(processes.count, 0)
+                let folderes = try await Folder.query(on: app.db).all()
+                XCTAssertEqual(folderes.count, 0)
             } catch { }
         }
     }
@@ -98,17 +98,17 @@ extension ProcessusControllerTests {
 }
 
 // MARK: - Delete All
-extension ProcessusControllerTests {
+extension FolderControllerTests {
     func testDeleteAll() async throws {
-        let processus = try await ProcessusControllerTests().createExpectedProcessus(with: adminID, on: app.db)
+        let folder = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
         
         try await app.test(.DELETE, "\(baseURL)/all") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .noContent)
             do {
-                let processes = try await Processus.query(on: app.db).all()
-                XCTAssertEqual(processes.count, 0)
+                let folders = try await Folder.query(on: app.db).all()
+                XCTAssertEqual(folders.count, 0)
             } catch { }
         }
     }

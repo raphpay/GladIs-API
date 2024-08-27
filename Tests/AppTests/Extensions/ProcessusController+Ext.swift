@@ -9,35 +9,35 @@
 import XCTVapor
 import Fluent
 
-extension ProcessusControllerTests {
-    func saveProcess(to admin: User, processus: [Processus], folder: Processus.Folder, on db: Database) async throws {
-        if folder == .systemQuality {
-            admin.systemQualityFolders = processus
+extension FolderControllerTests {
+    func saveProcess(to admin: User, folder: [Folder], sleeve: Folder.Sleeve, on db: Database) async throws {
+        if sleeve == .systemQuality {
+            admin.systemQualityFolders = folder
         } else {
-            admin.recordsFolders = processus
+            admin.recordsFolders = folder
         }
         try await admin.update(on: db)
     }
     
-    func createExpectedProcessus(with userID: User.IDValue, on db: Database) async throws -> Processus {
-        let processus = Processus(title: expectedTitle, number: expectedNumber, folder: expectedFolder, userID: userID)
-        try await processus.save(on: db)
-        return processus
+    func createExpectedFolder(with userID: User.IDValue, on db: Database) async throws -> Folder {
+        let folder = Folder(title: expectedTitle, number: expectedNumber, sleeve: expectedSleeve, userID: userID)
+        try await folder.save(on: db)
+        return folder
     }
     
-    func createExpectedProcessus(for user: User, in folder: Processus.Folder, on db: Database) async throws -> Processus {
+    func createExpectedFolder(for user: User, in sleeve: Folder.Sleeve, on db: Database) async throws -> Folder {
         let userID = try user.requireID()
-        let processus = Processus(title: expectedTitle, number: expectedNumber, folder: expectedFolder, userID: userID)
+        let folder = Folder(title: expectedTitle, number: expectedNumber, sleeve: expectedSleeve, userID: userID)
         
-        if folder == .systemQuality {
-            user.systemQualityFolders = [processus]
-        } else if folder == .record {
-            user.recordsFolders = [processus]
+        if sleeve == .systemQuality {
+            user.systemQualityFolders = [folder]
+        } else if sleeve == .record {
+            user.recordsFolders = [folder]
         }
         
         try await user.update(on: db)
         
-        try await processus.save(on: db)
-        return processus
+        try await folder.save(on: db)
+        return folder
     }
 }
