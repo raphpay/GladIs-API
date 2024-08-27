@@ -23,16 +23,20 @@ final class Folder: Model, Content, @unchecked Sendable {
     @Field(key: Folder.v20240806.sleeve)
     var sleeve: Sleeve
     
+    @OptionalField(key: Folder.v20240806.path)
+    var path: String?
+    
     @Parent(key: Folder.v20240806.userID)
     var user: User
     
     init() {}
     
-    init(id: UUID? = nil, title: String, number: Int, sleeve: Sleeve, userID: User.IDValue) {
+    init(id: UUID? = nil, title: String, number: Int, sleeve: Sleeve, path: String? = nil, userID: User.IDValue) {
         self.id = id
         self.title = title
         self.number = number
         self.sleeve = sleeve
+        self.path = path
         self.$user.id = userID
     }
 }

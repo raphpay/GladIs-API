@@ -14,6 +14,7 @@ extension Folder {
         static let title = FieldKey(stringLiteral: "title")
         static let number = FieldKey(stringLiteral: "number")
         static let sleeve = FieldKey(stringLiteral: "sleeve")
+        static let path = FieldKey(stringLiteral: "path")
         static let userID = FieldKey(stringLiteral: "userID")
     }
 }

@@ -21,6 +21,7 @@ final class FolderControllerTests: XCTestCase {
     let expectedTitle = "expectedTitle"
     let expectedNumber = 1
     let expectedSleeve = Folder.Sleeve.systemQuality
+    let expectedPath = "expected/path"
     
     override func setUp() async throws {
         try await super.setUp()

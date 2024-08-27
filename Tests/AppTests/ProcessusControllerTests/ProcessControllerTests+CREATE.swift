@@ -13,7 +13,7 @@ import Vapor
 // MARK: - Create
 extension FolderControllerTests {
     func testCreateSystemQualityProcessSucceed() async throws {
-        let input = Folder.Input(title: expectedTitle, number: expectedNumber, userID: adminID, sleeve: .systemQuality)
+        let input = Folder.Input(title: expectedTitle, number: expectedNumber, userID: adminID, sleeve: .systemQuality, path: expectedPath)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -41,7 +41,7 @@ extension FolderControllerTests {
         let newProcessTitle = "expectedFolderTitle"
         let newProcessNumber = 2
         let folder = Folder(title: expectedTitle, number: expectedNumber, sleeve: .systemQuality, userID: adminID)
-        let input = Folder.Input(title: newProcessTitle, number: 2, userID: adminID, sleeve: expectedSleeve)
+        let input = Folder.Input(title: newProcessTitle, number: 2, userID: adminID, sleeve: expectedSleeve, path: expectedPath)
         try await saveProcess(to: admin, folder: [folder], sleeve: expectedSleeve, on: app.db)
         
         try await app.test(.POST, baseURL) { req in
@@ -68,7 +68,7 @@ extension FolderControllerTests {
     }
     
     func testCreateRecordProcessSucceed() async throws {
-        let input = Folder.Input(title: expectedTitle, number: expectedNumber, userID: adminID, sleeve: .record)
+        let input = Folder.Input(title: expectedTitle, number: expectedNumber, userID: adminID, sleeve: .record, path: expectedPath)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -96,7 +96,7 @@ extension FolderControllerTests {
     func testCreateRecordFolderWithExistantFolderSucceed() async throws {
         let newProcessTitle = "expectedFolderTitle"
         let newProcessNumber = 2
-        let input = Folder.Input(title: newProcessTitle, number: 2, userID: adminID, sleeve: .record)
+        let input = Folder.Input(title: newProcessTitle, number: 2, userID: adminID, sleeve: .record, path: expectedPath)
         let folder = Folder(title: expectedTitle, number: expectedNumber, sleeve: .record, userID: adminID)
         try await saveProcess(to: admin, folder: [folder], sleeve: .record, on: app.db)
         
@@ -124,7 +124,7 @@ extension FolderControllerTests {
     }
     
     func testCreateWithInexistantUserFails() async throws {
-        let input = Folder.Input(title: expectedTitle, number: expectedNumber, userID: UUID(), sleeve: expectedSleeve)
+        let input = Folder.Input(title: expectedTitle, number: expectedNumber, userID: UUID(), sleeve: expectedSleeve, path: expectedPath)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -137,7 +137,7 @@ extension FolderControllerTests {
     
     func testCreateWithSameNumberSucceed() async throws {
         let _ = try await FolderControllerTests().createExpectedFolder(for: admin, in: .systemQuality, on: app.db)
-        let input = Folder.Input(title: "\(expectedTitle)2", number: expectedNumber, userID: adminID, sleeve: expectedSleeve)
+        let input = Folder.Input(title: "\(expectedTitle)2", number: expectedNumber, userID: adminID, sleeve: expectedSleeve, path: expectedPath)
         
         try await app.test(.POST, baseURL) { req in
             try req.content.encode(input)
@@ -165,8 +165,8 @@ extension FolderControllerTests {
 // MARK: - Create Multiple
 extension FolderControllerTests {
     func testCreateMultipleSucceed() async throws {
-        let folderInput = Folder.Input(title: expectedTitle, number: expectedNumber, userID: adminID, sleeve: expectedSleeve)
-        let folderInputTwo = Folder.Input(title: "\(expectedTitle)2", number: expectedNumber + 1, userID: adminID, sleeve: expectedSleeve)
+        let folderInput = Folder.Input(title: expectedTitle, number: expectedNumber, userID: adminID, sleeve: expectedSleeve, path: expectedPath)
+        let folderInputTwo = Folder.Input(title: "\(expectedTitle)2", number: expectedNumber + 1, userID: adminID, sleeve: expectedSleeve, path: expectedPath)
         let input = Folder.MultipleInput(inputs: [folderInput, folderInputTwo], userID: adminID)
         
         try await app.test(.POST, "\(baseURL)/multiple") { req in

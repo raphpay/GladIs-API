@@ -18,9 +18,10 @@ extension Folder {
         let number: Int
         let userID: User.IDValue
         let sleeve: Sleeve
+        let path: String?
         
         func toModel() -> Folder {
-            .init(title: title, number: number, sleeve: sleeve, userID: userID)
+            .init(title: title, number: number, sleeve: sleeve, path: path, userID: userID)
         }
     }
     
@@ -35,6 +36,7 @@ extension Folder {
     struct UpdateInput: Content {
         let title: String?
         let number: Int?
+        let path: String?
         
         func update(_ folder: Folder, on req: Request) async throws -> Folder {
             let updatedFolder = folder
@@ -44,6 +46,9 @@ extension Folder {
             }
             if let number = number {
                 updatedFolder.number = number
+            }
+            if let path = path {
+                updatedFolder.path = path
             }
             
             try await updatedFolder.update(on: req.db)
