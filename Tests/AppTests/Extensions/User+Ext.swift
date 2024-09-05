@@ -21,6 +21,7 @@ extension User {
         return user
     }
     
+    // TODO: Check if still needed
     static func attachModule(_ module: Module, to user: User, on database: Database) async throws {
         if user.modules == nil {
             user.modules = []
@@ -28,6 +29,11 @@ extension User {
             user.modules?.append(module)
         }
         try await user.update(on: database)
+    }
+    
+    func attachModules(_ modules: [Module], on db: Database) async throws {
+        self.modules = modules
+        try await self.update(on: db)
     }
     
     static func attachTechnicalTab(_ tab: TechnicalDocumentationTab, to user: User, on database: Database) async throws {
@@ -45,6 +51,22 @@ extension User {
 extension UserControllerTests {
     func createExpectedAdmin(on db: Database) async throws -> User {
         let hashedPassword = try Bcrypt.hash("Passwordtest123")
+        let user = User(firstName: expectedAdminFirstName,
+                        lastName: expectedAdminLastName,
+                        phoneNumber: expectedAdminPhoneNumber,
+                        username: expectedAdminUsername,
+                        password: hashedPassword,
+                        email: expectedAdminEmail,
+                        firstConnection: true,
+                        userType: .admin)
+        
+        try await user.save(on: db)
+        
+        return user
+    }
+    
+    func createExpectedUser(userType: User.UserType = .client, on db: Database) async throws -> User {
+        let hashedPassword = try Bcrypt.hash(expectedPassword)
         let user = User(firstName: expectedFirstName,
                         lastName: expectedLastName,
                         phoneNumber: expectedPhoneNumber,
@@ -52,10 +74,24 @@ extension UserControllerTests {
                         password: hashedPassword,
                         email: expectedEmail,
                         firstConnection: true,
-                        userType: .admin)
+                        userType: userType)
         
         try await user.save(on: db)
         
         return user
+    }
+    
+    func createExpectedUserInput(password: String? = nil) -> User.Input {
+        var inputPassword = password
+        if inputPassword == nil { inputPassword = expectedPassword }
+        
+        let input = User.Input(firstName: expectedFirstName, lastName: expectedLastName,
+                                   phoneNumber: expectedPhoneNumber, email: expectedEmail,
+                                   password: inputPassword, userType: .admin,
+                                   companyName: nil, products: nil,
+                                   numberOfEmployees: nil, numberOfUsers: nil,
+                                   salesAmount: nil, employeesIDs: nil, managerID: nil)
+        
+        return input
     }
 }

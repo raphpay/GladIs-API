@@ -12,7 +12,14 @@ final class UserControllerTests: XCTestCase {
     
     var app: Application!
     var admin: User!
+    var adminID: UUID!
     var token: Token!
+    // Admin
+    let expectedAdminFirstName = "expectedAdminFirstName"
+    let expectedAdminLastName = "expectedAdminLastName"
+    let expectedAdminEmail = "expectedAdminEmail"
+    let expectedAdminPhoneNumber = "0612345678"
+    let expectedAdminUsername = "expectedAdminUsername"
     // Expected Properties
     let baseRoute = "api/users"
     let expectedFirstName = "expectedFirstName"
@@ -22,7 +29,6 @@ final class UserControllerTests: XCTestCase {
     let expectedPassword = "expectedPassword1("
     let expectedCompanyName = "expectedCompanyName"
     let expectedUsername = "expectedUsername"
-    let expectedAdminUsername = "expectedAdminUsername"
     let expectedClientUsername = "expectedClientUsername"
     // Module
     let expectedModuleName = "expectedModuleName"
@@ -38,7 +44,8 @@ final class UserControllerTests: XCTestCase {
         try await super.setUp()
         app = Application(.testing)
         try! await configure(app)
-        admin = try await User.create(username: expectedAdminUsername, userType: .admin, on: app.db)
+        admin = try await UserControllerTests().createExpectedAdmin(on: app.db)
+        adminID = try admin.requireID()
         token = try await Token.create(for: admin, on: app.db)
     }
     

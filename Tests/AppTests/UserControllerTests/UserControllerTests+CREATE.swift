@@ -11,16 +11,12 @@ import XCTVapor
 // MARK: - Create Without Token
 extension UserControllerTests {
     func testCreateUserWithoutTokenSucceed() async throws {
-        let userInput = User.Input(firstName: expectedFirstName, lastName: expectedLastName,
-                                   phoneNumber: expectedPhoneNumber, email: expectedEmail,
-                                   password: expectedPassword, userType: .admin,
-                                   companyName: nil, products: nil,
-                                   numberOfEmployees: nil, numberOfUsers: nil,
-                                   salesAmount: nil, employeesIDs: nil, managerID: nil)
-        let path = "\(baseRoute)/noToken"
-        try app.test(.POST, path) { req in
+        let userInput = UserControllerTests().createExpectedUserInput()
+        
+        try app.test(.POST, "\(baseRoute)/noToken") { req in
             try req.content.encode(userInput)
         } afterResponse: { res in
+            print("res \(res)")
             XCTAssertEqual(res.status, .ok)
             let createdUser = try res.content.decode(User.Public.self)
             XCTAssertEqual(createdUser.firstName, expectedFirstName)
@@ -29,14 +25,8 @@ extension UserControllerTests {
     }
     
     func testCreateUserWithoutTokenWithEmptyPasswordFails() async throws {
-        let userInput = User.Input(firstName: expectedFirstName, lastName: expectedLastName,
-                                   phoneNumber: expectedPhoneNumber, email: expectedEmail,
-                                   password: "", userType: .admin,
-                                   companyName: nil, products: nil,
-                                   numberOfEmployees: nil, numberOfUsers: nil,
-                                   salesAmount: nil, employeesIDs: nil, managerID: nil)
-        let path = "\(baseRoute)/noToken"
-        try app.test(.POST, path) { req in
+        let userInput = UserControllerTests().createExpectedUserInput(password: "")
+        try app.test(.POST, "\(baseRoute)/noToken") { req in
             try req.content.encode(userInput)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .badRequest)
@@ -49,12 +39,7 @@ extension UserControllerTests {
 // MARK: - Create
 extension UserControllerTests {
     func testCreateUserSucceed() async throws {
-        let userInput = User.Input(firstName: expectedFirstName, lastName: expectedLastName,
-                                   phoneNumber: expectedPhoneNumber, email: expectedEmail,
-                                   password: expectedPassword, userType: .admin,
-                                   companyName: nil, products: nil,
-                                   numberOfEmployees: nil, numberOfUsers: nil,
-                                   salesAmount: nil, employeesIDs: nil, managerID: nil)
+        let userInput = UserControllerTests().createExpectedUserInput()
         
         try app.test(.POST, baseRoute) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -68,17 +53,13 @@ extension UserControllerTests {
     }
     
     func testCreateUserWithoutAdminPermissionFails() async throws {
-        let userInput = User.Input(firstName: expectedFirstName, lastName: expectedLastName,
-                                   phoneNumber: expectedPhoneNumber, email: expectedEmail,
-                                   password: expectedPassword, userType: .admin,
-                                   companyName: nil, products: nil,
-                                   numberOfEmployees: nil, numberOfUsers: nil,
-                                   salesAmount: nil, employeesIDs: nil, managerID: nil)
+        let userInput = UserControllerTests().createExpectedUserInput()
+        
         let user = try await User.create(username: expectedAdminUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
+        let clientToken = try await Token.create(for: user, on: app.db)
         
         try app.test(.POST, baseRoute) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            req.headers.bearerAuthorization = BearerAuthorization(token: clientToken.value)
             try req.content.encode(userInput)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .forbidden)
@@ -87,12 +68,7 @@ extension UserControllerTests {
     }
     
     func testCreateUserWithEmptyPasswordFails() async throws {
-        let userInput = User.Input(firstName: expectedFirstName, lastName: expectedLastName,
-                                   phoneNumber: expectedPhoneNumber, email: expectedEmail,
-                                   password: "", userType: .admin,
-                                   companyName: nil, products: nil,
-                                   numberOfEmployees: nil, numberOfUsers: nil,
-                                   salesAmount: nil, employeesIDs: nil, managerID: nil)
+        let userInput = UserControllerTests().createExpectedUserInput(password: "")
         
         try app.test(.POST, baseRoute) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -109,13 +85,11 @@ extension UserControllerTests {
 extension UserControllerTests {
     func testAddTechnicalDocTabSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let docTab = try await TechnicalDocumentationTab.create(name: expectedDocTabName, area: expectedDocTabArea, on: app.db)
         
         let userID = try user.requireID()
         let tabID = try docTab.requireID()
-        let path = "\(baseRoute)/\(userID)/technicalDocumentationTabs/\(tabID)"
-        try app.test(.POST, path) { req in
+        try app.test(.POST, "\(baseRoute)/\(userID)/technicalDocumentationTabs/\(tabID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
@@ -129,8 +103,7 @@ extension UserControllerTests {
         let docTab = try await TechnicalDocumentationTab.create(name: expectedDocTabName, area: expectedDocTabArea, on: app.db)
         
         let tabID = try docTab.requireID()
-        let path = "\(baseRoute)/12345/technicalDocumentationTabs/\(tabID)"
-        try app.test(.POST, path) { req in
+        try app.test(.POST, "\(baseRoute)/12345/technicalDocumentationTabs/\(tabID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .badRequest)
@@ -140,11 +113,9 @@ extension UserControllerTests {
     
     func testAddTechnicalDocTabWithInexistantTabFails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        
         let userID = try user.requireID()
-        let path = "\(baseRoute)/\(userID)/technicalDocumentationTabs/1234"
-        try app.test(.POST, path) { req in
+        
+        try app.test(.POST, "\(baseRoute)/\(userID)/technicalDocumentationTabs/1234") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .badRequest)
@@ -157,12 +128,12 @@ extension UserControllerTests {
 extension UserControllerTests {
     func testVerifyPasswordSucceed() async throws {
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
+        let userID = try user.requireID()
+        token = try await Token.create(for: user, on: app.db)
+        
         let passwordValidationRequest = PasswordValidationRequest(currentPassword: expectedPassword)
         
-        let userID = try user.requireID()
-        let path = "\(baseRoute)/\(userID)/verifyPassword"
-        try app.test(.POST, path) { req in
+        try app.test(.POST, "\(baseRoute)/\(userID)/verifyPassword") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
             try req.content.encode(passwordValidationRequest)
         } afterResponse: { res in
@@ -172,12 +143,12 @@ extension UserControllerTests {
     
     func testVerifyPasswordWithWrongPasswordFails() async throws {
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
+        let userID = try user.requireID()
+        token = try await Token.create(for: user, on: app.db)
+        
         let passwordValidationRequest = PasswordValidationRequest(currentPassword: "wrongPassword")
         
-        let userID = try user.requireID()
-        let path = "\(baseRoute)/\(userID)/verifyPassword"
-        try app.test(.POST, path) { req in
+        try app.test(.POST, "\(baseRoute)/\(userID)/verifyPassword") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
             try req.content.encode(passwordValidationRequest)
         } afterResponse: { res in
@@ -188,11 +159,11 @@ extension UserControllerTests {
     
     func testVerifyPasswordWithDifferentUserFails() async throws {
         let user = try await User.create(username: expectedUsername, userType: .client, password: expectedPassword, on: app.db)
+        let userID = try user.requireID()
+        
         let passwordValidationRequest = PasswordValidationRequest(currentPassword: expectedPassword)
         
-        let userID = try user.requireID()
-        let path = "\(baseRoute)/\(userID)/verifyPassword"
-        try app.test(.POST, path) { req in
+        try app.test(.POST, "\(baseRoute)/\(userID)/verifyPassword") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
             try req.content.encode(passwordValidationRequest)
         } afterResponse: { res in
