@@ -38,8 +38,8 @@ final class FolderControllerTests: XCTestCase {
         admin.recordsFolders = nil
         adminID = nil
         try await token.delete(force: true, on: app.db)
-        try await Folder.reset(on: app.db)
-        try await User.reset(on: app.db)
+        try await Folder.deleteAll(on: app.db)
+        try await User.deleteAll(on: app.db)
         app.shutdown()
         try await super.tearDown()
     }

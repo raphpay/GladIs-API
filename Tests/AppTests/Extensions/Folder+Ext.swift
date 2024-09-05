@@ -10,7 +10,7 @@ import XCTVapor
 import Fluent
 
 extension Folder {
-    static func reset(on db: Database) async throws {
+    static func deleteAll(on db: Database) async throws {
         try await Folder
             .query(on: db)
             .all()

@@ -11,13 +11,9 @@ import XCTVapor
 // MARK: - Remove
 extension PendingUserControllerTests {
     func testRemovePendingUserSucceed() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
-        
+        let pendingUser = try await PendingUserControllerTests().createExpectedPendingUser(on: app.db)
         let pendingUserID = try pendingUser.requireID()
+        
         try app.test(.DELETE, "\(baseRoute)/\(pendingUserID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
@@ -27,14 +23,12 @@ extension PendingUserControllerTests {
     
     func testRemovePendingUserWithoutAdminPermissionFails() async throws {
         let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
-        
+        let clientToken = try await Token.create(for: user, on: app.db)
+        let pendingUser = try await PendingUserControllerTests().createExpectedPendingUser(on: app.db)
         let pendingUserID = try pendingUser.requireID()
+        
         try app.test(.DELETE, "\(baseRoute)/\(pendingUserID)") { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            req.headers.bearerAuthorization = BearerAuthorization(token: clientToken.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .forbidden)
             XCTAssertTrue(res.body.string.contains("forbidden.userShouldBeAdmin"))
@@ -42,9 +36,6 @@ extension PendingUserControllerTests {
     }
     
     func testRemoveInexistantPendingUserFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        
         try app.test(.DELETE, "\(baseRoute)/12345") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
