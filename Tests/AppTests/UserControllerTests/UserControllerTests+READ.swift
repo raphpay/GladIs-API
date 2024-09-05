@@ -11,16 +11,15 @@ import XCTVapor
 // MARK: - Get All
 extension UserControllerTests {
     func testGetAllSucceed() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
+        let user = try await UserControllerTests().createExpectedUser(on: app.db)
         
         try app.test(.GET, baseRoute) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
             let users = try res.content.decode([User.Public].self)
-            XCTAssertEqual(users.count, 1)
-            XCTAssertEqual(users[0].username, expectedUsername)
+            XCTAssertEqual(users.count, 2)
+            XCTAssertEqual(users[1].username, expectedUsername)
         }
     }
 }
@@ -28,12 +27,9 @@ extension UserControllerTests {
 // MARK: - Get All Clients
 extension UserControllerTests {
     func testGetAllClientsSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
-        let client = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
+        let client = try await UserControllerTests().createExpectedUser(on: app.db)
         
-        let path = "\(baseRoute)/clients"
-        try app.test(.GET, path) { req in
+        try app.test(.GET, "\(baseRoute)/clients") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
@@ -47,19 +43,13 @@ extension UserControllerTests {
 // MARK: - Get Admins
 extension UserControllerTests {
     func testGetAllAdminsSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
-        let _ = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
-        
-        let path = "\(baseRoute)/admins"
-        try app.test(.GET, path) { req in
+        try app.test(.GET, "\(baseRoute)/admins") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
             let admins = try res.content.decode([User.Public].self)
-            XCTAssertEqual(admins.count, 2)
+            XCTAssertEqual(admins.count, 1)
             XCTAssertEqual(admins[0].username, expectedAdminUsername)
-            XCTAssertEqual(admins[1].username, expectedUsername)
         }
     }
 }
@@ -67,30 +57,32 @@ extension UserControllerTests {
 // MARK: - Get User By ID
 extension UserControllerTests {
     func testGetUserByIDSucceed() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        
-        let userID = try user.requireID()
-        let path = "\(baseRoute)/\(userID)"
-        try app.test(.GET, path) { req in
+        try app.test(.GET, "\(baseRoute)/\(adminID!)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
             let user = try res.content.decode(User.Public.self)
-            XCTAssertEqual(user.username, expectedUsername)
+            XCTAssertEqual(user.username, expectedAdminUsername)
         }
     }
     
     func testGetUserByIdWithInexistantUserFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
+        let userID = UUID()
         
-        let path = "\(baseRoute)/12345"
-        try app.test(.GET, path) { req in
+        try app.test(.GET, "\(baseRoute)/\(userID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .notFound)
             XCTAssertTrue(res.body.string.contains("notFound.user"))
+        }
+    }
+    
+    func testGetUserByIDWithIncorrectIDFails() async throws {
+        try app.test(.GET, "\(baseRoute)/12345") { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
         }
     }
 }
@@ -98,19 +90,10 @@ extension UserControllerTests {
 // MARK: - Get Modules
 extension UserControllerTests {
     func testGetUserModulesSucceed() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
-        let userID = try user.requireID()
-
-        let addPath = "\(baseRoute)/\(userID)/modules"
-        try app.test(.PUT, addPath) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
-        }
+        let module = Module(name: expectedModuleName, index: expectedModuleIndex)
+        try await admin.attachModules([module], on: app.db)
         
-        let path = "\(baseRoute)/\(userID)/modules"
-        try app.test(.GET, path) { req in
+        try app.test(.GET, "\(baseRoute)/\(adminID!)/modules") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
@@ -122,15 +105,21 @@ extension UserControllerTests {
     }
     
     func testGetUserModuleWithInexistantUserFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        
-        let path = "\(baseRoute)/21345/modules"
-        try app.test(.GET, path) { req in
+        let falseUserID = UUID()
+        try app.test(.GET, "\(baseRoute)/\(falseUserID)/modules") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .notFound)
             XCTAssertTrue(res.body.string.contains("notFound.user"))
+        }
+    }
+    
+    func testGetUserModuleWithIncorrectIDFails() async throws {
+        try app.test(.GET, "\(baseRoute)/12345/modules") { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
         }
     }
 }
@@ -138,14 +127,10 @@ extension UserControllerTests {
 // MARK: - Get Technical Doc Tabs
 extension UserControllerTests {
     func testGetUserTabsSucceed() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
         let tab = try await TechnicalDocumentationTab.create(name: expectedDocTabName, area: expectedDocTabArea, on: app.db)
-        try await User.attachTechnicalTab(tab, to: user, on: app.db)
+        try await User.attachTechnicalTab(tab, to: admin, on: app.db)
         
-        let userID = try user.requireID()
-        let path = "\(baseRoute)/\(userID)/technicalDocumentationTabs"
-        try app.test(.GET, path) { req in
+        try app.test(.GET, "\(baseRoute)/\(adminID!)/technicalDocumentationTabs") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .ok)
@@ -157,17 +142,22 @@ extension UserControllerTests {
     }
     
     func testGetUserTabWithInexistantUserFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        let tab = try await TechnicalDocumentationTab.create(name: expectedDocTabName, area: expectedDocTabArea, on: app.db)
-        try await User.attachTechnicalTab(tab, to: user, on: app.db)
+        let falseUserID = UUID()
         
-        let path = "\(baseRoute)/12345/technicalDocumentationTabs"
-        try app.test(.GET, path) { req in
+        try app.test(.GET, "\(baseRoute)/\(falseUserID)/technicalDocumentationTabs") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .notFound)
             XCTAssertTrue(res.body.string.contains("notFound.user"))
+        }
+    }
+    
+    func testGetUserTabWithIncorrectIDFails() async throws {
+        try app.test(.GET, "\(baseRoute)/12345/technicalDocumentationTabs") { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
         }
     }
 }
@@ -175,10 +165,8 @@ extension UserControllerTests {
 // MARK: - Get Manager
 extension UserControllerTests {
     func testGetManagerSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let manager = try await User.create(username: expectedUsername, on: app.db)
         let employee = try await User.create(username: "employeeUsername", on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         let managerID = try manager.requireID()
         let employeeID = try employee.requireID()
@@ -199,10 +187,8 @@ extension UserControllerTests {
     }
     
     func testGetManagerWithInexistantEmployeeFails() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let manager = try await User.create(username: expectedUsername, on: app.db)
         let employee = try await User.create(username: "employeeUsername", on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         let managerID = try manager.requireID()
         let employeeID = try employee.requireID()
@@ -221,12 +207,10 @@ extension UserControllerTests {
     }
     
     func testGetManagerWithEmptyManagerFails() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let manager = try await User.create(username: expectedUsername, on: app.db)
         let employee = try await User.create(username: "employeeUsername", on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
-        let managerID = try manager.requireID()
+        let _ = try manager.requireID()
         let employeeID = try employee.requireID()
         
         manager.employeesIDs = [employeeID.uuidString]
@@ -247,10 +231,8 @@ extension UserControllerTests {
 // MARK: - Get Employees
 extension UserControllerTests {
     func testGetEmployeesSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let manager = try await User.create(username: expectedUsername, on: app.db)
         let employee = try await User.create(username: "employeeUsername", on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         
         let managerID = try manager.requireID()
         let employeeID = try employee.requireID()
@@ -273,16 +255,25 @@ extension UserControllerTests {
     }
     
     func testGetEmployeesWithInexistantManagerFails() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
-        
-        let path = "\(baseRoute)/23456/employees"
+        let falseUserID = UUID()
+        let path = "\(baseRoute)/\(falseUserID)/employees"
         
         try app.test(.GET, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .notFound)
             XCTAssertTrue(res.body.string.contains("notFound.user"))
+        }
+    }
+    
+    func testGetEmployeesWithIncorrectIDFails() async throws {
+        let path = "\(baseRoute)/23456/employees"
+        
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
         }
     }
 }
@@ -306,10 +297,8 @@ extension UserControllerTests {
     }
     
     func testGetTokenWithInexistantUserFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        
-        let path = "\(baseRoute)/12345/token"
+        let falseUserID = UUID()
+        let path = "\(baseRoute)/\(falseUserID)/token"
         
         try app.test(.GET, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -318,14 +307,23 @@ extension UserControllerTests {
             XCTAssertTrue(res.body.string.contains("notFound.user"))
         }
     }
+    
+    func testGetTokenWithIncorrectIDFails() async throws {
+        let path = "\(baseRoute)/12345/token"
+        
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
+        }
+    }
 }
 
 // MARK: - Get Reset Tokens For Client
 extension UserControllerTests {
     func testGetResetTokensForClientSucceed() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
         let resetToken = try await PasswordResetToken.create(for: user, on: app.db)
         
         let userID = try user.requireID()
@@ -340,11 +338,10 @@ extension UserControllerTests {
     }
     
     func testGetResetTokenWithInexistantUserFails() async throws {
-        let admin = try await User.create(username: expectedAdminUsername, on: app.db)
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: admin, on: app.db)
+        let _ = try await User.create(username: expectedUsername, on: app.db)
+        let falseUserID = UUID()
         
-        let path = "\(baseRoute)/12345/resetToken"
+        let path = "\(baseRoute)/\(falseUserID)/resetToken"
         try app.test(.GET, path) { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
@@ -353,15 +350,25 @@ extension UserControllerTests {
         }
     }
     
-    // TODO: Check this test -> it fails
+    func testGetResetTokenWithIncorrectIDFails() async throws {
+        let path = "\(baseRoute)/123456/resetToken"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .badRequest)
+            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
+        }
+    }
+    
     func testGetResetTokenWithoutAdminPermissionFails() async throws {
         let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
+        let userToken = try await Token.create(for: user, on: app.db)
+        let _ = try await PasswordResetToken.create(for: user, on: app.db)
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/resetToken"
         try app.test(.GET, path) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            req.headers.bearerAuthorization = BearerAuthorization(token: userToken.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .forbidden)
             XCTAssertTrue(res.body.string.contains("forbidden.userShouldBeAdmin"))
@@ -432,7 +439,6 @@ extension UserControllerTests {
     func testGetReceivedMessagesWithWrongUUIDFails() async throws {
         let sender = try await User.create(username: expectedUsername, on: app.db)
         let receiver = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: sender, on: app.db)
         let _ = try await Message.create(title: expectedMessageTitle, content: expectedMessageContent, sender: sender, receiver: receiver, on: app.db)
         
         let path = "\(baseRoute)/1/messages/received"
@@ -440,7 +446,7 @@ extension UserControllerTests {
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .badRequest)
-            XCTAssertTrue(res.body.string.contains("badRequest.emptyUserID"))
+            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
         }
     }
 }
@@ -484,9 +490,20 @@ extension UserControllerTests {
     }
     
     func testGetSentMessagesWithInexistantUserFails() async throws {
+        let falseUserID = UUID()
+        
+        let path = "\(baseRoute)/\(falseUserID)/messages/sent"
+        try app.test(.GET, path) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.user"))
+        }
+    }
+    
+    func testGetSentMessagesWithIncorrectIDFails() async throws {
         let sender = try await User.create(username: expectedUsername, on: app.db)
         let receiver = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: sender, on: app.db)
         let _ = try await Message.create(title: expectedMessageTitle, content: expectedMessageContent, sender: sender, receiver: receiver, on: app.db)
         
         let path = "\(baseRoute)/1/messages/sent"
@@ -494,7 +511,7 @@ extension UserControllerTests {
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .badRequest)
-            XCTAssertTrue(res.body.string.contains("badRequest.emptyUserID"))
+            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
         }
     }
 }

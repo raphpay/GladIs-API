@@ -10,16 +10,8 @@ import XCTVapor
 
 // MARK: - Get All
 extension PendingUserControllerTests {
-    func testGetAllPendingUserSucceed() async throws {
-        // Clear
-        try await PendingUser.deleteAll(on: app.db)
-        
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
-        
+    func testGetAllPendingUserSucceed() async throws {        
+        let pendingUser = try await PendingUserControllerTests().createExpectedPendingUser(on: app.db)
     
         try app.test(.GET, baseRoute, beforeRequest: { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -34,18 +26,11 @@ extension PendingUserControllerTests {
     }
     
     func testGetAllPendingUserWithoutAdminPermissionFails() async throws {
-        // Clear
-        try await PendingUser.deleteAll(on: app.db)
-        
         let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
-        
+        let clientToken = try await Token.create(for: user, on: app.db)
     
         try app.test(.GET, baseRoute, beforeRequest: { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            req.headers.bearerAuthorization = BearerAuthorization(token: clientToken.value)
         }, afterResponse: { res in
             XCTAssertEqual(res.status, .forbidden)
             XCTAssertTrue(res.body.string.contains("forbidden.userShouldBeAdmin"))
@@ -56,21 +41,13 @@ extension PendingUserControllerTests {
 // MARK: - Get Modules
 extension PendingUserControllerTests {
     func testGetModulesSucceed() async throws {
-        let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
+        let pendingUser = try await PendingUserControllerTests().createExpectedPendingUser(on: app.db)
         let pendingUserID = try pendingUser.requireID()
-        let moduleInput = Module.Input(name: expectedModuleName, index: expectedModuleIndex)
         
-        let path = "\(baseRoute)/\(pendingUserID)/modules"
-        try app.test(.PUT, path) { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-            try req.content.encode(moduleInput)
-        }
-
-        try app.test(.GET, path) { req in
+        let module = Module(name: expectedModuleName, index: expectedModuleIndex)
+        try await pendingUser.addModules([module], on: app.db)
+        
+        try app.test(.GET, "\(baseRoute)/\(pendingUserID)/modules") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in 
             XCTAssertEqual(res.status, .ok)
@@ -82,9 +59,6 @@ extension PendingUserControllerTests {
     }
     
     func testGetModulesWithInexistantPendingUserFails() async throws {
-        let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-       
         try app.test(.GET, "\(baseRoute)/12345/modules") { req in 
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in

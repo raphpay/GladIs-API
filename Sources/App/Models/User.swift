@@ -88,6 +88,12 @@ final class User: Model, Content {
     @Children(for: \.$receiver)
     var receivedMessages: [Message]
     
+    @OptionalField(key: User.v20240806.systemQualityFolders)
+    var systemQualityFolders: [Folder]?
+    
+    @OptionalField(key: User.v20240806.recordsFolders)
+    var recordsFolders: [Folder]?
+    
     init() {}
     
     init(id: UUID? = nil,
@@ -96,7 +102,9 @@ final class User: Model, Content {
          userType: UserType,
          companyName: String? = nil, products: String? = nil,
          numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
-         salesAmount: Double? = nil, employeesIDs: [String]? = nil, managerID: String? = nil) {
+         salesAmount: Double? = nil, employeesIDs: [String]? = nil, managerID: String? = nil,
+         systemQualityFolders: [Folder]? = nil, recordsFolders: [Folder]? = nil
+    ) {
         // Required
         self.id = id
         self.firstName = firstName
@@ -115,140 +123,7 @@ final class User: Model, Content {
         self.salesAmount = salesAmount
         self.employeesIDs = employeesIDs
         self.managerID = managerID
+        self.systemQualityFolders = systemQualityFolders
+        self.recordsFolders = recordsFolders
     }
-    
-    struct Public: Content {
-        // Required
-        var id: UUID?
-        let firstName: String
-        let lastName: String
-        let phoneNumber: String
-        let email: String
-        let username: String
-        var firstConnection: Bool
-        let userType: UserType
-        // Optional
-        var companyName: String?
-        var products: String?
-        var numberOfEmployees: Int?
-        var numberOfUsers: Int?
-        var salesAmount: Double?
-        var employeesIDs: [String]?
-        var managerID: String?
-        var isBlocked: Bool?
-        var modules: [Module]?
-        var isConnectionBlocked: Bool?
-        var connectionFailedAttempts: Int?
-    }
-    
-    
-    struct Input: Content {
-        // Required
-        let firstName: String
-        let lastName: String
-        let phoneNumber: String
-        let email: String
-        let password: String?
-        let userType: UserType
-        // Optional
-        let companyName: String?
-        let products: String?
-        let numberOfEmployees: Int?
-        let numberOfUsers: Int?
-        let salesAmount: Double?
-        let employeesIDs: [String]?
-        let managerID: String?
-    }
-    
-    struct EmailInput: Content {
-        let email: String
-    }
-    
-    struct UsernameInput: Content {
-        let username: String
-    }
-
-    struct LoginTryOutput: Content {
-        let id: UUID?
-        let connectionFailedAttempts: Int?
-        let isConnectionBlocked: Bool?
-        let email: String
-    }
-}
-
-
-extension User {
-    enum v20240207 {
-        static let schemaName = "users"
-        static let id = FieldKey(stringLiteral: "id")
-        static let firstName = FieldKey(stringLiteral: "firstName")
-        static let lastName = FieldKey(stringLiteral: "lastName")
-        static let phoneNumber = FieldKey(stringLiteral: "phoneNumber")
-        static let companyName = FieldKey(stringLiteral: "companyName")
-        static let email = FieldKey(stringLiteral: "email")
-        static let firstConnection = FieldKey(stringLiteral: "firstConnection")
-        static let products = FieldKey(stringLiteral: "products")
-        static let modules = FieldKey(stringLiteral: "modules")
-        static let technicalDocumentationTabs = FieldKey(stringLiteral: "technicalDocumentationTabs")
-        static let numberOfEmployees = FieldKey(stringLiteral: "numberOfEmployees")
-        static let numberOfUsers = FieldKey(stringLiteral: "numberOfUsers")
-        static let salesAmount = FieldKey(stringLiteral: "salesAmount")
-        static let employeesIDs = FieldKey(stringLiteral: "employeesIDs")
-        static let managerID = FieldKey(stringLiteral: "managerID")
-        static let isBlocked = FieldKey(stringLiteral: "isBlocked")
-        static let isConnectionBlocked = FieldKey(stringLiteral: "isConnectionBlocked")
-        static let connectionFailedAttempts = FieldKey(stringLiteral: "connectionFailedAttempts")
-        
-        
-        static let username = FieldKey(stringLiteral: "username")
-        static let password = FieldKey(stringLiteral: "password")
-        
-        static let userTypeEnum = FieldKey(stringLiteral: "userTypeEnum")
-        static let userType = "userType"
-        static let admin = "admin"
-        static let client = "client"
-        static let employee = "employee"
-    }
-    
-    enum UserType: String, Codable {
-        case employee, admin, client
-    }
-}
-
-extension User {
-    func convertToPublic() -> User.Public {
-        User.Public(id: id,
-                    firstName: firstName, lastName: lastName, phoneNumber: phoneNumber, email: email,
-                    username: username, firstConnection: firstConnection, userType: userType,
-                    companyName: companyName, products: products, numberOfEmployees: numberOfEmployees,
-                    numberOfUsers: numberOfUsers, salesAmount: salesAmount, employeesIDs: employeesIDs,
-                    managerID: managerID, isBlocked: isBlocked, modules: modules, isConnectionBlocked: isConnectionBlocked, connectionFailedAttempts: connectionFailedAttempts
-        )
-    }
-
-    func convertToLoginTryOutput() -> User.LoginTryOutput {
-        User.LoginTryOutput(id: id,
-            connectionFailedAttempts: connectionFailedAttempts,
-            isConnectionBlocked: isConnectionBlocked,
-            email: email
-        )
-    }
-}
-
-struct PasswordChangeRequest: Content {
-    let currentPassword: String
-    let newPassword: String
-}
-
-struct PasswordValidationRequest: Content {
-    let currentPassword: String
-}
-
-struct PasswordChangeResponse: Content {
-    let message: String
-}
-
-struct ResetPasswordRequest: Content {
-    let token: String
-    let newPassword: String
 }

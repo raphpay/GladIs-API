@@ -10,13 +10,8 @@ import XCTVapor
 
 // MARK: - Create
 extension PendingUserControllerTests {
-    func testCreatePendingUserSucceed() async throws {
-        // Clear database
-        try await PendingUser.deleteAll(on: app.db)
-        
-        let pendingUserInput = PendingUser.Input(firstName: expectedFirstName, lastName: expectedLastName,
-                                                 phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                 email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount)
+    func testCreatePendingUserSucceed() async throws {        
+        let pendingUserInput = PendingUserControllerTests().createExpectedPendingUserInput()
         
         try app.test(.POST, baseRoute) { req in
             try req.content.encode(pendingUserInput)
@@ -36,13 +31,8 @@ extension PendingUserControllerTests {
     }
     
     func testCreatePendingUserWithAlreadyExistingMailFails() async throws {
-        // Clear database
-        let _ = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
-        let pendingUserInput = PendingUser.Input(firstName: expectedFirstName, lastName: expectedLastName,
-                                                 phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                 email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount)
+        let _ = try await PendingUserControllerTests().createExpectedPendingUser(on: app.db)
+        let pendingUserInput = PendingUserControllerTests().createExpectedPendingUserInput()
         
         try app.test(.POST, baseRoute) { req in
             try req.content.encode(pendingUserInput)
@@ -57,10 +47,7 @@ extension PendingUserControllerTests {
 extension PendingUserControllerTests {
     func testConvertToUserSuceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
+        let pendingUser = try await PendingUserControllerTests().createExpectedPendingUser(on: app.db)
         
         let pendingUserID = try pendingUser.requireID()
         try app.test(.POST, "\(baseRoute)/\(pendingUserID)/convertToUser") { req in
@@ -76,15 +63,13 @@ extension PendingUserControllerTests {
  
     func testConvertToUserWithoutAdminPermissionFails() async throws {
         let user = try await User.create(username: expectedUsername, userType: .client, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
+        let clientToken = try await Token.create(for: user, on: app.db)
         
-        let pendingUser = try await PendingUser.create(firstName: expectedFirstName, lastName: expectedLastName,
-                                                       phoneNumber: expectedPhoneNumber, companyName: expectedCompanyName,
-                                                       email: expectedEmail, products: expectedProducts, numberOfEmployees: expectedNumberOfEmployees, numberOfUsers: expectedNumberOfUsers, salesAmount: expectedSalesAmount, on: app.db)
+        let pendingUser = try await PendingUserControllerTests().createExpectedPendingUser(on: app.db)
         
         let pendingUserID = try pendingUser.requireID()
         try app.test(.POST, "\(baseRoute)/\(pendingUserID)/convertToUser") { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            req.headers.bearerAuthorization = BearerAuthorization(token: clientToken.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .forbidden)
             XCTAssertTrue(res.body.string.contains("forbidden.userShouldBeAdmin"))
@@ -92,9 +77,6 @@ extension PendingUserControllerTests {
     }
     
     func testConvertToUserWithInexistantPendingUserFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        
         try app.test(.POST, "\(baseRoute)/2345/convertToUser") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in

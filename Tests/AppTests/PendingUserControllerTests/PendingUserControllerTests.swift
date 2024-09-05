@@ -11,8 +11,11 @@ import XCTVapor
 final class PendingUserControllerTests: XCTestCase {
     
     var app: Application!
-    // Expected Properties
     let baseRoute = "api/pendingUsers"
+    var admin: User!
+    var adminID: User.IDValue!
+    var token: Token!
+    // Expected Properties
     let expectedFirstName = "expectedFirstName"
     let expectedLastName = "expectedLastName"
     let expectedPhoneNumber = "0612345678"
@@ -28,13 +31,19 @@ final class PendingUserControllerTests: XCTestCase {
     
     override func setUp() async throws {
         try await super.setUp()
-        
         app = Application(.testing)
         try! await configure(app)
+        admin = try await UserControllerTests().createExpectedAdmin(on: app.db)
+        adminID = try admin.requireID()
+        token = try await Token.create(for: admin, on: app.db)
     }
     
-    override func tearDown() {
+    override func tearDown() async throws {
+        try await User.deleteAll(on: app.db)
+        try await token.delete(force: true, on: app.db)
+        try await User.deleteAll(on: app.db)
+        try await PendingUser.deleteAll(on: app.db)
         app.shutdown()
-        super.tearDown()
+        try await super.tearDown()
     }
 }
