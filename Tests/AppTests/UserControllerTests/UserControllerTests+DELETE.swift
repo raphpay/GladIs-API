@@ -14,8 +14,7 @@ extension UserControllerTests {
         let userToDelete = try await User.create(username: expectedUsername, userType: .client, on: app.db)
         let userID = try userToDelete.requireID()
         
-        let path = "\(baseRoute)/\(userID)"
-        try await app.test(.DELETE, path) { req in
+        try await app.test(.DELETE, "\(baseRoute)/\(userID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .noContent)
@@ -26,8 +25,7 @@ extension UserControllerTests {
     }
     
     func testRemoveWithIncorrectUserIDFails() async throws {
-        let path = "\(baseRoute)/1234"
-        try app.test(.DELETE, path) { req in
+        try app.test(.DELETE, "\(baseRoute)/1234") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .badRequest)
@@ -37,8 +35,8 @@ extension UserControllerTests {
     
     func testRemoveWithInexistantUserFails() async throws {
         let falseUserID = UUID()
-        let path = "\(baseRoute)/\(falseUserID)"
-        try app.test(.DELETE, path) { req in
+        
+        try app.test(.DELETE, "\(baseRoute)/\(falseUserID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .notFound)
@@ -50,11 +48,7 @@ extension UserControllerTests {
 // MARK: - Remove all
 extension UserControllerTests {
     func testRemoveAllSucceed() async throws {
-        let user = try await User.create(username: expectedAdminUsername, on: app.db)
-        let token = try await Token.create(for: user, on: app.db)
-        
-        let path = "\(baseRoute)/all"
-        try await app.test(.DELETE, path) { req in
+        try await app.test(.DELETE, "\(baseRoute)/all") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .noContent)

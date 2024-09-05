@@ -50,6 +50,7 @@ extension UserControllerTests {
 extension UserControllerTests {
     func testChangePasswordSucceed() async throws {
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
+        token = try await Token.create(for: user, on: app.db)
         let changeRequest = PasswordChangeRequest(currentPassword: expectedPassword, newPassword: expectedPassword + "hello")
         
         let userID = try user.requireID()
@@ -81,6 +82,7 @@ extension UserControllerTests {
     
     func testChangePasswordWithInvalidCurrentFails() async throws {
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
+        token = try await Token.create(for: user, on: app.db)
         let changeRequest = PasswordChangeRequest(currentPassword: "hello", newPassword: expectedPassword + "hello")
         
         let userID = try user.requireID()
@@ -615,13 +617,13 @@ extension UserControllerTests {
     }
 
     func testUnblockUserConnectionWithoutAdminPermissionFails() async throws {
-        let client = try await User.create(username: expectedClientUsername, userType: .client, on: app.db)
+        let client = try await UserControllerTests().createExpectedUser(userType: .client, on: app.db)
+        token = try await Token.create(for: client, on: app.db)
         let clientID = try client.requireID()
         client.isConnectionBlocked = true
         try await client.update(on: app.db)
 
-        let path = "\(baseRoute)/\(clientID)/unblock/connection"
-        try app.test(.PUT, path) { req in
+        try app.test(.PUT, "\(baseRoute)/\(clientID)/unblock/connection") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res in
             XCTAssertEqual(res.status, .forbidden)
