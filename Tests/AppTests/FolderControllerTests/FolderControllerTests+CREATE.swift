@@ -175,20 +175,20 @@ extension FolderControllerTests {
         } afterResponse: { res async in
             XCTAssertEqual(res.status, .ok)
             do {
-                let folder = try res.content.decode([Folder].self)
-                XCTAssertEqual(folder[0].title, expectedTitle)
-                XCTAssertEqual(folder[0].number, expectedNumber)
-                XCTAssertEqual(folder[0].sleeve, .systemQuality)
+                let folders = try res.content.decode([Folder].self)
+                XCTAssertEqual(folders[0].title, expectedTitle)
+                XCTAssertEqual(folders[0].number, expectedNumber)
+                XCTAssertEqual(folders[0].sleeve, .systemQuality)
                 
-                XCTAssertEqual(folder[1].title, "\(expectedTitle)2")
-                XCTAssertEqual(folder[1].number, expectedNumber + 1)
-                XCTAssertEqual(folder[1].sleeve, .systemQuality)
+                XCTAssertEqual(folders[1].title, "\(expectedTitle)2")
+                XCTAssertEqual(folders[1].number, expectedNumber + 1)
+                XCTAssertEqual(folders[1].sleeve, .systemQuality)
                 
                 let users = try await User.query(on: app.db).all()
                 XCTAssertNotNil(users[0].systemQualityFolders)
                 if let systemQualityFolders = users[0].systemQualityFolders {
                     XCTAssertEqual(systemQualityFolders.count, 2)
-                    XCTAssertEqual(systemQualityFolders[0].title, folder[0].title)
+                    XCTAssertEqual(systemQualityFolders[0].title, folders[0].title)
                 }
                 XCTAssertNil(users[0].recordsFolders)
             } catch {}
