@@ -78,6 +78,32 @@ extension UserControllerTests {
             XCTAssertTrue(res.body.string.contains("badRequest.password"))
         }
     }
+    
+    func testCreateWithWhitespacesSucceed() async throws {
+        let userInput = UserControllerTests().createExpectedUserInput(firstName: "expected first")
+        
+        try app.test(.POST, baseRoute) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(userInput)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let user = try res.content.decode(User.Public.self)
+            XCTAssertTrue(user.username.contains("expected_first"))
+        }
+    }
+    
+    func testCreateWithDashSucceed() async throws {
+        let userInput = UserControllerTests().createExpectedUserInput(lastName: "expected-last")
+        
+        try app.test(.POST, baseRoute) { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(userInput)
+        } afterResponse: { res in
+            XCTAssertEqual(res.status, .ok)
+            let user = try res.content.decode(User.Public.self)
+            XCTAssertTrue(user.username.contains("expected-last"))
+        }
+    }
 }
 
 

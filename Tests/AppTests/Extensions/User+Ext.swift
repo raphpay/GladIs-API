@@ -81,11 +81,19 @@ extension UserControllerTests {
         return user
     }
     
-    func createExpectedUserInput(password: String? = nil) -> User.Input {
+    func createExpectedUserInput(firstName: String? = nil,
+                                 lastName: String? = nil,
+                                 password: String? = nil) -> User.Input {
+        var inputFirstName = firstName
+        if inputFirstName == nil { inputFirstName = expectedFirstName }
+        
+        var inputLastName = lastName
+        if inputLastName == nil { inputLastName = expectedLastName }
+        
         var inputPassword = password
         if inputPassword == nil { inputPassword = expectedPassword }
         
-        let input = User.Input(firstName: expectedFirstName, lastName: expectedLastName,
+        let input = User.Input(firstName: inputFirstName!, lastName: inputLastName!,
                                    phoneNumber: expectedPhoneNumber, email: expectedEmail,
                                    password: inputPassword, userType: .admin,
                                    companyName: nil, products: nil,
