@@ -11,7 +11,9 @@ import Vapor
 extension User {
     static func generateUniqueUsername(firstName: String, lastName: String, on req: Request) async throws -> String {
         // Combine first name and last name to generate the initial username
-        let initialUsername = "\(firstName.lowercased()).\(lastName.lowercased())"
+        let sanitizedFirstName = firstName.removeAccents().removeWhitespaces(with: "_").lowercased()
+        let sanitizedLastName = lastName.removeAccents().removeWhitespaces(with: "_").lowercased()
+        let initialUsername = "\(sanitizedFirstName).\(sanitizedLastName.lowercased())"
         
         let user = try await User
             .query(on: req.db)
