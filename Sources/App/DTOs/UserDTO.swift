@@ -79,10 +79,10 @@ extension User {
             let updatedUser = user
             
             if let firstName = firstName {
-                updatedUser.firstName = firstName
+                updatedUser.firstName = firstName.trimmingCharacters(in: .whitespacesAndNewlines)
             }
             if let lastName = lastName {
-                updatedUser.lastName = lastName
+                updatedUser.lastName = lastName.trimmingCharacters(in: .whitespacesAndNewlines)
             }
             if let phoneNumber = phoneNumber {
                 try phoneNumber.validatePhoneNumber()
