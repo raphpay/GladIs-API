@@ -21,7 +21,8 @@ extension UserController {
         let username = try await User.generateUniqueUsername(firstName: input.firstName, lastName: input.lastName, on: req)
         let uniqueEmail = try await User.verifyUniqueEmail(input.email, on: req)
         
-        let user = User(firstName: input.firstName, lastName: input.lastName,
+        let user = User(firstName: input.firstName.trimmingCharacters(in: .whitespacesAndNewlines),
+                        lastName: input.lastName.trimmingCharacters(in: .whitespacesAndNewlines),
                         phoneNumber: input.phoneNumber, username: username, password: passwordHash,
                         email: uniqueEmail, firstConnection: true, userType: input.userType,
                         companyName: input.companyName, products: input.products,
