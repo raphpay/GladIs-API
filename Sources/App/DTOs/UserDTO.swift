@@ -85,9 +85,11 @@ extension User {
                 updatedUser.lastName = lastName
             }
             if let phoneNumber = phoneNumber {
+                try phoneNumber.validatePhoneNumber()
                 updatedUser.phoneNumber = phoneNumber
             }
             if let email = email {
+                try email.validateEmail()
                 updatedUser.email = email
             }
             if let value = shouldUpdateUsername, value == true {

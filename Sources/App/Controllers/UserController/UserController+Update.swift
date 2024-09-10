@@ -131,8 +131,6 @@ extension UserController {
     }
     
     func updateUserInfos(req: Request) async throws -> User.Public {
-        try User.Input.validate(content: req)
-        
         let userID = try await getUserID(on: req)
         let user = try await getUser(with: userID, on: req.db)
         

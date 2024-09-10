@@ -399,6 +399,27 @@ extension UserControllerTests {
             XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
         }
     }
+    
+    func testUpdateUserWithoutMailSucceed() async throws {
+        let user = try await User.create(username: expectedUsername, on: app.db)
+        let userID = try user.requireID()
+        let input = User.UpdateInput(firstName: "new", lastName: nil, phoneNumber: nil, email: nil,
+                                     shouldUpdateUsername: true)
+        
+        try await app.test(.PUT, "\(baseRoute)/\(userID)/updateInfos") { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(input)
+        } afterResponse: { res async in
+            XCTAssertEqual(res.status, .ok)
+            do {
+                let updatedUser = try res.content.decode(User.self)
+                XCTAssertEqual(updatedUser.username, "new.\(expectedLastName)")
+                let updatedUserID = try updatedUser.requireID()
+                XCTAssertEqual(updatedUserID, userID)
+            } catch { }
+        }
+
+    }
 }
 
 // MARK: - Remove Employee
