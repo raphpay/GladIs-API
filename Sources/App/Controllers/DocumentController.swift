@@ -35,7 +35,7 @@ struct DocumentController: RouteCollection {
     // MARK: - CREATE
     func upload(req: Request) async throws -> Document {
         let input = try req.content.decode(Document.Input.self)
-        let uploadDirectory = req.application.directory.publicDirectory + input.path
+        let uploadDirectory = req.application.directory.resourcesDirectory + input.path
         
         let fileName = input.name
         
@@ -57,7 +57,7 @@ struct DocumentController: RouteCollection {
     
     func uploadLogo(req: Request) async throws -> Document {
         let input = try req.content.decode(Document.Input.self)
-        let uploadDirectory = req.application.directory.publicDirectory + input.path
+        let uploadDirectory = req.application.directory.resourcesDirectory + input.path
         
         let fileName = input.name
         
@@ -131,7 +131,7 @@ struct DocumentController: RouteCollection {
     
     func dowloadDocument(req: Request) async throws -> Response {
         let document = try await getDocument(req: req)
-        let filePath = req.application.directory.publicDirectory + document.path + document.name
+        let filePath = req.application.directory.resourcesDirectory + document.path + document.name
         
         if !FileManager.default.fileExists(atPath: filePath) {
             throw Abort(.notFound, reason: "notFound.file")
@@ -174,7 +174,7 @@ struct DocumentController: RouteCollection {
 // MARK: - Utils
 extension DocumentController {
     func delete(document: Document, on req: Request) async throws -> HTTPResponseStatus {
-        let baseDirectory = req.application.directory.publicDirectory
+        let baseDirectory = req.application.directory.resourcesDirectory
         let filePath = baseDirectory + document.path + document.name
         if FileManager.default.fileExists(atPath: filePath) {
             try FileManager.default.removeItem(atPath: filePath)
