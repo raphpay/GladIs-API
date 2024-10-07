@@ -45,4 +45,17 @@ extension String {
             throw Abort(.badRequest, reason: "badRequest.phoneNumber.invalid")
         }
     }
+    
+    func isValidEmail() -> Bool {
+        let regex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let isValid = NSPredicate { input, _ in
+            guard let input = input as? String else {
+                return false
+            }
+            
+            return input.range(of: regex, options: .regularExpression) != nil
+        }.evaluate(with: self)
+        
+        return isValid
+    }
 }

@@ -13,6 +13,8 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent.git", from: "4.8.0"),
         // 🌱 Fluent driver for Mongo.
         .package(url: "https://github.com/vapor/fluent-mongo-driver.git", from: "1.0.0"),
+        // SendGrid emails
+        .package(url: "https://github.com/vapor-community/sendgrid-kit.git", from: "2.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -21,6 +23,7 @@ let package = Package(
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentMongoDriver", package: "fluent-mongo-driver"),
                 .product(name: "Vapor", package: "vapor"),
+                .product(name: "SendGridKit", package: "sendgrid-kit"),
             ]
         ),
         .testTarget(name: "AppTests", dependencies: [

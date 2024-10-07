@@ -23,4 +23,5 @@ func routes(_ app: Application) throws {
     try app.register(collection: SurveyController())
     try app.register(collection: FormController())
     try app.register(collection: FolderController())
+    try app.register(collection: EmailController())
 }
