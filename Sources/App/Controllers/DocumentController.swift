@@ -18,6 +18,7 @@ struct DocumentController: RouteCollection {
         let tokenAuthGroup = documents.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: upload)
+        tokenAuthGroup.post("filePart", use: uploadFormData)
         // Read
         tokenAuthGroup.get(use: getAllDocuments)
         tokenAuthGroup.get(":documentID", use: getDocument)
@@ -52,6 +53,40 @@ struct DocumentController: RouteCollection {
         let document = Document(name: fileName, path: input.path, status: .none)
         try await document.save(on: req.db)
         
+        return document
+    }
+    
+    func uploadFormData(req: Request) async throws -> Document {
+        // Ensure the request contains multipart form data
+        guard req.headers.contentType == .formData else {
+            throw Abort(.unsupportedMediaType)
+        }
+
+        // Extract file data using Vapor's content parsing
+        // We are looking for the "file" part of the form-data, ensure that the name matches the form field
+        let file = try req.content.get(File.self, at: "file")
+
+        // Decode the other form fields (uri, name, path)
+        let input = try req.content.decode(Document.FormDataInput.self)
+
+        // Create the upload directory if it doesn't exist
+        let uploadDirectory = req.application.directory.resourcesDirectory + input.path
+        if !FileManager.default.fileExists(atPath: uploadDirectory) {
+            do {
+                try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
+            } catch {
+                throw Abort(.internalServerError, reason: "Failed to create directory.")
+            }
+        }
+
+        // Save the file content
+        let filePath = uploadDirectory + input.name
+        try await req.fileio.writeFile(file.data, at: filePath)
+
+        // Save document details to the database
+        let document = Document(name: input.name, path: input.path, status: .none)
+        try await document.save(on: req.db)
+
         return document
     }
     

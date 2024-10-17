@@ -60,6 +60,12 @@ final class Document: Model, Content {
         let documents: [Document]
         let pageCount: Int
     }
+    
+    struct FormDataInput: Content {
+        let uri: String
+        let name: String
+        let path: String
+    }
 }
 
 extension Document {
