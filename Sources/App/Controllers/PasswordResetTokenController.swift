@@ -114,7 +114,7 @@ struct PasswordResetTokenController: RouteCollection {
         for token in tokens {
             do {
                 try await token.delete(force: true, on: req.db)
-            } catch let error {
+            } catch {
                 throw Abort(.badRequest, reason: "badRequest.passwordResetToken.delete")
             }
         }
