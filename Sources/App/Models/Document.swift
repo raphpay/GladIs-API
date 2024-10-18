@@ -66,6 +66,10 @@ final class Document: Model, Content {
         let name: String
         let path: String
     }
+
+    struct NameInput: Content {
+        let name: String
+    }
 }
 
 extension Document {

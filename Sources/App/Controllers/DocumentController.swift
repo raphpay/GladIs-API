@@ -7,6 +7,7 @@
 
 import Fluent
 import Vapor
+import PDFKit
 
 struct DocumentController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
@@ -19,12 +20,14 @@ struct DocumentController: RouteCollection {
         // Create
         tokenAuthGroup.post(use: upload)
         tokenAuthGroup.post("filePart", use: uploadFormData)
+        tokenAuthGroup.post("filePart", "multiple", use: uploadFormDataMultiplePages)
         // Read
         tokenAuthGroup.get(use: getAllDocuments)
         tokenAuthGroup.get(":documentID", use: getDocument)
         tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
         tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
         tokenAuthGroup.post("paginated", "path", use: getPaginatedDocumentsAtPath)
+        tokenAuthGroup.post("byName", use: getDocumentIDsByName)
         // Update
         tokenAuthGroup.put(":documentID", use: changeDocumentStatus)
         // Delete
@@ -88,6 +91,87 @@ struct DocumentController: RouteCollection {
         try await document.save(on: req.db)
 
         return document
+    }
+
+    func getDocumentIDsByName(req: Request) async throws -> [Document] {
+        // Récupérer le nom du document depuis la requête
+        // guard let name = req.parameters.get("name") as String? else {
+            // throw Abort(.badRequest, reason: "Missing 'name' parameter.")
+        // }
+
+        let name = try req.content.decode(Document.NameInput.self).name;
+
+        // Construire le motif de recherche pour filtrer les documents
+        let searchPattern = "\(name)-p\\d+\\.pdf" // Motif pour chercher des fichiers comme name-p1.pdf, name-p2.pdf, etc.
+
+        // Rechercher tous les documents ayant un nom correspondant
+        let documents = try await Document.query(on: req.db)
+            .filter(\.$name ~~ searchPattern) // Utilisation de l'opérateur de correspondance regex
+            .all()
+
+        return documents
+    }
+
+    func uploadFormDataMultiplePages(req: Request) async throws -> [Document] {
+        // Ensure the request contains multipart form data
+        guard req.headers.contentType == .formData else {
+            throw Abort(.unsupportedMediaType)
+        }
+
+        // Extract file data using Vapor's content parsing
+        let file = try req.content.get(File.self, at: "file")
+
+        // Decode the other form fields (uri, name, path)
+        let input = try req.content.decode(Document.FormDataInput.self)
+
+        // Create the upload directory if it doesn't exist
+        let uploadDirectory = req.application.directory.resourcesDirectory + input.path
+        if !FileManager.default.fileExists(atPath: uploadDirectory) {
+            do {
+                try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
+            } catch {
+                throw Abort(.internalServerError, reason: "Failed to create directory.")
+            }
+        }
+
+        // Save the original PDF file to the upload directory
+        let originalFilePath = uploadDirectory + input.name
+        try await req.fileio.writeFile(file.data, at: originalFilePath)
+
+        // Extract pages from the PDF file
+        guard let pdfDocument = PDFDocument(url: URL(fileURLWithPath: originalFilePath)) else {
+            throw Abort(.internalServerError, reason: "Failed to open PDF document.")
+        }
+
+        var documents: [Document] = []
+        
+        for pageIndex in 0..<pdfDocument.pageCount {
+            guard let page = pdfDocument.page(at: pageIndex) else {
+                continue
+            }
+
+            // Create a new PDF document for the page
+            let singlePageDocument = PDFDocument()
+            singlePageDocument.insert(page, at: 0)
+
+            // Create a unique name for the new PDF file
+            let pageFileName = "\(input.name.replacingOccurrences(of: ".pdf", with: ""))-p\(pageIndex + 1).pdf"
+            let pageFilePath = uploadDirectory + pageFileName
+
+            // Save the single page PDF document
+            if singlePageDocument.write(to: URL(fileURLWithPath: pageFilePath)) {
+                // Save document details to the database
+                let document = Document(name: pageFileName, path: input.path, status: .none)
+                try await document.save(on: req.db)
+                documents.append(document)
+            } else {
+                throw Abort(.internalServerError, reason: "Failed to save page document.")
+            }
+        }
+        
+        try FileManager.default.removeItem(atPath: originalFilePath)
+
+        return documents // Return the list of created documents
     }
     
     func uploadLogo(req: Request) async throws -> Document {
