@@ -19,15 +19,14 @@ struct DocumentController: RouteCollection {
         let tokenAuthGroup = documents.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: upload)
-        tokenAuthGroup.post("filePart", use: uploadFormData)
-        tokenAuthGroup.post("filePart", "multiple", use: uploadFormDataMultiplePages)
+        tokenAuthGroup.post("filePart", use: uploadFormDataMultiplePages)
         // Read
         tokenAuthGroup.get(use: getAllDocuments)
         tokenAuthGroup.get(":documentID", use: getDocument)
         tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
         tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
         tokenAuthGroup.post("paginated", "path", use: getPaginatedDocumentsAtPath)
-        tokenAuthGroup.post("byName", use: getDocumentIDsByName)
+        tokenAuthGroup.post("byName", use: getDocumentByName)
         // Update
         tokenAuthGroup.put(":documentID", use: changeDocumentStatus)
         // Delete
@@ -58,59 +57,6 @@ struct DocumentController: RouteCollection {
         
         return document
     }
-    
-    func uploadFormData(req: Request) async throws -> Document {
-        // Ensure the request contains multipart form data
-        guard req.headers.contentType == .formData else {
-            throw Abort(.unsupportedMediaType)
-        }
-
-        // Extract file data using Vapor's content parsing
-        // We are looking for the "file" part of the form-data, ensure that the name matches the form field
-        let file = try req.content.get(File.self, at: "file")
-
-        // Decode the other form fields (uri, name, path)
-        let input = try req.content.decode(Document.FormDataInput.self)
-
-        // Create the upload directory if it doesn't exist
-        let uploadDirectory = req.application.directory.resourcesDirectory + input.path
-        if !FileManager.default.fileExists(atPath: uploadDirectory) {
-            do {
-                try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
-            } catch {
-                throw Abort(.internalServerError, reason: "Failed to create directory.")
-            }
-        }
-
-        // Save the file content
-        let filePath = uploadDirectory + input.name
-        try await req.fileio.writeFile(file.data, at: filePath)
-
-        // Save document details to the database
-        let document = Document(name: input.name, path: input.path, status: .none)
-        try await document.save(on: req.db)
-
-        return document
-    }
-
-    func getDocumentIDsByName(req: Request) async throws -> [Document] {
-        // Récupérer le nom du document depuis la requête
-        // guard let name = req.parameters.get("name") as String? else {
-            // throw Abort(.badRequest, reason: "Missing 'name' parameter.")
-        // }
-
-        let name = try req.content.decode(Document.NameInput.self).name;
-
-        // Construire le motif de recherche pour filtrer les documents
-        let searchPattern = "\(name)-p\\d+\\.pdf" // Motif pour chercher des fichiers comme name-p1.pdf, name-p2.pdf, etc.
-
-        // Rechercher tous les documents ayant un nom correspondant
-        let documents = try await Document.query(on: req.db)
-            .filter(\.$name ~~ searchPattern) // Utilisation de l'opérateur de correspondance regex
-            .all()
-
-        return documents
-    }
 
     func uploadFormDataMultiplePages(req: Request) async throws -> [Document] {
         // Ensure the request contains multipart form data
@@ -119,6 +65,7 @@ struct DocumentController: RouteCollection {
         }
 
         // Extract file data using Vapor's content parsing
+        // We are looking for the "file" part of the form-data, ensure that the name matches the form field
         let file = try req.content.get(File.self, at: "file")
 
         // Decode the other form fields (uri, name, path)
@@ -246,6 +193,21 @@ struct DocumentController: RouteCollection {
         }
         
         return document
+    }
+    
+    func getDocumentByName(req: Request) async throws -> [Document] {
+        // Get the document name via the request
+        let name = try req.content.decode(Document.NameInput.self).name;
+
+        // Construct the search pattern to filter documents
+        let searchPattern = "\(name)-p\\d+\\.pdf" // Pattern to search files with name-p1.pdf, name-p2.pdf, etc...
+
+        // Search all the corresponding documents
+        let documents = try await Document.query(on: req.db)
+            .filter(\.$name ~~ searchPattern) // Using regex
+            .all()
+
+        return documents
     }
     
     func dowloadDocument(req: Request) async throws -> Response {
