@@ -19,14 +19,14 @@ struct DocumentController: RouteCollection {
         let tokenAuthGroup = documents.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: upload)
-        tokenAuthGroup.post("filePart", use: uploadFormDataMultiplePages)
+        tokenAuthGroup.post("filePart", use: uploadViaFormData)
         // Read
         tokenAuthGroup.get(use: getAllDocuments)
         tokenAuthGroup.get(":documentID", use: getDocument)
         tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
         tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
         tokenAuthGroup.post("paginated", "path", use: getPaginatedDocumentsAtPath)
-        tokenAuthGroup.post("byName", use: getDocumentByName)
+        tokenAuthGroup.post("pages", "byName", "andPath", use: getDocumentPagesByNameAndPath)
         // Update
         tokenAuthGroup.put(":documentID", use: changeDocumentStatus)
         // Delete
@@ -58,7 +58,7 @@ struct DocumentController: RouteCollection {
         return document
     }
 
-    func uploadFormDataMultiplePages(req: Request) async throws -> [Document] {
+    func uploadViaFormData(req: Request) async throws -> [Document] {
         // Ensure the request contains multipart form data
         guard req.headers.contentType == .formData else {
             throw Abort(.unsupportedMediaType)
@@ -84,13 +84,15 @@ struct DocumentController: RouteCollection {
         // Save the original PDF file to the upload directory
         let originalFilePath = uploadDirectory + input.name
         try await req.fileio.writeFile(file.data, at: originalFilePath)
+        let originalDocument = Document(name: input.name, path: input.path, status: .none)
+        try await originalDocument.save(on: req.db)
 
         // Extract pages from the PDF file
         guard let pdfDocument = PDFDocument(url: URL(fileURLWithPath: originalFilePath)) else {
             throw Abort(.internalServerError, reason: "Failed to open PDF document.")
         }
 
-        var documents: [Document] = []
+        var documents: [Document] = [originalDocument]
         
         for pageIndex in 0..<pdfDocument.pageCount {
             guard let page = pdfDocument.page(at: pageIndex) else {
@@ -145,7 +147,7 @@ struct DocumentController: RouteCollection {
     
     // MARK: - READ
     func getAllDocuments(req: Request) async throws -> [Document] {
-        try await Document
+        return try await Document
             .query(on: req.db)
             .all()
     }
@@ -162,26 +164,31 @@ struct DocumentController: RouteCollection {
             .filter(\.$path == path.value)
             .all()
     }
-    
+
     func getPaginatedDocumentsAtPath(req: Request) async throws -> Document.PaginatedOutput {
         struct Path: Codable {
             var value: String
         }
-        
+
         let path = try req.content.decode(Path.self)
-        
+
+        // Get the pagination parameters from the query string
         guard let page = req.query[Int.self, at: "page"],
               let perPage = req.query[Int.self, at: "perPage"] else {
             throw Abort(.badRequest, reason: "Missing page or perPage query parameters")
         }
-        
+
+        // Paginate and filter documents by path, excluding documents with '-pX.pdf' in their name
         let paginatedResults = try await Document
             .query(on: req.db)
             .filter(\.$path == path.value)
+            .filter(\.$name !~= "-p\\d+\\.pdf") // Filter out names ending with '-pX.pdf'
             .paginate(PageRequest(page: page, per: perPage))
 
+        // Extract the total number of pages
         let pageCount = paginatedResults.metadata.pageCount
-        
+
+        // Create the output with the filtered documents and the page count
         let output = Document.PaginatedOutput(documents: paginatedResults.items, pageCount: pageCount)
 
         return output
@@ -195,16 +202,17 @@ struct DocumentController: RouteCollection {
         return document
     }
     
-    func getDocumentByName(req: Request) async throws -> [Document] {
-        // Get the document name via the request
-        let name = try req.content.decode(Document.NameInput.self).name;
+    func getDocumentPagesByNameAndPath(req: Request) async throws -> [Document] {
+        // Get the document name and path via the request
+        let input = try req.content.decode(Document.SearchInput.self);
 
         // Construct the search pattern to filter documents
-        let searchPattern = "\(name)-p\\d+\\.pdf" // Pattern to search files with name-p1.pdf, name-p2.pdf, etc...
+        let searchPattern = "\(input.name)-p\\d+\\.pdf" // Pattern to search files with name-p1.pdf, name-p2.pdf, etc...
 
         // Search all the corresponding documents
         let documents = try await Document.query(on: req.db)
             .filter(\.$name ~~ searchPattern) // Using regex
+            .filter(\.$path == input.path)
             .all()
 
         return documents
