@@ -31,7 +31,8 @@ extension Document {
         let path: String
     }
 
-    struct NameInput: Content {
+    struct SearchInput: Content {
         let name: String
+        let path: String
     }
 }
