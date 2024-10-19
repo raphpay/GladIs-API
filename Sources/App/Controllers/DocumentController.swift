@@ -19,7 +19,6 @@ struct DocumentController: RouteCollection {
         let tokenAuthGroup = documents.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: upload)
-        tokenAuthGroup.post("filePart", use: uploadViaFormData)
         // Read
         tokenAuthGroup.get(use: getAllDocuments)
         tokenAuthGroup.get(":documentID", use: getDocument)
@@ -36,29 +35,7 @@ struct DocumentController: RouteCollection {
     
     
     // MARK: - CREATE
-    func upload(req: Request) async throws -> Document {
-        let input = try req.content.decode(Document.Input.self)
-        let uploadDirectory = req.application.directory.resourcesDirectory + input.path
-        
-        let fileName = input.name
-        
-        if !FileManager.default.fileExists(atPath: uploadDirectory) {
-            do {
-                try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
-            } catch {
-                throw Abort(.internalServerError, reason: "internalServerError.failedToCreateDirectory")
-            }
-        }
-        
-        try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
-        
-        let document = Document(name: fileName, path: input.path, status: .none)
-        try await document.save(on: req.db)
-        
-        return document
-    }
-
-    func uploadViaFormData(req: Request) async throws -> [Document] {
+    func upload(req: Request) async throws -> [Document] {
         // Ensure the request contains multipart form data
         guard req.headers.contentType == .formData else {
             throw Abort(.unsupportedMediaType)
