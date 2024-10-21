@@ -17,8 +17,8 @@
 version: '3.7'
 
 volumes:
-  db_data:  # Volume for MongoDB data
-  uploads:  # Volume for file uploads
+  db_data: # Volume for MongoDB data
+  uploads: # Volume for file uploads
 
 x-shared_environment: &shared_environment
   LOG_LEVEL: ${LOG_LEVEL:-debug}
@@ -33,13 +33,13 @@ services:
       <<: *shared_environment
     depends_on:
       - db
-      - file-storage  # Ensure the file-storage service is up before the app
+      - file-storage # Ensure the file-storage service is up before the app
     ports:
       - '8080:8080'
     user: '0'  # uncomment to run as root for testing purposes even though Dockerfile defines 'vapor' user.
     command: ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
     volumes:
-      - uploads:/app/Resources/Uploads  # Mount shared volume for uploads
+      - uploads:/app/Resources  # Mount shared volume for uploads
 
   migrate:
     image: glad-is--a-p-i:latest
@@ -73,8 +73,8 @@ services:
       - '27017:27017'
 
   file-storage:
-    image: alpine  # You can use a minimal image like Alpine for storage
+    image: alpine # You can use a minimal image like Alpine for storage
     volumes:
-      - uploads:/storage/uploads  # Mount the same uploads volume
-    command: ["tail", "-f", "/dev/null"]  # Keep the container running (it doesn't need to do anything)
+      - uploads:/storage/uploads # Mount the same uploads volume
+    command: ["tail", "-f", "/dev/null"] # Keep the container running (it doesn't need to do anything)
     restart: unless-stopped
