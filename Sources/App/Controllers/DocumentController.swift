@@ -7,6 +7,7 @@
 
 import Fluent
 import Vapor
+import CoreGraphics
 
 struct DocumentController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
@@ -198,48 +199,47 @@ extension DocumentController {
     }
 
     func uploadPDPages(input: Document.FormDataInput, originalDocument: Document, uploadDirectory: String, req: Request) async throws -> [Document] {
+        // Extract pages from the PDF file
         let destinationFilePath = uploadDirectory + input.name
+        guard let pdfDocument = CGPDFDocument(URL(fileURLWithPath: destinationFilePath) as CFURL) else {
+            throw Abort(.internalServerError, reason: "Failed to open PDF document.")
+        }
+
         var documents: [Document] = [originalDocument]
-
-        // Create a unique name pattern for the output files
-        let outputPattern = uploadDirectory + "\(input.name.replacingOccurrences(of: ".pdf", with: ""))-%d.pdf"
-
-        // Call `pdfseparate` to split the PDF into individual pages
-        let separateProcess = Process()
-        // Local path to pdfseparate :
-        // let pdfSeparatePath = /opt/homebrew/bin/pdfseparate
         
-        // Server path to pdfseparate:
-        let pdfSeparatePath = "/usr/bin/pdfseparate"
-        separateProcess.executableURL = URL(fileURLWithPath: pdfSeparatePath) // Path to `pdfseparate`
-        separateProcess.arguments = [destinationFilePath, outputPattern]
+        for pageIndex in 1...pdfDocument.numberOfPages {
+            guard let page = pdfDocument.page(at: pageIndex) else {
+                continue
+            }
 
-        let pipe = Pipe()
-        separateProcess.standardOutput = pipe
-        separateProcess.standardError = pipe
+            // Get page size
+            var pageRect = page.getBoxRect(.mediaBox)
+            
+            // Create a new PDF context for the page
+            let pageFileName = "\(input.name.replacingOccurrences(of: ".pdf", with: ""))-p\(pageIndex).pdf"
+            let pageFilePath = uploadDirectory + pageFileName
+            guard let pdfContext = CGContext(URL(fileURLWithPath: pageFilePath) as CFURL, mediaBox: &pageRect, nil) else {
+                throw Abort(.internalServerError, reason: "Failed to create PDF context.")
+            }
 
-        try separateProcess.run()
-        separateProcess.waitUntilExit()
+            // Start the PDF context
+            pdfContext.beginPDFPage(nil)
+            
+            // Draw the page content into the context
+            pdfContext.drawPDFPage(page)
+            
+            // End the PDF context
+            pdfContext.endPDFPage()
+            pdfContext.closePDF();
 
-        let status = separateProcess.terminationStatus
-        if status != 0 {
-            throw Abort(.internalServerError, reason: "Failed to split the PDF.")
-        }
-
-        // Find all the generated PDF files and save them
-        let fileManager = FileManager.default
-        let splitPDFs = try fileManager.contentsOfDirectory(atPath: uploadDirectory).filter { $0.hasPrefix(input.name.replacingOccurrences(of: ".pdf", with: "")) && $0.hasSuffix(".pdf")
-        }
-
-        for splitPDF in splitPDFs {
-            let document = Document(name: splitPDF, path: input.path, status: .none)
+            // Save document details to the database
+            let document = Document(name: pageFileName, path: input.path, status: .none)
             try await document.save(on: req.db)
             documents.append(document)
         }
-
+        
         return documents
     }
-    
     
     // MARK: - Delete
     func delete(document: Document, on req: Request) async throws -> HTTPResponseStatus {
