@@ -35,17 +35,13 @@ struct DocumentController: RouteCollection {
     
     
     // MARK: - CREATE
-    func upload(req: Request) async throws -> [Document] {
+    func upload(req: Request) async throws -> Document {
         let input = try req.content.decode(Document.FormDataInput.self)
         let uploadDirectory = req.application.directory.resourcesDirectory + input.path
         
-        let originalDocument = try await uploadFile(input: input, uploadDirectory: uploadDirectory, on: req)
-        let documents = try await uploadPDPages(input: input, originalDocument: originalDocument, uploadDirectory: uploadDirectory, req: req)
-        
-        // Remove the complete document for memory usage
-        try FileManager.default.removeItem(atPath: uploadDirectory + input.name)
+        let document = try await uploadFile(input: input, uploadDirectory: uploadDirectory, on: req)
 
-        return documents // Return the list of created documents
+        return document
     }
     
     func uploadImage(req: Request) async throws -> Document {
@@ -176,10 +172,10 @@ extension DocumentController {
         guard req.headers.contentType == .formData else {
             throw Abort(.unsupportedMediaType)
         }
-        
+
         let file = try req.content.get(File.self, at: "file")
         let destinationFilePath = uploadDirectory + input.name
-        
+
         let fileName = input.name
         
         if !FileManager.default.fileExists(atPath: uploadDirectory) {
@@ -196,49 +192,6 @@ extension DocumentController {
         try await document.save(on: req.db)
         
         return document
-    }
-
-    func uploadPDPages(input: Document.FormDataInput, originalDocument: Document, uploadDirectory: String, req: Request) async throws -> [Document] {
-        // Extract pages from the PDF file
-        let destinationFilePath = uploadDirectory + input.name
-        guard let pdfDocument = CGPDFDocument(URL(fileURLWithPath: destinationFilePath) as CFURL) else {
-            throw Abort(.internalServerError, reason: "Failed to open PDF document.")
-        }
-
-        var documents: [Document] = [originalDocument]
-        
-        for pageIndex in 1...pdfDocument.numberOfPages {
-            guard let page = pdfDocument.page(at: pageIndex) else {
-                continue
-            }
-
-            // Get page size
-            var pageRect = page.getBoxRect(.mediaBox)
-            
-            // Create a new PDF context for the page
-            let pageFileName = "\(input.name.replacingOccurrences(of: ".pdf", with: ""))-p\(pageIndex).pdf"
-            let pageFilePath = uploadDirectory + pageFileName
-            guard let pdfContext = CGContext(URL(fileURLWithPath: pageFilePath) as CFURL, mediaBox: &pageRect, nil) else {
-                throw Abort(.internalServerError, reason: "Failed to create PDF context.")
-            }
-
-            // Start the PDF context
-            pdfContext.beginPDFPage(nil)
-            
-            // Draw the page content into the context
-            pdfContext.drawPDFPage(page)
-            
-            // End the PDF context
-            pdfContext.endPDFPage()
-            pdfContext.closePDF();
-
-            // Save document details to the database
-            let document = Document(name: pageFileName, path: input.path, status: .none)
-            try await document.save(on: req.db)
-            documents.append(document)
-        }
-        
-        return documents
     }
     
     // MARK: - Delete
