@@ -7,7 +7,6 @@
 
 import Fluent
 import Vapor
-import PDFKit
 
 struct DocumentController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
@@ -197,42 +196,50 @@ extension DocumentController {
         
         return document
     }
-    
+
     func uploadPDPages(input: Document.FormDataInput, originalDocument: Document, uploadDirectory: String, req: Request) async throws -> [Document] {
-        // Extract pages from the PDF file
         let destinationFilePath = uploadDirectory + input.name
-        guard let pdfDocument = PDFDocument(url: URL(fileURLWithPath: destinationFilePath)) else {
-            throw Abort(.internalServerError, reason: "Failed to open PDF document.")
-        }
-
         var documents: [Document] = [originalDocument]
+
+        // Create a unique name pattern for the output files
+        let outputPattern = uploadDirectory + "\(input.name.replacingOccurrences(of: ".pdf", with: ""))-%d.pdf"
+
+        // Call `pdfseparate` to split the PDF into individual pages
+        let separateProcess = Process()
+        // Local path to pdfseparate :
+        // let pdfSeparatePath = /opt/homebrew/bin/pdfseparate
         
-        for pageIndex in 0..<pdfDocument.pageCount {
-            guard let page = pdfDocument.page(at: pageIndex) else {
-                continue
-            }
+        // Server path to pdfseparate:
+        let pdfSeparatePath = "/usr/bin/pdfseparate"
+        separateProcess.executableURL = URL(fileURLWithPath: pdfSeparatePath) // Path to `pdfseparate`
+        separateProcess.arguments = [destinationFilePath, outputPattern]
 
-            // Create a new PDF document for the page
-            let singlePageDocument = PDFDocument()
-            singlePageDocument.insert(page, at: 0)
+        let pipe = Pipe()
+        separateProcess.standardOutput = pipe
+        separateProcess.standardError = pipe
 
-            // Create a unique name for the new PDF file
-            let pageFileName = "\(input.name.replacingOccurrences(of: ".pdf", with: ""))-p\(pageIndex + 1).pdf"
-            let pageFilePath = uploadDirectory + pageFileName
+        try separateProcess.run()
+        separateProcess.waitUntilExit()
 
-            // Save the single page PDF document
-            if singlePageDocument.write(to: URL(fileURLWithPath: pageFilePath)) {
-                // Save document details to the database
-                let document = Document(name: pageFileName, path: input.path, status: .none)
-                try await document.save(on: req.db)
-                documents.append(document)
-            } else {
-                throw Abort(.internalServerError, reason: "Failed to save page document.")
-            }
+        let status = separateProcess.terminationStatus
+        if status != 0 {
+            throw Abort(.internalServerError, reason: "Failed to split the PDF.")
         }
-        
+
+        // Find all the generated PDF files and save them
+        let fileManager = FileManager.default
+        let splitPDFs = try fileManager.contentsOfDirectory(atPath: uploadDirectory).filter { $0.hasPrefix(input.name.replacingOccurrences(of: ".pdf", with: "")) && $0.hasSuffix(".pdf")
+        }
+
+        for splitPDF in splitPDFs {
+            let document = Document(name: splitPDF, path: input.path, status: .none)
+            try await document.save(on: req.db)
+            documents.append(document)
+        }
+
         return documents
     }
+    
     
     // MARK: - Delete
     func delete(document: Document, on req: Request) async throws -> HTTPResponseStatus {
