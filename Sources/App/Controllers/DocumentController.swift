@@ -7,7 +7,6 @@
 
 import Fluent
 import Vapor
-import CoreGraphics
 
 struct DocumentController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
