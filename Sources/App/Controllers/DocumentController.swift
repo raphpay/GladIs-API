@@ -24,7 +24,6 @@ struct DocumentController: RouteCollection {
         tokenAuthGroup.get("download", ":documentID", use: dowloadDocument)
         tokenAuthGroup.post("getDocumentsAtPath", use: getDocumentsAtPath)
         tokenAuthGroup.post("paginated", "path", use: getPaginatedDocumentsAtPath)
-        tokenAuthGroup.post("pages", "byName", "andPath", use: getDocumentPagesByNameAndPath)
         // Update
         tokenAuthGroup.put(":documentID", use: changeDocumentStatus)
         // Delete
@@ -104,22 +103,6 @@ struct DocumentController: RouteCollection {
         }
         
         return document
-    }
-    
-    func getDocumentPagesByNameAndPath(req: Request) async throws -> [Document] {
-        // Get the document name and path via the request
-        let input = try req.content.decode(Document.SearchInput.self);
-
-        // Construct the search pattern to filter documents
-        let searchPattern = "\(input.name)-p\\d+\\.pdf" // Pattern to search files with name-p1.pdf, name-p2.pdf, etc...
-
-        // Search all the corresponding documents
-        let documents = try await Document.query(on: req.db)
-            .filter(\.$name ~~ searchPattern) // Using regex
-            .filter(\.$path == input.path)
-            .all()
-
-        return documents
     }
     
     func dowloadDocument(req: Request) async throws -> Response {
