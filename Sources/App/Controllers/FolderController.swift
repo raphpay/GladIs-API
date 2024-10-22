@@ -94,6 +94,8 @@ struct FolderController: RouteCollection {
     
     @Sendable
     func delete(req: Request) async throws -> HTTPResponseStatus {
+        try await checkUserRole(on: req)
+        
         let folderID = try getID(on: req)
         let folder = try await get(with: folderID, on: req)
         
@@ -113,6 +115,8 @@ struct FolderController: RouteCollection {
     
     @Sendable
     func deleteAll(req: Request) async throws -> HTTPResponseStatus {
+        try await checkUserRole(on: req)
+        
         try await Folder
             .query(on: req.db)
             .all()
@@ -188,6 +192,14 @@ extension FolderController {
             } else {
                 process.number = 1
             }
+        }
+    }
+    
+    private func checkUserRole(on req: Request) async throws {
+        let authenticatedUser = try req.auth.require(User.self)
+        
+        guard authenticatedUser.userType == .admin else {
+            throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
         }
     }
 }
