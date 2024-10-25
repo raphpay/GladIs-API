@@ -25,7 +25,7 @@ struct PasswordResetTokenController: RouteCollection {
     }
     
     // MARK: - Create
-    func requestPasswordReset(req: Request) async throws -> HTTPResponseStatus {
+    func requestPasswordReset(req: Request) async throws -> PasswordResetToken {
         let input = try req.content.decode(User.EmailInput.self)
     
         guard let user = try await User.query(on: req.db)
@@ -54,7 +54,9 @@ struct PasswordResetTokenController: RouteCollection {
             try await resetToken.save(on: req.db)
         }
         
-        return .ok
+        // Warning
+        // Could be dangerous to send it via http, the best would be to send the email right here
+        return token!
     }
     
     func resetPassword(req: Request) async throws -> HTTPStatus {
