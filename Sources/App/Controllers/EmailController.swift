@@ -11,15 +11,12 @@ import SendGridKit
 
 struct EmailController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
-        let events = routes.grouped("api", "emails")
-        // Token Authentification
-        let tokenAuthMiddleware = Token.authenticator()
-        let guardAuthMiddleware = User.guardMiddleware()
-        let tokenAuthGroup = events.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        let emails = routes.grouped("api", "emails")
         // Create
-        tokenAuthGroup.post(use: sendEmail)
+        emails.post(use: sendEmail)
     }
     
+    let logger = Logger(label: "email")
     @Sendable
     func sendEmail(req: Request) async throws -> String {
         let input = try req.content.decode(Email.Input.self)
@@ -34,6 +31,7 @@ struct EmailController: RouteCollection {
         }
         
         let tos = EmailMiddleware().createToArray(tos: input.to)
+        logger.info("email \(input.isHTML)")
         let content = EmailContent(type: input.isHTML ? "text/html" : "text/plain",
                                    value: input.content)
         
