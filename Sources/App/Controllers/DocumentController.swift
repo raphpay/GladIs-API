@@ -12,6 +12,7 @@ struct DocumentController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let documents = routes.grouped("api", "documents")
         documents.post("image", use: uploadImage)
+        documents.post("image", "data", use: uploadImageData)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -34,6 +35,7 @@ struct DocumentController: RouteCollection {
     
     
     // MARK: - CREATE
+    // TODO: Refactor the upload methods
     func upload(req: Request) async throws -> Document {
         let input = try req.content.decode(Document.FormDataInput.self)
         let uploadDirectory = req.application.directory.resourcesDirectory + input.path
@@ -72,6 +74,31 @@ struct DocumentController: RouteCollection {
         let input = try req.content.decode(Document.FormDataInput.self)
         let uploadDirectory = req.application.directory.resourcesDirectory + input.path
         return try await uploadFile(input: input, uploadDirectory: uploadDirectory, on: req)
+    }
+
+    func uploadImageData(req: Request) async throws -> Document {
+        let input = try req.content.decode(Document.Input.self)
+        let uploadDirectory = req.application.directory.resourcesDirectory + input.path
+
+        let fileName = try await createUniqueFileName(input: input, on: req)
+
+        // Ensure the directory exists
+        if !FileManager.default.fileExists(atPath: uploadDirectory) {
+            do {
+                try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
+            } catch {
+                throw Abort(.internalServerError, reason: "internalServerError.failedToCreateDirectory")
+            }
+        }
+
+        // Write the file to the directory with the unique fileName
+        try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
+
+        // Save the document with the unique name to the database
+        let document = Document(name: fileName, path: input.path, status: .none)
+        try await document.save(on: req.db)
+        
+        return document
     }
     
     // MARK: - READ
