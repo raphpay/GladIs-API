@@ -18,6 +18,7 @@ struct DocumentController: RouteCollection {
         let tokenAuthGroup = documents.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: upload)
+        tokenAuthGroup.post("data", use: uploadViaBase64Data)
         // Read
         tokenAuthGroup.get(use: getAllDocuments)
         tokenAuthGroup.get(":documentID", use: getDocument)
@@ -41,7 +42,32 @@ struct DocumentController: RouteCollection {
 
         return document
     }
-    
+
+    func uploadViaBase64Data(req: Request) async throws -> Document {
+        let input = try req.content.decode(Document.Input.self)
+        let uploadDirectory = req.application.directory.resourcesDirectory + input.path
+        
+        let fileName = try await createUniqueFileName(input: input, on: req)
+
+        // Ensure the directory exists
+        if !FileManager.default.fileExists(atPath: uploadDirectory) {
+            do {
+                try FileManager.default.createDirectory(atPath: uploadDirectory, withIntermediateDirectories: true)
+            } catch {
+                throw Abort(.internalServerError, reason: "internalServerError.failedToCreateDirectory")
+            }
+        }
+
+        // Write the file to the directory with the unique fileName
+        try await req.fileio.writeFile(input.file.data, at: uploadDirectory + fileName)
+
+        // Save the document with the unique name to the database
+        let document = Document(name: fileName, path: input.path, status: .none)
+        try await document.save(on: req.db)
+        
+        return document
+    }
+
     func uploadImage(req: Request) async throws -> Document {
         let input = try req.content.decode(Document.FormDataInput.self)
         let uploadDirectory = req.application.directory.resourcesDirectory + input.path
@@ -156,9 +182,10 @@ extension DocumentController {
         }
 
         let file = try req.content.get(File.self, at: "file")
-        let destinationFilePath = uploadDirectory + input.name
-
-        let fileName = input.name
+        let baseInput = input.toBaseInput(file: file)
+        let fileName = try await createUniqueFileName(input: baseInput, on: req)
+        
+        let destinationFilePath = uploadDirectory + fileName
         
         if !FileManager.default.fileExists(atPath: uploadDirectory) {
             do {
@@ -174,6 +201,26 @@ extension DocumentController {
         try await document.save(on: req.db)
         
         return document
+    }
+    
+    func createUniqueFileName(input: Document.Input, on req: Request) async throws -> String {
+        // Extract the base name and extension
+        let baseName = (input.name as NSString).deletingPathExtension
+        let fileExtension = (input.name as NSString).pathExtension
+        
+        var fileName = input.name // start with the original name
+        var suffix = 1
+        
+        // Check if a document with the same name and path exists and add suffix if necessary
+        while try await Document.query(on: req.db)
+            .filter(\.$name == fileName)
+            .filter(\.$path == input.path)
+            .first() != nil {
+                fileName = "\(baseName)-\(suffix).\(fileExtension)"
+                suffix += 1
+        }
+        
+        return fileName
     }
     
     // MARK: - Delete
