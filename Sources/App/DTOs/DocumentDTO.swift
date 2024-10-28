@@ -29,6 +29,10 @@ extension Document {
         let uri: String
         let name: String
         let path: String
+        
+        func toBaseInput(file: File) -> Document.Input {
+            .init(id: nil, name: name, path: path, lastModified: .now, file: file)
+        }
     }
 
     struct SearchInput: Content {
