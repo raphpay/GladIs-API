@@ -194,6 +194,9 @@ extension UserController {
     func getSystemQualityFolders(req: Request) async throws -> [Folder] {
         let userID = try await getUserID(on: req)
         let user = try await getUser(with: userID, on: req.db)
-        return user.systemQualityFolders ?? []
+
+        return try await user.$folders.query(on: req.db)
+            .filter(\.$sleeve == .systemQuality)
+            .all()
     }
 }

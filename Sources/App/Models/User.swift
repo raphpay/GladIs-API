@@ -88,24 +88,22 @@ final class User: Model, Content {
     @Children(for: \.$receiver)
     var receivedMessages: [Message]
     
-    @OptionalField(key: User.v20240806.systemQualityFolders)
-    var systemQualityFolders: [Folder]?
-    
-    @OptionalField(key: User.v20240806.recordsFolders)
-    var recordsFolders: [Folder]?
+    @Children(for: \.$user)
+    var folders: [Folder]
     
     init() {}
     
-    init(id: UUID? = nil,
-         firstName: String, lastName: String, phoneNumber: String,
-         username: String, password: String, email: String, firstConnection: Bool,
-         userType: UserType,
-         companyName: String? = nil, products: String? = nil,
-         numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
-         salesAmount: Double? = nil, employeesIDs: [String]? = nil, managerID: String? = nil,
-         systemQualityFolders: [Folder]? = nil, recordsFolders: [Folder]? = nil
+    init(
+        id: UUID? = nil,
+        firstName: String, lastName: String,
+        phoneNumber: String, username: String,
+        password: String, email: String,
+        firstConnection: Bool, userType: UserType,
+        companyName: String? = nil, products: String? = nil,
+        numberOfEmployees: Int? = nil, numberOfUsers: Int? = nil,
+        salesAmount: Double? = nil, employeesIDs: [String]? = nil,
+        managerID: String? = nil
     ) {
-        // Required
         self.id = id
         self.firstName = firstName
         self.lastName = lastName
@@ -115,7 +113,6 @@ final class User: Model, Content {
         self.password = password
         self.firstConnection = firstConnection
         self.userType = userType
-        // Optional
         self.companyName = companyName
         self.products = products
         self.numberOfEmployees = numberOfEmployees
@@ -123,7 +120,5 @@ final class User: Model, Content {
         self.salesAmount = salesAmount
         self.employeesIDs = employeesIDs
         self.managerID = managerID
-        self.systemQualityFolders = systemQualityFolders
-        self.recordsFolders = recordsFolders
     }
 }

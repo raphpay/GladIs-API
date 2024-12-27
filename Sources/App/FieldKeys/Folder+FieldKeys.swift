@@ -1,5 +1,5 @@
 //
-//  Processus+FieldKeys.swift
+//  Folder+FieldKeys.swift
 //  
 //
 //  Created by Raphaël Payet on 06/08/2024.
@@ -16,5 +16,9 @@ extension Folder {
         static let sleeve = FieldKey(stringLiteral: "sleeve")
         static let path = FieldKey(stringLiteral: "path")
         static let userID = FieldKey(stringLiteral: "userID")
+    }
+    
+    enum v20241227 {
+        static let category = FieldKey(stringLiteral: "category")
     }
 }

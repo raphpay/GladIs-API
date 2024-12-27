@@ -12,7 +12,7 @@ import Vapor
 
 // MARK: - Delete
 extension FolderControllerTests {
-    func testDeleteSucceed() async throws {
+    func test_Delete_Succeed() async throws {
         let folder = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
         let folderID = try folder.requireID()
         
@@ -27,7 +27,7 @@ extension FolderControllerTests {
         }
     }
     
-    func testDeleteWithIncorrectIDFails() async throws {
+    func test_Delete_WithIncorrectID_Fails() async throws {
         try await app.test(.DELETE, "\(baseURL)/12345") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
@@ -36,7 +36,7 @@ extension FolderControllerTests {
         }
     }
     
-    func testDeleteWithInexistantFolderFails() async throws {
+    func test_Delete_WithInexistantFolder_Fails() async throws {
         let falseID = UUID()
         
         try await app.test(.DELETE, "\(baseURL)/\(falseID)") { req in
@@ -47,60 +47,26 @@ extension FolderControllerTests {
         }
     }
     
-    func testDeleteWithInexistantUserFails() async throws {
-        let falseUserID = UUID()
-        let folder = try await FolderControllerTests().createExpectedFolder(with: falseUserID, on: app.db)
+    func test_Delete_WithUnauthorizedRole_Fails() async throws {
+        let unauthorizedUser = try await UserControllerTests().createExpectedUser(userType: .client, on: app.db)
+        let unauthorizedToken = try await Token.create(for: unauthorizedUser, on: app.db)
+        let folder = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
         let folderID = try folder.requireID()
         
-        try await app.test(.DELETE, "\(baseURL)/\(folderID)") { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-        } afterResponse: { res async in
-            XCTAssertEqual(res.status, .notFound)
-            XCTAssertTrue(res.body.string.contains("notFound.user"))
-        }
-    }
-}
-
-// MARK: - Delete All For User
-extension FolderControllerTests {
-    func testDeleteAllForUserSucceed() async throws {
-        let _ = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
-        
-        try await app.test(.DELETE, "\(baseURL)/all/for/\(adminID!)") { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-        } afterResponse: { res async in
-            XCTAssertEqual(res.status, .noContent)
-            do {
-                let folderes = try await Folder.query(on: app.db).all()
-                XCTAssertEqual(folderes.count, 0)
-            } catch { }
-        }
-    }
-    
-    func testDeleteAllWithIncorrectIDFails() async throws {
-        try await app.test(.DELETE, "\(baseURL)/all/for/12345") { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-        } afterResponse: { res async in
-            XCTAssertEqual(res.status, .badRequest)
-            XCTAssertTrue(res.body.string.contains("badRequest.missingOrIncorrectUserID"))
-        }
-    }
-    
-    func testDeleteAllWithInexistantUserFails() async throws {
-        let falseUserID = UUID()
-        try await app.test(.DELETE, "\(baseURL)/all/for/\(falseUserID)") { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-        } afterResponse: { res async in
-            XCTAssertEqual(res.status, .notFound)
-            XCTAssertTrue(res.body.string.contains("notFound.user"))
-        }
+        try await app.test(.DELETE, "\(baseURL)/\(folderID)", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: unauthorizedToken.value)
+        }, afterResponse: { res async in
+            // Then
+            XCTAssertEqual(res.status, .forbidden)
+            XCTAssertTrue(res.body.string.contains("forbidden.userShouldBeAdmin"))
+        })
     }
 }
 
 // MARK: - Delete All
 extension FolderControllerTests {
-    func testDeleteAll() async throws {
-        let folder = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
+    func test_DeleteAll_Succeed() async throws {
+        let _ = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
         
         try await app.test(.DELETE, "\(baseURL)/all") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -111,5 +77,19 @@ extension FolderControllerTests {
                 XCTAssertEqual(folders.count, 0)
             } catch { }
         }
+    }
+    
+    func test_DeleteAll_WithUnauthorizedUser_Fails() async throws {
+        let unauthorizedUser = try await UserControllerTests().createExpectedUser(userType: .client, on: app.db)
+        let unauthorizedToken = try await Token.create(for: unauthorizedUser, on: app.db)
+        let _ = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
+        
+        try await app.test(.DELETE, "\(baseURL)/all", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: unauthorizedToken.value)
+        }, afterResponse: { res async in
+            // Then
+            XCTAssertEqual(res.status, .forbidden)
+            XCTAssertTrue(res.body.string.contains("forbidden.userShouldBeAdmin"))
+        })
     }
 }

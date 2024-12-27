@@ -10,11 +10,11 @@ import Vapor
 
 struct FolderController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
-        let processes = routes.grouped("api", "folders")
+        let folders = routes.grouped("api", "folders")
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
-        let tokenAuthGroup = processes.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        let tokenAuthGroup = folders.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: create)
         tokenAuthGroup.post("multiple", use: createMultiple)
@@ -24,7 +24,6 @@ struct FolderController: RouteCollection {
         tokenAuthGroup.put(":folderID", use: update)
         // Delete
         tokenAuthGroup.delete(":folderID", use: delete)
-        tokenAuthGroup.delete("all", "for", ":userID", use: deleteAllForUser)
         tokenAuthGroup.delete("all", use: deleteAll)
     }
     
@@ -32,20 +31,20 @@ struct FolderController: RouteCollection {
     func create(req: Request) async throws -> Folder {
         let input = try req.content.decode(Folder.Input.self)
         let user = try await UserController().getUser(with: input.userID, on: req.db)
-        let process = try await create(input, for: user, on: req)
-        return process
+        let folder = try await create(input, for: user, on: req)
+        return folder
     }
     
     func createMultiple(req: Request) async throws -> [Folder] {
         let input = try req.content.decode(Folder.MultipleInput.self)
         let user = try await UserController().getUser(with: input.userID, on: req.db)
-        var createdFolder: [Folder] = []
-        for inputProcess in input.inputs {
-            let process = try await create(inputProcess, for: user, on: req)
-            createdFolder.append(process)
+        var createdFolders: [Folder] = []
+        for inputFolder in input.inputs {
+            let folder = try await create(inputFolder, for: user, on: req)
+            createdFolders.append(folder)
         }
         
-        return createdFolder
+        return createdFolders
     }
     
     // MARK: - READ
@@ -63,35 +62,10 @@ struct FolderController: RouteCollection {
         let input = try req.content.decode(Folder.UpdateInput.self)
         let updatedFolder = try await input.update(folder, on: req)
         
-        let user = try await UserController().getUser(with: updatedFolder.$user.id, on: req.db)
-        
-        if updatedFolder.sleeve == .systemQuality {
-            try await UserController().updateUserSystemQualityFolder(user: user, folder: updatedFolder, on: req)
-        } else if updatedFolder.sleeve == .record {
-            try await UserController().updateUserRecordsFolder(user: user, folder: updatedFolder, on: req)
-        }
-        
         return updatedFolder
     }
     
     // MARK: - DELETE
-    @Sendable
-    func deleteAllForUser(req: Request) async throws -> HTTPResponseStatus {
-        let userID = try await UserController().getUserID(on: req)
-        let user = try await UserController().getUser(with: userID, on: req.db)
-        
-        user.recordsFolders?.removeAll()
-        user.systemQualityFolders?.removeAll()
-        try await user.update(on: req.db)
-        
-        try await Folder
-            .query(on: req.db)
-            .filter(\.$user.$id == userID)
-            .delete(force: true)
-        
-        return .noContent
-    }
-    
     @Sendable
     func delete(req: Request) async throws -> HTTPResponseStatus {
         try await checkUserRole(on: req)
@@ -100,15 +74,6 @@ struct FolderController: RouteCollection {
         let folder = try await get(with: folderID, on: req)
         
         try await folder.delete(force: true, on: req.db)
-        
-        let user = try await UserController().getUser(with: folder.$user.id, on: req.db)
-        
-        // Remove the Folder from the User's systemQualityFolders and recordsFolders
-        if folder.sleeve == .systemQuality {
-            try await UserController().removeSystemQualityFolder(user: user, folderID: folderID, on: req)
-        } else if folder.sleeve == .record {
-            try await UserController().removeRecordFolder(user: user, folderID: folderID, on: req)
-        }
         
         return .noContent
     }
@@ -129,31 +94,10 @@ struct FolderController: RouteCollection {
 extension FolderController {
     // CREATE
     func create(_ input: Folder.Input, for user: User, on req: Request) async throws -> Folder {
-        let process = input.toModel()
-        
-        try await checkFolderNumberAvailability(process, for: user, on: req)
-        
-        try await process.save(on: req.db)
-        
-        if process.sleeve == .systemQuality {
-            if var systemQualityFolders = user.systemQualityFolders {
-                systemQualityFolders.append(process)
-                user.systemQualityFolders = systemQualityFolders
-            } else {
-                user.systemQualityFolders = [process]
-            }
-            try await user.update(on: req.db)
-        } else if process.sleeve == .record {
-            if var records = user.recordsFolders {
-                records.append(process)
-                user.recordsFolders = records
-            } else {
-                user.recordsFolders = [process]
-            }
-            try await user.update(on: req.db)
-        }
-        
-        return process
+        let folder = input.toModel()
+        try await checkFolderNumberAvailability(folder, for: user, on: req)
+        try await folder.save(on: req.db)
+        return folder
     }
     
     // GET
@@ -174,23 +118,23 @@ extension FolderController {
     }
     
     // PRIVATE
-    private func checkFolderNumberAvailability(_ process: Folder, for user: User, on req: Request) async throws {
-        let existingProcess = try await Folder.query(on: req.db)
+    private func checkFolderNumberAvailability(_ folder: Folder, for user: User, on req: Request) async throws {
+        let existingFolder = try await Folder.query(on: req.db)
             .filter(\.$user.$id == user.id!)
-            .filter(\.$sleeve == process.sleeve)
-            .filter(\.$number == process.number)
+            .filter(\.$sleeve == folder.sleeve)
+            .filter(\.$number == folder.number)
             .first()
         
-        if existingProcess != nil {
-            if let maxNumberProcess = try await Folder.query(on: req.db)
+        if existingFolder != nil {
+            if let maxNumberFolder = try await Folder.query(on: req.db)
                 .filter(\.$user.$id == user.id!)
-                .filter(\.$sleeve == process.sleeve)
+                .filter(\.$sleeve == folder.sleeve)
                 .sort(\.$number, .descending)
                 .first() {
                 
-                process.number = maxNumberProcess.number + 1
+                folder.number = maxNumberFolder.number + 1
             } else {
-                process.number = 1
+                folder.number = 1
             }
         }
     }
