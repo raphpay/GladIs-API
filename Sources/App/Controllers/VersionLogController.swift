@@ -61,7 +61,7 @@ struct VersionLogController: RouteCollection {
         let versionLog = try await get(req: req)
         let input = try req.content.decode(VersionLog.UpdateInput.self)
         
-        let updatedVersionLog = input.update(versionLog)
+        let updatedVersionLog = try input.update(versionLog)
         try await updatedVersionLog.update(on: req.db)
         
         return updatedVersionLog
