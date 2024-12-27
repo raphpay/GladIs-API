@@ -24,7 +24,6 @@ struct FolderController: RouteCollection {
         tokenAuthGroup.put(":folderID", use: update)
         // Delete
         tokenAuthGroup.delete(":folderID", use: delete)
-        tokenAuthGroup.delete("all", "for", ":userID", use: deleteAllForUser)
         tokenAuthGroup.delete("all", use: deleteAll)
     }
     
@@ -67,21 +66,6 @@ struct FolderController: RouteCollection {
     }
     
     // MARK: - DELETE
-    @Sendable
-    func deleteAllForUser(req: Request) async throws -> HTTPResponseStatus {
-        let userID = try await UserController().getUserID(on: req)
-        let user = try await UserController().getUser(with: userID, on: req.db)
-        
-        try await user.update(on: req.db)
-        
-        try await Folder
-            .query(on: req.db)
-            .filter(\.$user.$id == userID)
-            .delete(force: true)
-        
-        return .noContent
-    }
-    
     @Sendable
     func delete(req: Request) async throws -> HTTPResponseStatus {
         try await checkUserRole(on: req)

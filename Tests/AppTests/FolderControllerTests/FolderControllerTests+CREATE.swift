@@ -12,7 +12,7 @@ import Vapor
 
 // MARK: - Create
 extension FolderControllerTests {
-    func test_CreateSystemQualityFolder_Succeed() async throws {
+    func test_Create_Succeed() async throws {
         let input = Folder.Input(title: expectedTitle,
                                  number: expectedNumber,
                                  userID: adminID,
@@ -38,7 +38,7 @@ extension FolderControllerTests {
         }
     }
     
-    func test_CreateWithSameNumber_Succeed() async throws {
+    func test_Create_WithSameNumber_Succeed() async throws {
         let _ = try await FolderControllerTests().createExpectedFolder(for: admin, in: .systemQuality, on: app.db)
         let input = Folder.Input(title: "\(expectedTitle)2",
                                  number: expectedNumber,
@@ -65,7 +65,7 @@ extension FolderControllerTests {
         }
     }
     
-    func test_CreateWithInexistantUser_Fails() async throws {
+    func test_Create_WithInexistantUser_Fails() async throws {
         let input = Folder.Input(title: expectedTitle,
                                  number: expectedNumber,
                                  userID: UUID(),
@@ -82,8 +82,6 @@ extension FolderControllerTests {
             XCTAssertTrue(res.body.string.contains("notFound.user"))
         }
     }
-    
-    // TODO: Add more tests ?
 }
 
 // MARK: - Create Multiple
@@ -125,5 +123,32 @@ extension FolderControllerTests {
                 XCTAssertEqual(folders[1].category, expectedCategory)
             } catch {}
         }
+    }
+    
+    func test_CreateMultiple_WithInexistantUser_Fails() async throws {
+        let folderInput = Folder.Input(title: expectedTitle,
+                                       number: expectedNumber,
+                                       userID: adminID,
+                                       sleeve: expectedSleeve,
+                                       path: expectedPath,
+                                       category: expectedCategory
+        )
+        let folderInputTwo = Folder.Input(title: "\(expectedTitle)2",
+                                          number: expectedNumber + 1,
+                                          userID: adminID,
+                                          sleeve: expectedSleeve,
+                                          path: expectedPath,
+                                          category: expectedCategory
+        )
+        let input = Folder.MultipleInput(inputs: [folderInput, folderInputTwo], userID: UUID())
+        
+        try await app.test(.POST, "\(baseURL)/multiple", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+            try req.content.encode(input)
+        }, afterResponse: { res async in
+            // Then
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.user"))
+        })
     }
 }
