@@ -39,13 +39,13 @@ struct FolderController: RouteCollection {
     func createMultiple(req: Request) async throws -> [Folder] {
         let input = try req.content.decode(Folder.MultipleInput.self)
         let user = try await UserController().getUser(with: input.userID, on: req.db)
-        var createdFolder: [Folder] = []
+        var createdFolders: [Folder] = []
         for inputFolder in input.inputs {
             let folder = try await create(inputFolder, for: user, on: req)
-            createdFolder.append(folder)
+            createdFolders.append(folder)
         }
         
-        return createdFolder
+        return createdFolders
     }
     
     // MARK: - READ
@@ -62,8 +62,6 @@ struct FolderController: RouteCollection {
         
         let input = try req.content.decode(Folder.UpdateInput.self)
         let updatedFolder = try await input.update(folder, on: req)
-        
-        let user = try await UserController().getUser(with: updatedFolder.$user.id, on: req.db)
         
         return updatedFolder
     }

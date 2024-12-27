@@ -48,5 +48,6 @@ final class Folder: Model, Content, @unchecked Sendable {
         self.sleeve = sleeve
         self.path = path
         self.$user.id = userID
+        self.category = category
     }
 }
