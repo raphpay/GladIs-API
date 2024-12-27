@@ -10,11 +10,11 @@ import Vapor
 
 struct FolderController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
-        let processes = routes.grouped("api", "folders")
+        let folders = routes.grouped("api", "folders")
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
-        let tokenAuthGroup = processes.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        let tokenAuthGroup = folders.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: create)
         tokenAuthGroup.post("multiple", use: createMultiple)
@@ -32,17 +32,17 @@ struct FolderController: RouteCollection {
     func create(req: Request) async throws -> Folder {
         let input = try req.content.decode(Folder.Input.self)
         let user = try await UserController().getUser(with: input.userID, on: req.db)
-        let process = try await create(input, for: user, on: req)
-        return process
+        let folder = try await create(input, for: user, on: req)
+        return folder
     }
     
     func createMultiple(req: Request) async throws -> [Folder] {
         let input = try req.content.decode(Folder.MultipleInput.self)
         let user = try await UserController().getUser(with: input.userID, on: req.db)
         var createdFolder: [Folder] = []
-        for inputProcess in input.inputs {
-            let process = try await create(inputProcess, for: user, on: req)
-            createdFolder.append(process)
+        for inputFolder in input.inputs {
+            let folder = try await create(inputFolder, for: user, on: req)
+            createdFolder.append(folder)
         }
         
         return createdFolder
@@ -136,23 +136,23 @@ extension FolderController {
     }
     
     // PRIVATE
-    private func checkFolderNumberAvailability(_ process: Folder, for user: User, on req: Request) async throws {
-        let existingProcess = try await Folder.query(on: req.db)
+    private func checkFolderNumberAvailability(_ folder: Folder, for user: User, on req: Request) async throws {
+        let existingFolder = try await Folder.query(on: req.db)
             .filter(\.$user.$id == user.id!)
-            .filter(\.$sleeve == process.sleeve)
-            .filter(\.$number == process.number)
+            .filter(\.$sleeve == folder.sleeve)
+            .filter(\.$number == folder.number)
             .first()
         
-        if existingProcess != nil {
-            if let maxNumberProcess = try await Folder.query(on: req.db)
+        if existingFolder != nil {
+            if let maxNumberFolder = try await Folder.query(on: req.db)
                 .filter(\.$user.$id == user.id!)
-                .filter(\.$sleeve == process.sleeve)
+                .filter(\.$sleeve == folder.sleeve)
                 .sort(\.$number, .descending)
                 .first() {
                 
-                process.number = maxNumberProcess.number + 1
+                folder.number = maxNumberFolder.number + 1
             } else {
-                process.number = 1
+                folder.number = 1
             }
         }
     }

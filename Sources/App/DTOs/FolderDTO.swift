@@ -1,5 +1,5 @@
 //
-//  ProcessDTO.swift
+//  FolderDTO.swift
 //
 //
 //  Created by Raphaël Payet on 06/08/2024.
