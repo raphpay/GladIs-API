@@ -15,13 +15,6 @@ final class FolderControllerTests: XCTestCase {
     var admin: User!
     var adminID: User.IDValue!
     var token: Token!
-    // Expected Properties
-    let expectedAdminUsername = "expectedAdminUsername"
-    // Process
-    let expectedTitle = "expectedTitle"
-    let expectedNumber = 1
-    let expectedSleeve = Folder.Sleeve.systemQuality
-    let expectedPath = "expected/path"
     
     override func setUp() async throws {
         try await super.setUp()
@@ -34,14 +27,19 @@ final class FolderControllerTests: XCTestCase {
     
     override func tearDown() async throws {
         try await User.deleteAll(on: app.db)
-        admin.systemQualityFolders = nil
-        admin.recordsFolders = nil
         adminID = nil
         try await token.delete(force: true, on: app.db)
         try await Folder.deleteAll(on: app.db)
-        try await User.deleteAll(on: app.db)
         app.shutdown()
         try await super.tearDown()
     }
+    
+    // Expected Properties
+    let expectedAdminUsername = "expectedAdminUsername"
+    let expectedTitle = "expectedTitle"
+    let expectedNumber = 1
+    let expectedSleeve = Folder.Sleeve.systemQuality
+    let expectedPath = "expected/path"
+    let expectedCategory = Folder.Category.qualityManual
 }
 

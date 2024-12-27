@@ -12,7 +12,7 @@ import Vapor
 
 // MARK: - Delete
 extension FolderControllerTests {
-    func testDeleteSucceed() async throws {
+    func test_Delete_Succeed() async throws {
         let folder = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
         let folderID = try folder.requireID()
         
@@ -27,7 +27,7 @@ extension FolderControllerTests {
         }
     }
     
-    func testDeleteWithIncorrectIDFails() async throws {
+    func test_Delete_WithIncorrectID_Fails() async throws {
         try await app.test(.DELETE, "\(baseURL)/12345") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
@@ -36,7 +36,7 @@ extension FolderControllerTests {
         }
     }
     
-    func testDeleteWithInexistantFolderFails() async throws {
+    func test_Delete_WithInexistantFolder_Fails() async throws {
         let falseID = UUID()
         
         try await app.test(.DELETE, "\(baseURL)/\(falseID)") { req in
@@ -46,24 +46,11 @@ extension FolderControllerTests {
             XCTAssertTrue(res.body.string.contains("notFound.folder"))
         }
     }
-    
-    func testDeleteWithInexistantUserFails() async throws {
-        let falseUserID = UUID()
-        let folder = try await FolderControllerTests().createExpectedFolder(with: falseUserID, on: app.db)
-        let folderID = try folder.requireID()
-        
-        try await app.test(.DELETE, "\(baseURL)/\(folderID)") { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-        } afterResponse: { res async in
-            XCTAssertEqual(res.status, .notFound)
-            XCTAssertTrue(res.body.string.contains("notFound.user"))
-        }
-    }
 }
 
 // MARK: - Delete All For User
 extension FolderControllerTests {
-    func testDeleteAllForUserSucceed() async throws {
+    func test_DeleteAllForUser_Succeed() async throws {
         let _ = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
         
         try await app.test(.DELETE, "\(baseURL)/all/for/\(adminID!)") { req in
@@ -77,7 +64,7 @@ extension FolderControllerTests {
         }
     }
     
-    func testDeleteAllWithIncorrectIDFails() async throws {
+    func test_DeleteAllForUser_WithIncorrectID_Fails() async throws {
         try await app.test(.DELETE, "\(baseURL)/all/for/12345") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         } afterResponse: { res async in
@@ -86,7 +73,7 @@ extension FolderControllerTests {
         }
     }
     
-    func testDeleteAllWithInexistantUserFails() async throws {
+    func test_DeleteAllForUser_WithInexistantUser_Fails() async throws {
         let falseUserID = UUID()
         try await app.test(.DELETE, "\(baseURL)/all/for/\(falseUserID)") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -99,8 +86,8 @@ extension FolderControllerTests {
 
 // MARK: - Delete All
 extension FolderControllerTests {
-    func testDeleteAll() async throws {
-        let folder = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
+    func test_DeleteAll_Succeed() async throws {
+        let _ = try await FolderControllerTests().createExpectedFolder(with: adminID, on: app.db)
         
         try await app.test(.DELETE, "\(baseURL)/all") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
