@@ -28,6 +28,8 @@ struct VersionLogController: RouteCollection {
         // Read
         tokenAuthGroup.get(use: get)
         // Update
+        tokenAuthGroup.put(use: update)
+        tokenAuthGroup.put("clientVersions", use: addSupportedClientVersions)
         // Delete
         tokenAuthGroup.delete("all", use: delete)
     }
@@ -51,6 +53,30 @@ struct VersionLogController: RouteCollection {
             throw Abort(.notFound, reason: "notFound.versionLog")
         }
         
+        return versionLog
+    }
+    
+    // MARK: - Update
+    func update(req: Request) async throws -> VersionLog {
+        let versionLog = try await get(req: req)
+        let input = try req.content.decode(VersionLog.UpdateInput.self)
+        
+        let updatedVersionLog = input.update(versionLog)
+        try await updatedVersionLog.update(on: req.db)
+        
+        return updatedVersionLog
+    }
+    
+    func addSupportedClientVersions(req: Request) async throws -> VersionLog {
+        let versionLog = try await get(req: req)
+        let input = try req.content.decode(VersionLog.UpdateSupportedClientVersions.self).supportedClientVersions
+        
+        for version in input {
+            versionLog.supportedClientVersions.append(version)
+        }
+        
+        try await versionLog.update(on: req.db)
+
         return versionLog
     }
     
