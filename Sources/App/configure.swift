@@ -33,6 +33,7 @@ public func configure(_ app: Application) async throws {
     // 27-12-2024
     app.migrations.add(AddCategoryToFolder())
     app.migrations.add(MigrateFoldersToRelation())
+    app.migrations.add(CreateVersionLog())
     
     switch app.environment {
         case .development:
