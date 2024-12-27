@@ -72,9 +72,11 @@ extension UserController {
         // Decode the input from the request to get the desired path.
         let inputPath = try req.content.decode(Folder.UserRecordPathInput.self).path
         
-        // Filter the user's records folders to find folders matching the input path.
-        let folders = user.recordsFolders?.filter { $0.path == inputPath } ?? []
-
-        return folders
+        // Return the user's records folders to find folders matching the input path.
+        return try await user.$folders
+            .query(on: req.db)
+            .filter(\.$sleeve == .record)
+            .filter(\.$path == inputPath)
+            .all()
     }
 }

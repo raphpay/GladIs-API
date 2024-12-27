@@ -17,4 +17,8 @@ extension Folder {
         static let path = FieldKey(stringLiteral: "path")
         static let userID = FieldKey(stringLiteral: "userID")
     }
+    
+    enum v20241227 {
+        static let category = FieldKey(stringLiteral: "category")
+    }
 }

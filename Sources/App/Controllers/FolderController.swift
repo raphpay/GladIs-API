@@ -65,12 +65,6 @@ struct FolderController: RouteCollection {
         
         let user = try await UserController().getUser(with: updatedFolder.$user.id, on: req.db)
         
-        if updatedFolder.sleeve == .systemQuality {
-            try await UserController().updateUserSystemQualityFolder(user: user, folder: updatedFolder, on: req)
-        } else if updatedFolder.sleeve == .record {
-            try await UserController().updateUserRecordsFolder(user: user, folder: updatedFolder, on: req)
-        }
-        
         return updatedFolder
     }
     
@@ -80,8 +74,6 @@ struct FolderController: RouteCollection {
         let userID = try await UserController().getUserID(on: req)
         let user = try await UserController().getUser(with: userID, on: req.db)
         
-        user.recordsFolders?.removeAll()
-        user.systemQualityFolders?.removeAll()
         try await user.update(on: req.db)
         
         try await Folder
@@ -100,15 +92,6 @@ struct FolderController: RouteCollection {
         let folder = try await get(with: folderID, on: req)
         
         try await folder.delete(force: true, on: req.db)
-        
-        let user = try await UserController().getUser(with: folder.$user.id, on: req.db)
-        
-        // Remove the Folder from the User's systemQualityFolders and recordsFolders
-        if folder.sleeve == .systemQuality {
-            try await UserController().removeSystemQualityFolder(user: user, folderID: folderID, on: req)
-        } else if folder.sleeve == .record {
-            try await UserController().removeRecordFolder(user: user, folderID: folderID, on: req)
-        }
         
         return .noContent
     }
@@ -129,31 +112,10 @@ struct FolderController: RouteCollection {
 extension FolderController {
     // CREATE
     func create(_ input: Folder.Input, for user: User, on req: Request) async throws -> Folder {
-        let process = input.toModel()
-        
-        try await checkFolderNumberAvailability(process, for: user, on: req)
-        
-        try await process.save(on: req.db)
-        
-        if process.sleeve == .systemQuality {
-            if var systemQualityFolders = user.systemQualityFolders {
-                systemQualityFolders.append(process)
-                user.systemQualityFolders = systemQualityFolders
-            } else {
-                user.systemQualityFolders = [process]
-            }
-            try await user.update(on: req.db)
-        } else if process.sleeve == .record {
-            if var records = user.recordsFolders {
-                records.append(process)
-                user.recordsFolders = records
-            } else {
-                user.recordsFolders = [process]
-            }
-            try await user.update(on: req.db)
-        }
-        
-        return process
+        let folder = input.toModel()
+        try await checkFolderNumberAvailability(folder, for: user, on: req)
+        try await folder.save(on: req.db)
+        return folder
     }
     
     // GET

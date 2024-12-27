@@ -23,6 +23,9 @@ final class Folder: Model, Content, @unchecked Sendable {
     @Field(key: Folder.v20240806.sleeve)
     var sleeve: Sleeve
     
+    @Field(key: Folder.v20241227.category)
+    var category: Category
+    
     @OptionalField(key: Folder.v20240806.path)
     var path: String?
     
@@ -31,7 +34,14 @@ final class Folder: Model, Content, @unchecked Sendable {
     
     init() {}
     
-    init(id: UUID? = nil, title: String, number: Int, sleeve: Sleeve, path: String? = nil, userID: User.IDValue) {
+    init(id: UUID? = nil,
+         title: String,
+         number: Int,
+         sleeve: Sleeve,
+         category: Category,
+         path: String? = nil,
+         userID: User.IDValue
+    ) {
         self.id = id
         self.title = title
         self.number = number
