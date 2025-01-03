@@ -10,7 +10,7 @@ import XCTVapor
 import Fluent
 import Vapor
 
-// MARK: - Create
+// MARK: - Update
 extension VersionLogControllerTests {
     func test_Update_Succeed() async throws {
         let versionLog = try await VersionLogControllerTests().createExpectedVersionLog(on: app.db)
