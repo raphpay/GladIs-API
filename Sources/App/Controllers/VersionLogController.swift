@@ -20,13 +20,15 @@ import Vapor
 struct VersionLogController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let versionLogs = routes.grouped("api", "versionLogs")
+        
+        // Read
+        versionLogs.get(use: get)
+        
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
         let tokenAuthGroup = versionLogs.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Create
         tokenAuthGroup.post(use: create)
-        // Read
-        tokenAuthGroup.get(use: get)
         // Update
         tokenAuthGroup.put(use: update)
         tokenAuthGroup.put("clientVersions", use: addSupportedClientVersions)

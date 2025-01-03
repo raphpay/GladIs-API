@@ -15,9 +15,7 @@ extension VersionLogControllerTests {
     func test_Get_Succeed() async throws {
         let _ = try await VersionLogControllerTests().createExpectedVersionLog(on: app.db)
         
-        try await app.test(.GET, baseURL, beforeRequest: { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-        }, afterResponse: { res async in
+        try await app.test(.GET, baseURL, afterResponse: { res async in
             // Then
             XCTAssertEqual(res.status, .ok)
             do {
@@ -30,12 +28,9 @@ extension VersionLogControllerTests {
     }
     
     func test_Get_WithInexistantVersionLog_Fails() async throws {
-        try await app.test(.GET, baseURL, beforeRequest: { req in
-            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
-        }, afterResponse: { res async in
+        try await app.test(.GET, baseURL, afterResponse: { res async in
             // Then
             XCTAssertEqual(res.status, .notFound)
-            print("res.body.string \(res.body.string)")
             XCTAssertTrue(res.body.string.contains("notFound.versionLog"))
         })
     }
