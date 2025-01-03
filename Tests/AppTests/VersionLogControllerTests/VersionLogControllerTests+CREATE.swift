@@ -12,7 +12,7 @@ import Vapor
 
 // MARK: - Create
 extension VersionLogControllerTests {
-    func test_Create_Suceed() async throws {
+    func test_Create_Succeed() async throws {
         let input = VersionLog.Input(currentVersion: expectedCurrentVersion,
                                      supportedClientVersions: expectedSupportedClientVersions,
                                      minimumClientVersion: expectedMinimumVersion)
@@ -28,6 +28,23 @@ extension VersionLogControllerTests {
                 XCTAssertEqual(versionLog.supportedClientVersions, expectedSupportedClientVersions)
                 XCTAssertEqual(versionLog.minimumClientVersion, expectedMinimumVersion)
             } catch {}
+        })
+    }
+    
+    func test_Create_WithUnauthorizedRole_Fails() async throws {
+        let input = VersionLog.Input(currentVersion: expectedCurrentVersion,
+                                     supportedClientVersions: expectedSupportedClientVersions,
+                                     minimumClientVersion: expectedMinimumVersion)
+        let unauthorizedUser = try await UserControllerTests().createExpectedUser(userType: .client, on: app.db)
+        let unauthorizedToken = try await Token.create(for: unauthorizedUser, on: app.db)
+        
+        try await app.test(.POST, baseURL, beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: unauthorizedToken.value)
+            try req.content.encode(input)
+        }, afterResponse: { res async in
+            // Then
+            XCTAssertEqual(res.status, .unauthorized)
+            XCTAssertTrue(res.body.string.contains("unauthorized.role"))
         })
     }
     

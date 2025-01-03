@@ -36,6 +36,7 @@ struct VersionLogController: RouteCollection {
     
     // MARK: - Create
     func create(req: Request) async throws -> VersionLog {
+        try Utils.checkRole(on: req, allowedRoles: [.admin])
         let input = try req.content.decode(VersionLog.Input.self)
         let versionLog = input.toModel()
         
@@ -58,6 +59,7 @@ struct VersionLogController: RouteCollection {
     
     // MARK: - Update
     func update(req: Request) async throws -> VersionLog {
+        try Utils.checkRole(on: req, allowedRoles: [.admin])
         let versionLog = try await get(req: req)
         let input = try req.content.decode(VersionLog.UpdateInput.self)
         
@@ -68,6 +70,7 @@ struct VersionLogController: RouteCollection {
     }
     
     func addSupportedClientVersions(req: Request) async throws -> VersionLog {
+        try Utils.checkRole(on: req, allowedRoles: [.admin])
         let versionLog = try await get(req: req)
         let input = try req.content.decode(VersionLog.UpdateSupportedClientVersions.self).supportedClientVersions
         
@@ -82,6 +85,7 @@ struct VersionLogController: RouteCollection {
     
     // MARK: - Delete
     func delete(req: Request) async throws -> HTTPResponseStatus {
+        try Utils.checkRole(on: req, allowedRoles: [.admin])
         try await VersionLog.query(on: req.db).all().delete(force: true, on: req.db)
         return .noContent
     }
