@@ -103,11 +103,13 @@ struct PasswordResetTokenController: RouteCollection {
     
     // MARK: - Read
     func getAll(req: Request) async throws -> [PasswordResetToken.Public] {
-        try await PasswordResetToken.query(on: req.db).all().convertToPublic()
+        try Utils.checkRole(on: req, allowedRoles: [.admin])
+        return try await PasswordResetToken.query(on: req.db).all().convertToPublic()
     }
     
     // MARK: - Delete
     func remove(req: Request) async throws -> HTTPResponseStatus {
+        try Utils.checkRole(on: req, allowedRoles: [.admin])
         guard let token = try await PasswordResetToken.find(req.parameters.get("passwordResetTokenID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.passwordResetToken")
         }
@@ -118,6 +120,7 @@ struct PasswordResetTokenController: RouteCollection {
     }
     
     func removeAll(req: Request) async throws -> HTTPResponseStatus {
+        try Utils.checkRole(on: req, allowedRoles: [.admin])
         let tokens = try await PasswordResetToken.query(on: req.db).all()
         
         for token in tokens {
