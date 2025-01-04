@@ -1,5 +1,5 @@
 //
-//  PasswordResetControllerTests+DELETE.swift
+//  PasswordResetTokenControllerTests+DELETE.swift
 //
 //
 //  Created by Raphaël Payet on 15/04/2024.
@@ -9,8 +9,8 @@
 import XCTVapor
 
 // MARK: - Remove
-extension PasswordResetControllerTests {
-    func testRemoveTokenSucceed() async throws {
+extension PasswordResetTokenControllerTests {
+    func test_RemoveToken_Succeed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
         let resetToken = try await PasswordResetToken.create(for: user, on: app.db)
@@ -24,7 +24,7 @@ extension PasswordResetControllerTests {
         }
     }
     
-    func testRemoveInexistantTokenFails() async throws {
+    func test_RemoveInexistantToken_Fails() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
         
@@ -39,8 +39,8 @@ extension PasswordResetControllerTests {
 }
 
 // MARK: - Remove All
-extension PasswordResetControllerTests {
-    func testRemoveAllResetTokensSucceed() async throws {
+extension PasswordResetTokenControllerTests {
+    func test_RemoveAllResetTokens_Succeed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let token = try await Token.create(for: user, on: app.db)
         

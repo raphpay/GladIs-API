@@ -1,5 +1,5 @@
 //
-//  PasswordResetControllerTests+CREATE.swift
+//  PasswordResetTokenControllerTests+CREATE.swift
 //
 //
 //  Created by Raphaël Payet on 15/04/2024.
@@ -9,7 +9,7 @@
 import XCTVapor
 
 // MARK: - Request Password Reset
-extension PasswordResetControllerTests {
+extension PasswordResetTokenControllerTests {
     func test_RequestPasswordReset_Succeed() async throws {
         let userEmailInput = User.EmailInput(email: expectedEmail)
         let _ = try await User.create(username: expectedUsername, email: expectedEmail, on: app.db)
@@ -40,7 +40,7 @@ extension PasswordResetControllerTests {
 }
 
 // MARK: - Reset
-extension PasswordResetControllerTests {
+extension PasswordResetTokenControllerTests {
     func test_ResetPassword_Succeed() async throws {
         let user = try await User.create(username: expectedUsername, email: expectedEmail, on: app.db)
         let resetToken = try await PasswordResetToken.create(for: user, on: app.db)
