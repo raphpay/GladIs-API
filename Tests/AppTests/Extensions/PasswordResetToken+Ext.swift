@@ -10,7 +10,9 @@ import XCTVapor
 import Fluent
 
 extension PasswordResetToken {
-    static func create(for user: User, expiresAt date: Date = Date().addingTimeInterval(3600), on database: Database) async throws -> PasswordResetToken {
+    static func create(for user: User,
+                       expiresAt date: Date = Date().addingTimeInterval(3600),
+                       on database: Database) async throws -> PasswordResetToken {
         let token = PasswordResetToken.generate()
         let resetToken = PasswordResetToken(token: token, userId: try user.requireID(), userEmail: user.email, expiresAt: date)
         try await resetToken.save(on: database)
