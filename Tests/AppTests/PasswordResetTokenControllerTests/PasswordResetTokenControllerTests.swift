@@ -11,20 +11,22 @@ import XCTVapor
 final class PasswordResetControllerTests: XCTestCase {
     
     var app: Application!
-    // Expected Properties
-    let expectedUsername = "expectedUsername"
-    let expectedEmail = "expectedEmail@test.com"
-    let newPassword = "testPassword1("
     
     override func setUp() async throws {
         try await super.setUp()
-        
         app = Application(.testing)
         try! await configure(app)
     }
     
-    override func tearDown() {
+    override func tearDown() async throws {
+        try await User.deleteAll(on: app.db)
+        try await PasswordResetToken.query(on: app.db).all().delete(force: true, on: app.db)
         app.shutdown()
-        super.tearDown()
+        try await super.tearDown()
     }
+    
+    // Expected Properties
+    let expectedUsername = "expectedUsername"
+    let expectedEmail = "expectedEmail@test.com"
+    let newPassword = "testPassword1("
 }

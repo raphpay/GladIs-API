@@ -27,7 +27,7 @@ struct PasswordResetTokenController: RouteCollection {
     // MARK: - Create
     func requestPasswordReset(req: Request) async throws -> PasswordResetToken {
         let input = try req.content.decode(User.EmailInput.self)
-    
+        
         guard let user = try await User.query(on: req.db)
             .filter(\.$email == input.email)
             .first() else {
@@ -36,27 +36,34 @@ struct PasswordResetTokenController: RouteCollection {
         
         let userID = try user.requireID()
         
-        let token = try await PasswordResetToken
+        // Check for existing token
+        if let existingToken = try await PasswordResetToken
             .query(on: req.db)
             .filter(\.$user.$id == userID)
-            .first()
-        
-        if let existingToken = token {
+            .first() {
+            
+            // Update the existing token's value and expiration date
             existingToken.token = PasswordResetToken.generate()
             existingToken.expiresAt = Date().addingTimeInterval(3600)
             try await existingToken.update(on: req.db)
+            
+            // Return the updated token
+            return existingToken
         } else {
-            let token = PasswordResetToken.generate()
-            let resetToken = PasswordResetToken(token: token, 
-                                                userId: userID,
-                                                userEmail: input.email,
-                                                expiresAt: Date().addingTimeInterval(3600))
+            // Create a new token
+            let generatedToken = PasswordResetToken.generate()
+            let resetToken = PasswordResetToken(
+                token: generatedToken,
+                userId: userID,
+                userEmail: input.email,
+                expiresAt: Date().addingTimeInterval(3600)
+            )
+            
             try await resetToken.save(on: req.db)
+            
+            // Return the newly created token
+            return resetToken
         }
-        
-        // Warning
-        // Could be dangerous to send it via http, the best would be to send the email right here
-        return token!
     }
     
     func resetPassword(req: Request) async throws -> HTTPStatus {
