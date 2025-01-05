@@ -11,13 +11,13 @@ import Vapor
 
 struct CreateUser: AsyncMigration {
     func prepare(on database: Database) async throws {
-        let type = try await database.enum(DocumentActivityLog.v20240207.action)
+        let type = try await database.enum(User.v20240207.userType)
             .case(User.v20240207.admin)
             .case(User.v20240207.client)
             .case(User.v20240207.employee)
             .create()
         
-        try await database.schema(DocumentActivityLog.v20240207.schemaName)
+        try await database.schema(User.v20240207.schemaName)
             .id()
             .field(User.v20240207.firstName, .string, .required)
             .field(User.v20240207.lastName, .string, .required)

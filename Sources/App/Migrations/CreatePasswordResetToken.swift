@@ -10,18 +10,19 @@ import Vapor
 
 struct CreatePasswordResetToken: AsyncMigration {
     func prepare(on database: Database) async throws {
-        try await database.schema(Event.v20240207.schemaName)
+        try await database.schema(PasswordResetToken.v20240207.schemaName)
             .id()
-            .field(Event.v20240207.name, .string, .required)
-            .field(Event.v20240207.date, .date, .required)
-            .field(Event.v20240207.clientID, .uuid, .required,
-                   .references(User.v20240207.schemaName, User.v20240207.id, onDelete: .cascade))
+            .field(PasswordResetToken.v20240207.token, .string, .required)
+            .field(PasswordResetToken.v20240207.userID, .uuid, .required,
+                   .references(User.v20240207.schemaName, User.v20240207.id))
+            .field(PasswordResetToken.v20240207.userEmail, .string, .required)
+            .field(PasswordResetToken.v20240207.expiresAt, .date, .required)
             .create()
     }
 
     func revert(on database: Database) async throws {
         try await database
-            .schema(Event.v20240207.schemaName)
+            .schema(PasswordResetToken.v20240207.schemaName)
             .delete()
     }
 }
