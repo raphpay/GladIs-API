@@ -12,12 +12,10 @@ import Vapor
 extension VersionLog {
     struct Input: Content {
         let currentVersion: String
-        let supportedClientVersions: [String]
         let minimumClientVersion: String
         
         func toModel() -> VersionLog {
             .init(currentVersion: currentVersion,
-                  supportedClientVersions: supportedClientVersions,
                   minimumClientVersion: minimumClientVersion)
         }
     }
@@ -67,9 +65,5 @@ extension VersionLog {
             // If all parts are equal but `new` has fewer components, it’s considered a regression
             return newComponents.count < currentComponents.count
         }
-    }
-    
-    struct UpdateSupportedClientVersions: Content {
-        let supportedClientVersions: [String]
     }
 }

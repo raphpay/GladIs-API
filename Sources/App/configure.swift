@@ -34,7 +34,8 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(AddCategoryToFolder())
     app.migrations.add(MigrateFoldersToRelation())
     app.migrations.add(CreateVersionLog())
-    
+    // 05-01-2025
+    app.migrations.add(RemoveParameterToVersionLog())
     switch app.environment {
         case .development:
             app.migrations.add(CreateAdminUser())
