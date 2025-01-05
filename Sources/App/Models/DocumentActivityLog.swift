@@ -53,49 +53,4 @@ final class DocumentActivityLog: Model, Content {
         self.$form.id = formID
         self.$client.id = clientID
     }
-    
-    struct Input: Content {
-        var id: UUID?
-        let action: DocumentActivityLog.ActionEnum
-        let actorIsAdmin: Bool
-        let actorID: UUID
-        let documentID: Document.IDValue?
-        let formID: Form.IDValue?
-        let clientID: User.IDValue
-    }
-
-    struct PaginatedOutput: Content {
-        let logs: [DocumentActivityLog]
-        let pageCount: Int
-    }
-}
-
-extension DocumentActivityLog {
-    enum v20240207 {
-        static let schemaName = "documentActivityLogs"
-        static let id = FieldKey(stringLiteral: "id")
-        static let name = FieldKey(stringLiteral: "name")
-        static let actorUsername = FieldKey(stringLiteral: "actorUsername")
-        static let actionDate = FieldKey(stringLiteral: "actionDate")
-        static let actorIsAdmin = FieldKey(stringLiteral: "actorIsAdmin")
-        static let documentID = FieldKey(stringLiteral: "documentID")
-        static let formID = FieldKey(stringLiteral: "formID")
-        static let clientID = FieldKey(stringLiteral: "clientID")
-        
-        static let actionEnum = FieldKey(stringLiteral: "actionEnum")
-        static let action = "action"
-        static let creation = "creation"
-        static let modification = "modification"
-        static let approbation = "approbation"
-        static let visualisation = "visualisation"
-        static let loaded = "loaded"
-        static let deletion = "deletion"
-        static let signature = "signature"
-    }
-    
-    enum ActionEnum: String, Codable {
-        case creation, modification, approbation
-        case visualisation, loaded, deletion
-        case signature
-    }
 }

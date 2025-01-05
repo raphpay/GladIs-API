@@ -24,50 +24,53 @@ struct DocumentActivityLogController: RouteCollection {
         tokenAuthGroup.delete(use: removeAll)
     }
     
-    
     // MARK: - CREATE
     func create(req: Request) async throws -> DocumentActivityLog {
+        // Decode the input
         let logInput = try req.content.decode(DocumentActivityLog.Input.self)
-        var log: DocumentActivityLog?
-        var logName = ""
-
+        // Fetch the actor (user)
         guard let userQuery = try await User.find(logInput.actorID, on: req.db) else {
             throw Abort(.notFound, reason: "notFound.user")
         }
-
-        if logInput.documentID != nil {
-            guard let docQuery = try await Document.find(logInput.documentID, on: req.db) else {
+        
+        var logName = ""
+        var documentID: UUID? = nil
+        var formID: UUID? = nil
+        
+        // Fetch document or form
+        if let docID = logInput.documentID {
+            guard let docQuery = try await Document.find(docID, on: req.db) else {
                 throw Abort(.notFound, reason: "notFound.document")
             }
             logName = docQuery.name
-            log = DocumentActivityLog(name: logName,
-                                      actorUsername: userQuery.username,
-                                      action: logInput.action,
-                                      actionDate: Date.now,
-                                      actorIsAdmin: logInput.actorIsAdmin,
-                                      documentID: logInput.documentID,
-                                      clientID: logInput.clientID)
-
-        } else if logInput.formID != nil {
-            guard let formQuery = try await Form.find(logInput.formID, on: req.db) else {
+            documentID = docID
+        } else if let formIDInput = logInput.formID {
+            guard let formQuery = try await Form.find(formIDInput, on: req.db) else {
                 throw Abort(.notFound, reason: "notFound.form")
             }
             logName = formQuery.title
-            log = DocumentActivityLog(name: logName,
-                                      actorUsername: userQuery.username,
-                                      action: logInput.action,
-                                      actionDate: Date.now,
-                                      actorIsAdmin: logInput.actorIsAdmin,
-                                      formID: logInput.formID,
-                                      clientID: logInput.clientID)
+            formID = formIDInput
         } else {
             throw Abort(.badRequest, reason: "badRequest.documentOrForm")
         }
-
-        if let log = log {
+        
+        // Create the log
+        let log = DocumentActivityLog(
+            name: logName,
+            actorUsername: userQuery.username,
+            action: logInput.action,
+            actionDate: Date.now,
+            actorIsAdmin: logInput.actorIsAdmin,
+            documentID: documentID,
+            formID: formID,
+            clientID: logInput.clientID
+        )
+        
+        // Save the log
+        do {
             try await log.save(on: req.db)
             return log
-        } else {
+        } catch {
             throw Abort(.internalServerError, reason: "internalServerError")
         }
     }
