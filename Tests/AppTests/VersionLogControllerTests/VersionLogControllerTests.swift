@@ -38,6 +38,5 @@ final class VersionLogControllerTests: XCTestCase {
     // Expected Properties
     let expectedCurrentVersion = "1.2.3"
     let expectedMinimumVersion = "1.2.0"
-    let expectedSupportedClientVersions = ["1.0.0", "1.1.0"]
 }
 

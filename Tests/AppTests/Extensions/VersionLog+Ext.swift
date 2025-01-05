@@ -12,7 +12,6 @@ import Vapor
 extension VersionLogControllerTests {
     func createExpectedVersionLog(on db: Database) async throws -> VersionLog {
         let versionLog = VersionLog(currentVersion: expectedCurrentVersion,
-                                    supportedClientVersions: expectedSupportedClientVersions,
                                     minimumClientVersion: expectedMinimumVersion)
         try await versionLog.save(on: db)
         return versionLog

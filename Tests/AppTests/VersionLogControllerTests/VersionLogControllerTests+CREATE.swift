@@ -14,7 +14,6 @@ import Vapor
 extension VersionLogControllerTests {
     func test_Create_Succeed() async throws {
         let input = VersionLog.Input(currentVersion: expectedCurrentVersion,
-                                     supportedClientVersions: expectedSupportedClientVersions,
                                      minimumClientVersion: expectedMinimumVersion)
         try await app.test(.POST, baseURL, beforeRequest: { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -25,7 +24,6 @@ extension VersionLogControllerTests {
             do {
                 let versionLog = try res.content.decode(VersionLog.self)
                 XCTAssertEqual(versionLog.currentVersion, expectedCurrentVersion)
-                XCTAssertEqual(versionLog.supportedClientVersions, expectedSupportedClientVersions)
                 XCTAssertEqual(versionLog.minimumClientVersion, expectedMinimumVersion)
             } catch {}
         })
@@ -33,7 +31,6 @@ extension VersionLogControllerTests {
     
     func test_Create_WithUnauthorizedRole_Fails() async throws {
         let input = VersionLog.Input(currentVersion: expectedCurrentVersion,
-                                     supportedClientVersions: expectedSupportedClientVersions,
                                      minimumClientVersion: expectedMinimumVersion)
         let unauthorizedUser = try await UserControllerTests().createExpectedUser(userType: .client, on: app.db)
         let unauthorizedToken = try await Token.create(for: unauthorizedUser, on: app.db)
@@ -51,7 +48,6 @@ extension VersionLogControllerTests {
     func test_Create_WithAlreadyExistingVersionLog_Fails() async throws {
         let _ = try await VersionLogControllerTests().createExpectedVersionLog(on: app.db)
         let input = VersionLog.Input(currentVersion: expectedCurrentVersion,
-                                     supportedClientVersions: expectedSupportedClientVersions,
                                      minimumClientVersion: expectedMinimumVersion)
         try await app.test(.POST, baseURL, beforeRequest: { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)

@@ -21,7 +21,6 @@ extension VersionLogControllerTests {
             do {
                 let versionLog = try res.content.decode(VersionLog.self)
                 XCTAssertEqual(versionLog.currentVersion, expectedCurrentVersion)
-                XCTAssertEqual(versionLog.supportedClientVersions, expectedSupportedClientVersions)
                 XCTAssertEqual(versionLog.minimumClientVersion, expectedMinimumVersion)
             } catch {}
         })
