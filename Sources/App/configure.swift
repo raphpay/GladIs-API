@@ -38,7 +38,6 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(RemoveParameterToVersionLog())
     switch app.environment {
         case .development:
-            app.migrations.add(CreateAdminUser())
             app.databases.middleware.use(UserMiddleware(), on: .mongo)
         default:
             break
