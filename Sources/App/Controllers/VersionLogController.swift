@@ -31,7 +31,6 @@ struct VersionLogController: RouteCollection {
         tokenAuthGroup.post(use: create)
         // Update
         tokenAuthGroup.put(use: update)
-        tokenAuthGroup.put("clientVersions", use: addSupportedClientVersions)
         // Delete
         tokenAuthGroup.delete("all", use: delete)
     }
@@ -69,20 +68,6 @@ struct VersionLogController: RouteCollection {
         try await updatedVersionLog.update(on: req.db)
         
         return updatedVersionLog
-    }
-    
-    func addSupportedClientVersions(req: Request) async throws -> VersionLog {
-        try Utils.checkRole(on: req, allowedRoles: [.admin])
-        let versionLog = try await get(req: req)
-        let input = try req.content.decode(VersionLog.UpdateSupportedClientVersions.self).supportedClientVersions
-        
-        for version in input {
-            versionLog.supportedClientVersions.append(version)
-        }
-        
-        try await versionLog.update(on: req.db)
-
-        return versionLog
     }
     
     // MARK: - Delete
