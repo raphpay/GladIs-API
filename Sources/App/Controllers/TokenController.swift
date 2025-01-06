@@ -137,8 +137,7 @@ extension TokenController {
         }
         
         if let connectionFailedAttempts = user.connectionFailedAttempts,
-            connectionFailedAttempts >= maxAttempts,
-           user.isConnectionBlocked == true {
+            connectionFailedAttempts >= maxAttempts {
             user.isConnectionBlocked = true
             try await user.update(on: req.db)
             throw Abort(.unauthorized, reason: "unauthorized.login.maxLoginAttemptReached")
