@@ -126,10 +126,14 @@ extension TokenController {
     private func handleMaxLoginAttempt(user: User, on req: Request) async throws {
         // Define max attempts and lockout duration
         let maxAttempts = 5
+        
+        if user.isBlocked == true {
+            throw Abort(.forbidden, reason: "forbidden.accountBlocked")
+        }
 
         // Check if the user has exceeded the max login attempts or is blocked
         if user.isConnectionBlocked == true {
-            throw Abort(.forbidden, reason: "forbidden.accountBlocked")
+            throw Abort(.forbidden, reason: "forbidden.connectionBlocked")
         }
         
         if let connectionFailedAttempts = user.connectionFailedAttempts,
@@ -137,7 +141,7 @@ extension TokenController {
            user.isConnectionBlocked == true {
             user.isConnectionBlocked = true
             try await user.update(on: req.db)
-            throw Abort(.unauthorized, reason: "unauthorized.maxLoginAttemptReached")
+            throw Abort(.unauthorized, reason: "unauthorized.login.maxLoginAttemptReached")
         }
     }
     
@@ -177,7 +181,7 @@ extension TokenController {
             try await user.update(on: req.db)
             
             // Throw unauthorized error
-            throw Abort(.unauthorized, reason: "unauthorized.invalidCredentials")
+            throw Abort(.unauthorized, reason: "unauthorized.login.invalidCredentials")
         }
     }
 }
