@@ -18,13 +18,14 @@ final class TokenControllerTests: XCTestCase {
     
     override func setUp() async throws {
         try await super.setUp()
-        
         app = Application(.testing)
         try! await configure(app)
     }
     
-    override func tearDown() {
+    override func tearDown() async throws {
+        try await User.deleteAll(on: app.db)
+        try await Token.deleteAll(on: app.db)
         app.shutdown()
-        super.tearDown()
+        try await super.tearDown()
     }
 }

@@ -11,7 +11,7 @@ import XCTVapor
 
 // MARK: - Login
 extension TokenControllerTests {
-    func testLoginSuccessNewToken() async throws {
+    func test_Login_Success() async throws {
         try await User.deleteAll(on: app.db)
         let _ = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
         
@@ -27,8 +27,7 @@ extension TokenControllerTests {
         })
     }
 
-    func testLoginSuccessTokenRefresh() async throws {
-        try await User.deleteAll(on: app.db)
+    func test_Login_WithRefreshToken_Success() async throws {
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
         let existingToken = try await Token.create(for: user, on: app.db)
 
@@ -45,19 +44,18 @@ extension TokenControllerTests {
         })
     }
 
-    func testLoginWithoutUserFails() async throws {
+    func test_Login_WithoutUser_Fails() async throws {
         let path = "\(baseRoute)/login"
         try app.test(.POST, path, beforeRequest: { req in
             req.headers.basicAuthorization = BasicAuthorization(username: "wrongUser", password: "wrongPass")
         }, afterResponse: { res in
-            XCTAssertEqual(res.status, .unauthorized)
-            XCTAssertTrue(res.body.string.contains("unauthorized.login.invalidCredentials"))
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.user"))
         })
     }
 
 
-    func testLoginWithBlockedUserFails() async throws {
-        try await User.deleteAll(on: app.db)
+    func test_Login_WithBlockedUser_Fails() async throws {
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
         user.isBlocked = true
         try await user.update(on: app.db)
@@ -66,13 +64,12 @@ extension TokenControllerTests {
         try app.test(.POST, path, beforeRequest: { req in
             req.headers.basicAuthorization = BasicAuthorization(username: expectedUsername, password: expectedPassword)
         }, afterResponse: { res in
-            XCTAssertEqual(res.status, .unauthorized)
-            XCTAssertTrue(res.body.string.contains("unauthorized.login.accountBlocked"))
+            XCTAssertEqual(res.status, .forbidden)
+            XCTAssertTrue(res.body.string.contains("forbidden.accountBlocked"))
         })
     }
 
-    func testLoginWithConnectionBlockedUserFails() async throws {
-        try await User.deleteAll(on: app.db)
+    func test_Login_WithConnectionBlockedUser_Fails() async throws {
         let user = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
         user.isConnectionBlocked = true
         try await user.update(on: app.db)
@@ -81,8 +78,24 @@ extension TokenControllerTests {
         try app.test(.POST, path, beforeRequest: { req in
             req.headers.basicAuthorization = BasicAuthorization(username: expectedUsername, password: expectedPassword)
         }, afterResponse: { res in
+            XCTAssertEqual(res.status, .forbidden)
+            XCTAssertTrue(res.body.string.contains("forbidden.connectionBlocked"))
+        })
+    }
+    
+    func test_Login_WithWrongPassword_Fails() async throws {
+        let _ = try await User.create(username: expectedUsername, password: expectedPassword, on: app.db)
+        
+        try await app.test(.POST, "\(baseRoute)/login", beforeRequest: { req in
+            req.headers.basicAuthorization = BasicAuthorization(username: expectedUsername, password: "wrongPassword")
+        }, afterResponse: { res async in
+            // Then
             XCTAssertEqual(res.status, .unauthorized)
-            XCTAssertTrue(res.body.string.contains("unauthorized.login.connectionBlocked"))
+            XCTAssertTrue(res.body.string.contains("unauthorized.login.invalidCredentials"))
+            do {
+                let users = try await User.query(on: app.db).all()
+                XCTAssertEqual(users[0].connectionFailedAttempts, 1)
+            } catch {}
         })
     }
 }
