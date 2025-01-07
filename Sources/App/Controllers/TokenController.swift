@@ -12,7 +12,6 @@ import Vapor
 struct TokenController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let tokens = routes.grouped("api", "tokens")
-        tokens.get("environment", use: getEnvironment)
         tokens.get(":tokenID", use: getTokenByID)
         tokens.delete(":tokenID", use: logout)
         // Basic Auth
@@ -41,10 +40,6 @@ struct TokenController: RouteCollection {
         try await Token
             .query(on: req.db)
             .all()
-    }
-
-    func getEnvironment(req: Request) async throws -> String {
-        Environment.get("LOCALENV") ?? "No .env file"
     }
     
     // MARK: - Login

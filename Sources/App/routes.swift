@@ -10,6 +10,10 @@ func routes(_ app: Application) throws {
         "Hello, world!"
     }
 
+    app.get("environment") { async -> String in 
+        Environment.get("LOCALENV") ?? "No .env file"
+    }
+
     try app.register(collection: UserController())
     try app.register(collection: TokenController())
     try app.register(collection: PendingUserController())
