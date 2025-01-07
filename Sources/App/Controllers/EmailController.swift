@@ -36,7 +36,7 @@ struct EmailController: RouteCollection {
                                    value: input.content)
         
         let email = createEmail(from: from, tos: tos, subject: input.subject, content: content, replyTo: replyTo)
-        try await send(email: email, sendGridApiKey: input.apiKey)
+        try await send(email: email)
         
         return "success.emailSent"
     }
@@ -53,8 +53,12 @@ struct EmailController: RouteCollection {
          return email
      }
     
-     func send(email: SendGridEmail, sendGridApiKey: String) async throws {
+     func send(email: SendGridEmail) async throws {
          let httpClient = HTTPClient()
+         
+         guard let sendGridApiKey = Environment.get("SEND_GRID_API_KEY") else {
+             throw Abort(.internalServerError, reason: "internalServerError.missingEnvironmentVariable")
+         }
          let sendGridClient = SendGridClient(httpClient: httpClient, apiKey: sendGridApiKey)
         
          do {
