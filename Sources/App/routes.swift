@@ -11,7 +11,7 @@ func routes(_ app: Application) throws {
     }
 
     app.get("environment") { async -> String in 
-        Environment.get("LOCALENV") ?? "No .env file"
+        Environment.get("LOCAL_ENV") ?? "No .env file"
     }
 
     try app.register(collection: UserController())
