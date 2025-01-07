@@ -17,7 +17,6 @@ extension Email {
         let replyTo: String?
         let subject: String
         let content: String
-        let apiKey: String
         var isHTML: Bool = false
     }
 }
