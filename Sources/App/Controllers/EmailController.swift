@@ -31,7 +31,6 @@ struct EmailController: RouteCollection {
         }
         
         let tos = EmailMiddleware().createToArray(tos: input.to)
-        logger.info("email \(input.isHTML)")
         let content = EmailContent(type: input.isHTML ? "text/html" : "text/plain",
                                    value: input.content)
         
@@ -59,6 +58,7 @@ struct EmailController: RouteCollection {
          guard let sendGridApiKey = Environment.get("SEND_GRID_API_KEY") else {
              throw Abort(.internalServerError, reason: "internalServerError.missingEnvironmentVariable")
          }
+         
          let sendGridClient = SendGridClient(httpClient: httpClient, apiKey: sendGridApiKey)
         
          do {
