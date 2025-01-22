@@ -22,15 +22,10 @@ struct QuestionnaireRecipientController: RouteCollection {
         tokenAuthGroup.delete("all", use: removeAll)
     }
     
-    let logger = Logger(label: "recipient")
     // MARK: - Create
     func create(req: Request, input: QuestionnaireRecipient.Input) async throws -> QuestionnaireRecipient {
-        logger.info("start2")
-        logger.info("input2 \(input)")
         try await QuestionnaireMiddleware().validateRecipient(recipientInput: input, on: req.db)
-        logger.info("validated")
         let questionnaireRecipient = input.toModel()
-        logger.info("recipient \(questionnaireRecipient)")
         try await questionnaireRecipient.save(on: req.db)
         return questionnaireRecipient
     }
