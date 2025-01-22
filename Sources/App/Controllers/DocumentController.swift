@@ -100,6 +100,8 @@ struct DocumentController: RouteCollection {
         
         return document
     }
+
+
     
     // MARK: - READ
     func getAllDocuments(req: Request) async throws -> [Document] {

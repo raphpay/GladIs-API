@@ -7,7 +7,7 @@ import Vapor
 public func configure(_ app: Application) async throws {
     // uncomment to serve files from /Public folder
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
-    app.middleware.use(cors) // From CorsMiddleware.swift
+    app.middleware.use(cors, at: .beginning) // From CorsMiddleware.swift
     app.routes.defaultMaxBodySize = "10mb"
 
     try app.databases.use(DatabaseConfigurationFactory.mongo(
