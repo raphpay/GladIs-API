@@ -56,6 +56,9 @@ struct QuestionnaireController: RouteCollection {
         try Utils.checkRole(on: req, allowedRoles: [.admin])
         let questionnaires = try await Questionnaire.query(on: req.db).all()
         try await questionnaires.delete(force: true, on: req.db)
+        
+        let _ = try await QuestionnaireRecipientController().removeAll(req: req)
+        
         return .noContent
     }
 }

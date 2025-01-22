@@ -11,7 +11,6 @@ import Fluent
 struct QuestionnaireRecipientController: RouteCollection {
     func boot(routes: Vapor.RoutesBuilder) throws {
         let questionnaireRecipients = routes.grouped("api", "questionnaires", "recipients")
-//        questionnaireRecipients.post(<#T##path: PathComponent...##PathComponent#>, use: <#T##(Request) async throws -> AsyncResponseEncodable#>)
         // Token Protected
         let tokenAuthMiddleware = Token.authenticator()
         let guardAuthMiddleware = User.guardMiddleware()
@@ -37,6 +36,16 @@ struct QuestionnaireRecipientController: RouteCollection {
     }
     
     // MARK: - Delete
+    func remove(req: Request, id: QuestionnaireRecipient.IDValue) async throws -> HTTPResponseStatus {
+        guard let questionnaireRecipient = try await QuestionnaireRecipient.find(id, on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.questionnaireRecipient")
+        }
+        
+        try await questionnaireRecipient.delete(force: true, on: req.db)
+        
+        return .noContent
+    }
+    
     func removeAll(req: Request) async throws -> HTTPResponseStatus {
         try Utils.checkRole(on: req, allowedRoles: [.admin])
         let questionnaireRecipients = try await QuestionnaireRecipient.query(on: req.db).all()

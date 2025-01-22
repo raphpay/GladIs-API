@@ -14,12 +14,14 @@ struct CreateQuestionnaireRecipient: AsyncMigration {
             .field(QuestionnaireRecipient.v20240806.questionnaireID,
                    .uuid,
                    .required,
-                   .references(Questionnaire.v20240806.schemaName, Questionnaire.v20240806.id)
+                   .references(Questionnaire.v20240806.schemaName, Questionnaire.v20240806.id,
+                               onDelete: .cascade)
             )
             .field(QuestionnaireRecipient.v20240806.clientID,
                    .uuid,
                    .required,
-                   .references(User.v20240207.schemaName, User.v20240207.id)
+                   .references(User.v20240207.schemaName, User.v20240207.id,
+                               onDelete: .cascade)
             )
             .field(QuestionnaireRecipient.v20240806.createdAt, .date, .required)
             .field(QuestionnaireRecipient.v20240806.status, .string, .required)
