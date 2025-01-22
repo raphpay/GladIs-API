@@ -28,4 +28,12 @@ struct QuestionnaireMiddleware {
             throw Abort(.badRequest, reason: "badRequest.duplicateFieldIndexes")
         }
     }
+    
+    func validateRecipient(recipientInput: QuestionnaireRecipient.Input, on database: Database) async throws {
+        guard let client = try await User.find(recipientInput.clientID, on: database),
+              client.userType == .client
+        else {
+            throw Abort(.badRequest, reason: "badRequest.userNotClient")
+        }
+    }
 }

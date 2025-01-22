@@ -14,14 +14,14 @@ extension Questionnaire {
         let fields: [QField]
         let adminID: User.IDValue
         let sentAt: Date?
-        let sentCount: Int
         let responseCount: Int
+        let clientIDs: [User.IDValue]
         
         func toModel() -> Questionnaire {
             .init(title: title,
                   fields: fields,
                   adminID: adminID,
-                  sentCount: sentCount,
+                  sentCount: clientIDs.count,
                   responseCount: responseCount,
                   sentAt: sentAt
             )

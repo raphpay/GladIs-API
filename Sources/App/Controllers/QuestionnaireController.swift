@@ -25,12 +25,28 @@ struct QuestionnaireController: RouteCollection {
     }
     
     // MARK: - CREATE
+    let logger = Logger(label: "Test")
     func create(req: Request) async throws -> Questionnaire {
+        logger.info("start")
         try Utils.checkRole(on: req, allowedRoles: [.admin])
+        logger.info("after role check")
         let input = try req.content.decode(Questionnaire.Input.self)
+        logger.info("input \(input)")
         try await QuestionnaireMiddleware().validate(questionnaireInput: input, on: req.db)
+        logger.info("validated")
         let questionnaire = input.toModel()
+        logger.info("questionnaire \(questionnaire)")
         try await questionnaire.save(on: req.db)
+        let questionnaireID = try questionnaire.requireID()
+        logger.info("questionnaireID \(questionnaireID)")
+        
+        for clientID in input.clientIDs {
+            logger.info("client \(clientID)")
+            let recipientInput = QuestionnaireRecipient.Input(questionnaireID: questionnaireID, clientID: clientID, status: .sent, sentAt: Date())
+            logger.info("recipinput \(recipientInput)")
+            let _ = try await QuestionnaireRecipientController().create(req: req, input: recipientInput)
+        }
+        
         return questionnaire
     }
     

@@ -38,6 +38,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(RemoveParameterToVersionLog())
     // 22/01/2025
     app.migrations.add(CreateQuestionnaire())
+    app.migrations.add(CreateQuestionnaireRecipient())
     
     switch app.environment {
         case .development:

@@ -30,4 +30,5 @@ func routes(_ app: Application) throws {
     try app.register(collection: EmailController())
     try app.register(collection: VersionLogController())
     try app.register(collection: QuestionnaireController())
+    try app.register(collection: QuestionnaireRecipientController())
 }

@@ -35,8 +35,8 @@ final class Questionnaire: Model, Content {
     @Field(key: Questionnaire.v20240806.responseCount)
     var responseCount: Int
     
-//    @Children(key: Questionnaire.v20240806.questionnaireRecipients)
-//    var questionnaireRecipients: [Questionnaire]
+    @Children(for: \.$questionnaire)
+    var questionnaireRecipients: [QuestionnaireRecipient]
     
 
     init() {}
