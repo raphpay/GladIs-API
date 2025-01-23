@@ -37,7 +37,7 @@ extension Questionnaire {
         let fields: [QField]?
         
         func update(questionnaire: Questionnaire) -> Questionnaire {
-            var updatedQuestionnaire = questionnaire
+            let updatedQuestionnaire = questionnaire
             
             if let title = title {
                 updatedQuestionnaire.title = title
