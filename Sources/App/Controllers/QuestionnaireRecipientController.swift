@@ -45,6 +45,7 @@ struct QuestionnaireRecipientController: RouteCollection {
         }
         
         questionnaireRecipient.status = .viewed
+        questionnaireRecipient.viewedAt = Date()
         try await questionnaireRecipient.update(on: req.db)
         
         let questionnaire = try await QuestionnaireController().get(req: req, id: questionnaireRecipient.$questionnaire.id)
