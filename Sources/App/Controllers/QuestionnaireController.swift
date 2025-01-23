@@ -23,6 +23,7 @@ struct QuestionnaireController: RouteCollection {
         tokenAuthGroup.put(":qID", use: update)
         // Delete
         tokenAuthGroup.delete("all", use: removeAll)
+        tokenAuthGroup.delete(":qID", use: remove)
     }
     
     // MARK: - CREATE
@@ -78,6 +79,14 @@ struct QuestionnaireController: RouteCollection {
         try await questionnaires.delete(force: true, on: req.db)
         
         let _ = try await QuestionnaireRecipientController().removeAll(req: req)
+        
+        return .noContent
+    }
+    
+    func remove(req: Request) async throws -> HTTPResponseStatus {
+        try Utils.checkRole(on: req, allowedRoles: [.admin])
+        let questionnaire = try await get(on: req)
+        try await questionnaire.delete(force: true, on: req.db)
         
         return .noContent
     }
