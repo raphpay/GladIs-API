@@ -21,6 +21,7 @@ struct QuestionnaireRecipientController: RouteCollection {
         // Update
         tokenAuthGroup.put("viewed", ":qRecipientID", use: markAsViewed)
         tokenAuthGroup.put("submit", ":qRecipientID", use: submitAnswer)
+        tokenAuthGroup.put("exported", ":qRecipientID", use: markAsExported)
         // Delete
         tokenAuthGroup.delete("all", use: removeAll)
     }

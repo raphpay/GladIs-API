@@ -145,3 +145,35 @@ extension QuestionnaireRecipientControllerTests {
     }
 }
 
+// MARK: - Mark as Exported
+extension QuestionnaireRecipientControllerTests {
+    func test_MarkAsExported_Succeed() async throws {
+        let qRecipient = try await QuestionnaireRecipientControllerTests().createExpectedQRecipient(qID: qID,
+                                                                                                    clientID: clientID,
+                                                                                                    on: app.db)
+        let qRID = try qRecipient.requireID()
+        
+        try await app.test(.PUT, "\(baseURL)/exported/\(qRID)", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res async in
+            // Then
+            XCTAssertEqual(res.status, .ok)
+            do {
+                let questionnaireRecipient = try res.content.decode(QuestionnaireRecipient.self)
+                XCTAssertEqual(questionnaireRecipient.status, .exported)
+            } catch {}
+        })
+    }
+    
+    func test_MarkAsExported_WithInexistantQRecipient_Fails() async throws {
+        let id = UUID()
+        
+        try await app.test(.PUT, "\(baseURL)/exported/\(id)", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res async in
+            // Then
+            XCTAssertEqual(res.status, .notFound)
+            XCTAssertTrue(res.body.string.contains("notFound.qRecipient"))
+        })
+    }
+}
