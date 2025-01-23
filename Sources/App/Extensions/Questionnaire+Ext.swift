@@ -11,7 +11,6 @@ import Foundation
 extension Questionnaire {
     struct QField: Codable {
         var key: String
-        var value: String
         var index: Int
     }
 }

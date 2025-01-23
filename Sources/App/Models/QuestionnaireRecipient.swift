@@ -26,10 +26,13 @@ final class QuestionnaireRecipient: Model, Content {
     @Field(key: QuestionnaireRecipient.v20240806.sentAt)
     var sentAt: Date
     
-    @Field(key: QuestionnaireRecipient.v20240806.viewedAt)
+    @OptionalField(key: QuestionnaireRecipient.v20240806.fields)
+    var fields: [QRField]?
+    
+    @OptionalField(key: QuestionnaireRecipient.v20240806.viewedAt)
     var viewedAt: Date?
     
-    @Field(key: QuestionnaireRecipient.v20240806.submittedAt)
+    @OptionalField(key: QuestionnaireRecipient.v20240806.submittedAt)
     var submittedAt: Date?
     
     @Timestamp(key: QuestionnaireRecipient.v20240806.createdAt, on: .create)
@@ -42,6 +45,7 @@ final class QuestionnaireRecipient: Model, Content {
          clientID: User.IDValue,
          status: Status,
          sentAt: Date,
+         fields: [QRField]? = nil,
          viewedAt: Date? = nil,
          submittedAt: Date? = nil
     ) {
@@ -50,6 +54,7 @@ final class QuestionnaireRecipient: Model, Content {
         self.$client.id = clientID
         self.status = status
         self.sentAt = sentAt
+        self.fields = fields
         self.viewedAt = viewedAt
         self.submittedAt = submittedAt
         self.createdAt = Date()

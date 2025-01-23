@@ -12,3 +12,11 @@ extension QuestionnaireRecipient {
         case sent, viewed, submitted, exported
     }
 }
+
+extension QuestionnaireRecipient {
+    struct QRField: Codable {
+        var key: String
+        var value: String
+        var index: Int
+    }
+}

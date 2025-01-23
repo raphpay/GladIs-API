@@ -15,6 +15,7 @@ extension QuestionnaireRecipient {
         static let questionnaireID = FieldKey(stringLiteral: "questionnaire_id")
         static let clientID = FieldKey(stringLiteral: "client_id")
         static let status = FieldKey(stringLiteral: "status")
+        static let fields = FieldKey(stringLiteral: "fields")
         static let sentAt = FieldKey(stringLiteral: "sent_at")
         static let viewedAt = FieldKey(stringLiteral: "viewed_at")
         static let submittedAt = FieldKey(stringLiteral: "submitted_at")

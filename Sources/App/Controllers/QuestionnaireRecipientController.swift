@@ -18,6 +18,9 @@ struct QuestionnaireRecipientController: RouteCollection {
         // Read
         tokenAuthGroup.get("all", use: getAll)
         tokenAuthGroup.get("questionnaire", ":questionnaireRecipientID", use: getQuestionnaire)
+        // Update
+        tokenAuthGroup.put("submit", ":qRecipientID", use: submitAnswer)
+        tokenAuthGroup.put("viewed", ":qRecipientID", use: markAsViewed)
         // Delete
         tokenAuthGroup.delete("all", use: removeAll)
     }
@@ -48,6 +51,35 @@ struct QuestionnaireRecipientController: RouteCollection {
         return questionnaire
     }
     
+    // MARK: - Update
+    func submitAnswer(req: Request) async throws -> QuestionnaireRecipient {
+        let qrecipient = try await get(on: req)
+        
+        let input = try req.content.decode(QuestionnaireRecipient.UpdateInput.self)
+        
+        qrecipient.submittedAt = Date()
+        qrecipient.fields = input.fields
+        qrecipient.status = .submitted
+        try await qrecipient.update(on: req.db)
+        
+        let questionnaire = try await QuestionnaireController().get(req: req, id: qrecipient.$questionnaire.id)
+        questionnaire.responseCount += 1
+        try await questionnaire.update(on: req.db)
+        
+        return qrecipient
+    }
+    
+    func markAsViewed(req: Request) async throws -> QuestionnaireRecipient {
+        let qrecipient = try await get(on: req)
+        
+        qrecipient.viewedAt = Date()
+        qrecipient.status = .viewed
+        
+        try await qrecipient.update(on: req.db)
+        
+        return qrecipient
+    }
+    
     // MARK: - Delete
     func remove(req: Request, id: QuestionnaireRecipient.IDValue) async throws -> HTTPResponseStatus {
         guard let questionnaireRecipient = try await QuestionnaireRecipient.find(id, on: req.db) else {
@@ -64,5 +96,15 @@ struct QuestionnaireRecipientController: RouteCollection {
         let questionnaireRecipients = try await QuestionnaireRecipient.query(on: req.db).all()
         try await questionnaireRecipients.delete(force: true, on: req.db)
         return .noContent
+    }
+}
+
+extension QuestionnaireRecipientController {
+    func get(on req: Request) async throws -> QuestionnaireRecipient {
+        guard let qrecipient = try await QuestionnaireRecipient.find(req.parameters.get("qRecipientID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.qRecipient")
+        }
+        
+        return qrecipient
     }
 }

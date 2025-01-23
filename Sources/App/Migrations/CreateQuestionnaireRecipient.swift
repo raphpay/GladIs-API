@@ -26,6 +26,7 @@ struct CreateQuestionnaireRecipient: AsyncMigration {
             .field(QuestionnaireRecipient.v20240806.createdAt, .date, .required)
             .field(QuestionnaireRecipient.v20240806.status, .string, .required)
             .field(QuestionnaireRecipient.v20240806.sentAt, .date, .required)
+            .field(QuestionnaireRecipient.v20240806.fields, .array(of: .custom(QuestionnaireRecipient.QRField.self)))
             .field(QuestionnaireRecipient.v20240806.viewedAt, .date)
             .field(QuestionnaireRecipient.v20240806.submittedAt, .date)
             .create()

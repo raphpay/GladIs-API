@@ -8,6 +8,7 @@
 import Fluent
 import Vapor
 
+// MARK: Create
 extension QuestionnaireRecipient {
     struct Input: Content {
         let questionnaireID: Questionnaire.IDValue
@@ -22,5 +23,16 @@ extension QuestionnaireRecipient {
                   sentAt: sentAt
             )
         }
+    }
+}
+
+// MARK: Update
+extension QuestionnaireRecipient {
+    struct UpdateInput: Content {
+        let fields: [QRField]
+    }
+
+    struct UpdateStatusInput: Content {
+        let status: Status
     }
 }
