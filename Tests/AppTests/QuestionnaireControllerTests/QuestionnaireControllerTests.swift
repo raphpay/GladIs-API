@@ -41,6 +41,8 @@ final class QuestionnaireControllerTests: XCTestCase {
     let expectedTitle = "Test Questionnaire"
     let expectedFields = [Questionnaire.QField(key: "Test Field 1", index: 1),
                           Questionnaire.QField(key: "Test Field 2", index: 2)]
-    
+    // Wrong properties
+    let wrongFields = [Questionnaire.QField(key: "Test Field 1", index: 1),
+                       Questionnaire.QField(key: "Test Field 2", index: 1)]
 }
 
