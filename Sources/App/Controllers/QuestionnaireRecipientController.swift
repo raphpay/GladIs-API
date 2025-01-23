@@ -64,10 +64,9 @@ struct QuestionnaireRecipientController: RouteCollection {
     }
     
     func submitAnswer(req: Request) async throws -> QuestionnaireRecipient {
-//        TODO: Verify that the fields are the same than the related questionnaire
         let qrecipient = try await get(on: req)
-        
         let input = try req.content.decode(QuestionnaireRecipient.UpdateInput.self)
+        try await QuestionnaireRecipientMiddleware().validateFields(input, with: qrecipient.$questionnaire.id, on: req.db)
         
         qrecipient.submittedAt = Date()
         qrecipient.fields = input.fields

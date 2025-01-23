@@ -38,4 +38,27 @@ struct QuestionnaireRecipientMiddleware {
             throw Abort(.badRequest, reason: "badRequest.userNotClient")
         }
     }
+    
+    func validateFields(_ input: QuestionnaireRecipient.UpdateInput,
+                        with questionnaireID: Questionnaire.IDValue,
+                        on database: Database) async throws {
+        guard let questionnaire = try await Questionnaire.find(questionnaireID, on: database) else {
+            throw Abort(.notFound, reason: "notFound.questionnaire")
+        }
+        
+        guard questionnaire.fields.count == input.fields.count else {
+            throw Abort(.badRequest, reason: "badRequest.missingFields")
+        }
+        
+        // Sort both arrays by `index` for consistent comparison
+        let sortedQFields = questionnaire.fields.sorted(by: { $0.index < $1.index })
+        let sortedQRFields = input.fields.sorted(by: { $0.index < $1.index })
+        
+        // Compare each field pair
+        for (questionnaire, recipient) in zip(sortedQFields, sortedQRFields) {
+            if questionnaire.key != recipient.key || questionnaire.index != recipient.index {
+                throw Abort(.badRequest, reason: "badRequest.incorrectFields")
+            }
+        }
+    }
 }
