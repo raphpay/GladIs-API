@@ -14,7 +14,6 @@ final class QuestionnaireControllerTests: XCTestCase {
     var app: Application!
     let baseURL = "api/questionnaires"
     var admin: User!
-    var adminID: User.IDValue!
     var token: Token!
     
     override func setUp() async throws {
@@ -22,13 +21,11 @@ final class QuestionnaireControllerTests: XCTestCase {
         app = Application(.testing)
         try! await configure(app)
         admin = try await UserControllerTests().createExpectedAdmin(on: app.db)
-        adminID = try admin.requireID()
         token = try await Token.create(for: admin, on: app.db)
     }
     
     override func tearDown() async throws {
         try await User.deleteAll(on: app.db)
-        adminID = nil
         try await token.delete(force: true, on: app.db)
         try await Questionnaire.query(on: app.db).all().delete(force: true, on: app.db)
         try await QuestionnaireRecipient.query(on: app.db).all().delete(force: true, on: app.db)
