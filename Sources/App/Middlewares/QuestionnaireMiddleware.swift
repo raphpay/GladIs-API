@@ -9,7 +9,7 @@ import Vapor
 import Fluent
 
 struct QuestionnaireMiddleware {
-    func validate(questionnaireInput: Questionnaire.Input, on database: Database) async throws {
+    func validate(_ questionnaireInput: Questionnaire.Input, on database: Database) async throws {
         guard let user = try await User.find(questionnaireInput.adminID, on: database),
               user.userType == .admin else {
             throw Abort(.badRequest, reason: "badRequest.userNotAdmin")
@@ -28,8 +28,10 @@ struct QuestionnaireMiddleware {
             throw Abort(.badRequest, reason: "badRequest.duplicateFieldIndexes")
         }
     }
-    
-    func validateRecipient(recipientInput: QuestionnaireRecipient.Input, on database: Database) async throws {
+}
+
+struct QuestionnaireRecipientMiddleware {
+    func validate(_ recipientInput: QuestionnaireRecipient.Input, on database: Database) async throws {
         guard let client = try await User.find(recipientInput.clientID, on: database),
               client.userType == .client
         else {

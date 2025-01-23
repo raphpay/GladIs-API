@@ -27,7 +27,7 @@ struct QuestionnaireRecipientController: RouteCollection {
     
     // MARK: - Create
     func create(req: Request, input: QuestionnaireRecipient.Input) async throws -> QuestionnaireRecipient {
-        try await QuestionnaireMiddleware().validateRecipient(recipientInput: input, on: req.db)
+        try await QuestionnaireRecipientMiddleware().validate(input, on: req.db)
         let questionnaireRecipient = input.toModel()
         try await questionnaireRecipient.save(on: req.db)
         return questionnaireRecipient

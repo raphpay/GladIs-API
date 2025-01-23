@@ -29,7 +29,7 @@ struct QuestionnaireController: RouteCollection {
     func create(req: Request) async throws -> Questionnaire {
         try Utils.checkRole(on: req, allowedRoles: [.admin])
         let input = try req.content.decode(Questionnaire.Input.self)
-        try await QuestionnaireMiddleware().validate(questionnaireInput: input, on: req.db)
+        try await QuestionnaireMiddleware().validate(input, on: req.db)
         let questionnaire = input.toModel()
         try await questionnaire.save(on: req.db)
         let questionnaireID = try questionnaire.requireID()
