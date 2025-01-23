@@ -17,7 +17,7 @@ struct QuestionnaireRecipientController: RouteCollection {
         let tokenAuthGroup = questionnaireRecipients.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Read
         tokenAuthGroup.get("all", use: getAll)
-        tokenAuthGroup.get("questionnaire", ":questionnaireRecipientID", use: getQuestionnaire)
+        tokenAuthGroup.get("questionnaire", ":qRecipientID", use: getQuestionnaire)
         // Update
         tokenAuthGroup.put("viewed", ":qRecipientID", use: markAsViewed)
         tokenAuthGroup.put("submit", ":qRecipientID", use: submitAnswer)
@@ -41,8 +41,8 @@ struct QuestionnaireRecipientController: RouteCollection {
     }
     
     func getQuestionnaire(req: Request) async throws -> Questionnaire {
-        guard let questionnaireRecipient = try await QuestionnaireRecipient.find(req.parameters.get("questionnaireRecipientID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.questionnaireRecipient")
+        guard let questionnaireRecipient = try await QuestionnaireRecipient.find(req.parameters.get("qRecipientID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.qRecipient")
         }
         
         questionnaireRecipient.status = .viewed
@@ -95,7 +95,7 @@ struct QuestionnaireRecipientController: RouteCollection {
     // MARK: - Delete
     func remove(req: Request, id: QuestionnaireRecipient.IDValue) async throws -> HTTPResponseStatus {
         guard let questionnaireRecipient = try await QuestionnaireRecipient.find(id, on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.questionnaireRecipient")
+            throw Abort(.notFound, reason: "notFound.qRecipientID")
         }
         
         try await questionnaireRecipient.delete(force: true, on: req.db)

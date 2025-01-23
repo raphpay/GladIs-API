@@ -93,8 +93,9 @@ extension QuestionnaireRecipientControllerTests {
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
         }, afterResponse: { res async in
             // Then
+            print("res.body.string \(res.body.string)")
             XCTAssertEqual(res.status, .notFound)
-            XCTAssertTrue(res.body.string.contains("notFound.questionnaireRecipient"))
+            XCTAssertTrue(res.body.string.contains("notFound.qRecipient"))
         })
     }
     
