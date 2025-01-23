@@ -20,6 +20,7 @@ struct QuestionnaireController: RouteCollection {
         // Read
         tokenAuthGroup.get(use: getAll)
         // Update
+        tokenAuthGroup.put(":qID", use: update)
         // Delete
         tokenAuthGroup.delete("all", use: removeAll)
     }
@@ -59,9 +60,16 @@ struct QuestionnaireController: RouteCollection {
         return questionnaire
     }
     
-    // TODO: Add more routes
-    
     // MARK: - UPDATE
+    func update(req: Request) async throws -> Questionnaire {
+        let questionnaire = try await get(on: req)
+        let input = try req.content.decode(Questionnaire.UpdateInput.self)
+        
+        let updatedQuestionnaire = input.update(questionnaire: questionnaire)
+        try await updatedQuestionnaire.update(on: req.db)
+        
+        return updatedQuestionnaire
+    }
     
     // MARK: - DELETE
     func removeAll(req: Request) async throws -> HTTPResponseStatus {
@@ -72,5 +80,15 @@ struct QuestionnaireController: RouteCollection {
         let _ = try await QuestionnaireRecipientController().removeAll(req: req)
         
         return .noContent
+    }
+}
+
+extension QuestionnaireController {
+    func get(on req: Request) async throws -> Questionnaire {
+        guard let questionnaire = try await Questionnaire.find(req.parameters.get("qID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.questionnaire")
+        }
+        
+        return questionnaire
     }
 }

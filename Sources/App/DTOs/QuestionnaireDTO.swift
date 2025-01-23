@@ -8,6 +8,7 @@
 import Fluent
 import Vapor
 
+// MARK: - Create
 extension Questionnaire {
     struct Input: Content {
         let title: String
@@ -25,6 +26,28 @@ extension Questionnaire {
                   responseCount: responseCount,
                   sentAt: sentAt
             )
+        }
+    }
+}
+
+// MARK: - Update
+extension Questionnaire {
+    struct UpdateInput: Content {
+        let title: String?
+        let fields: [QField]?
+        
+        func update(questionnaire: Questionnaire) -> Questionnaire {
+            var updatedQuestionnaire = questionnaire
+            
+            if let title = title {
+                updatedQuestionnaire.title = title
+            }
+            
+            if let fields = fields {
+                updatedQuestionnaire.fields = fields
+            }
+            
+            return updatedQuestionnaire
         }
     }
 }

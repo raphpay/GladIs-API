@@ -19,8 +19,8 @@ struct QuestionnaireRecipientController: RouteCollection {
         tokenAuthGroup.get("all", use: getAll)
         tokenAuthGroup.get("questionnaire", ":questionnaireRecipientID", use: getQuestionnaire)
         // Update
-        tokenAuthGroup.put("submit", ":qRecipientID", use: submitAnswer)
         tokenAuthGroup.put("viewed", ":qRecipientID", use: markAsViewed)
+        tokenAuthGroup.put("submit", ":qRecipientID", use: submitAnswer)
         // Delete
         tokenAuthGroup.delete("all", use: removeAll)
     }
@@ -52,7 +52,19 @@ struct QuestionnaireRecipientController: RouteCollection {
     }
     
     // MARK: - Update
+    func markAsViewed(req: Request) async throws -> QuestionnaireRecipient {
+        let qrecipient = try await get(on: req)
+        
+        qrecipient.viewedAt = Date()
+        qrecipient.status = .viewed
+        
+        try await qrecipient.update(on: req.db)
+        
+        return qrecipient
+    }
+    
     func submitAnswer(req: Request) async throws -> QuestionnaireRecipient {
+//        TODO: Verify that the fields are the same than the related questionnaire
         let qrecipient = try await get(on: req)
         
         let input = try req.content.decode(QuestionnaireRecipient.UpdateInput.self)
@@ -69,15 +81,14 @@ struct QuestionnaireRecipientController: RouteCollection {
         return qrecipient
     }
     
-    func markAsViewed(req: Request) async throws -> QuestionnaireRecipient {
-        let qrecipient = try await get(on: req)
+    func markAsExported(req: Request) async throws -> QuestionnaireRecipient {
+        let qRecipient = try await get(on: req)
         
-        qrecipient.viewedAt = Date()
-        qrecipient.status = .viewed
+        qRecipient.status = .exported
         
-        try await qrecipient.update(on: req.db)
+        try await qRecipient.update(on: req.db)
         
-        return qrecipient
+        return qRecipient
     }
     
     // MARK: - Delete
