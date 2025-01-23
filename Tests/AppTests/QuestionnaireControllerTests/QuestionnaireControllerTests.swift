@@ -30,7 +30,8 @@ final class QuestionnaireControllerTests: XCTestCase {
         try await User.deleteAll(on: app.db)
         adminID = nil
         try await token.delete(force: true, on: app.db)
-        
+        try await Questionnaire.query(on: app.db).all().delete(force: true, on: app.db)
+        try await QuestionnaireRecipient.query(on: app.db).all().delete(force: true, on: app.db)
         // Required
         app.shutdown()
         try await super.tearDown()

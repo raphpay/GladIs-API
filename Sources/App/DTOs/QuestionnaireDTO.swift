@@ -14,8 +14,6 @@ extension Questionnaire {
         let title: String
         let fields: [QField]
         let adminID: User.IDValue
-        let sentAt: Date?
-        let responseCount: Int
         let clientIDs: [User.IDValue]
         
         func toModel() -> Questionnaire {
@@ -23,8 +21,8 @@ extension Questionnaire {
                   fields: fields,
                   adminID: adminID,
                   sentCount: clientIDs.count,
-                  responseCount: responseCount,
-                  sentAt: sentAt
+                  responseCount: 0,
+                  sentAt: Date()
             )
         }
     }

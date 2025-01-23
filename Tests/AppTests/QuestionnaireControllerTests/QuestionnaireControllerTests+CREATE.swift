@@ -13,15 +13,12 @@ import Vapor
 // MARK: - Create
 extension QuestionnaireControllerTests {
     func test_Create_Succeed() async throws {
-//        TODO: Remove response count and sentAt from input
         let client = try await  UserControllerTests().createExpectedUser(userType: .client, on: app.db)
         let clientID = try client.requireID()
         let adminID = try admin.requireID()
         let input = Questionnaire.Input(title: expectedTitle,
                                         fields: expectedFields,
                                         adminID: adminID,
-                                        sentAt: nil,
-                                        responseCount: 0,
                                         clientIDs: [clientID]
         )
         try await app.test(.POST, baseURL, beforeRequest: { req in
