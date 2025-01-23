@@ -34,7 +34,11 @@ struct QuestionnaireController: RouteCollection {
         let questionnaireID = try questionnaire.requireID()
         
         for clientID in input.clientIDs {
-            let recipientInput = QuestionnaireRecipient.Input(questionnaireID: questionnaireID, clientID: clientID, status: .sent, sentAt: Date())
+            let recipientInput = QuestionnaireRecipient.Input(questionnaireID: questionnaireID,
+                                                              clientID: clientID,
+                                                              status: .sent,
+                                                              sentAt: Date()
+            )
             let _ = try await QuestionnaireRecipientController().create(req: req, input: recipientInput)
         }
         
@@ -45,6 +49,14 @@ struct QuestionnaireController: RouteCollection {
     func getAll(req: Request) async throws -> [Questionnaire] {
         try Utils.checkRole(on: req, allowedRoles: [.admin])
         return try await Questionnaire.query(on: req.db).all()
+    }
+    
+    func get(req: Request, id: Questionnaire.IDValue) async throws -> Questionnaire {
+        guard let questionnaire = try await Questionnaire.find(id, on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.questionnaire")
+        }
+        
+        return questionnaire
     }
     
     // TODO: Add more routes

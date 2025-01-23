@@ -17,6 +17,7 @@ struct QuestionnaireRecipientController: RouteCollection {
         let tokenAuthGroup = questionnaireRecipients.grouped(tokenAuthMiddleware, guardAuthMiddleware)
         // Read
         tokenAuthGroup.get("all", use: getAll)
+        tokenAuthGroup.get("questionnaire", ":questionnaireRecipientID", use: getQuestionnaire)
         // Delete
         tokenAuthGroup.delete("all", use: removeAll)
     }
@@ -33,6 +34,18 @@ struct QuestionnaireRecipientController: RouteCollection {
     func getAll(req: Request) async throws -> [QuestionnaireRecipient] {
         try Utils.checkRole(on: req, allowedRoles: [.admin])
         return try await QuestionnaireRecipient.query(on: req.db).all()
+    }
+    
+    func getQuestionnaire(req: Request) async throws -> Questionnaire {
+        guard let questionnaireRecipient = try await QuestionnaireRecipient.find(req.parameters.get("questionnaireRecipientID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.questionnaireRecipient")
+        }
+        
+        questionnaireRecipient.status = .viewed
+        try await questionnaireRecipient.update(on: req.db)
+        
+        let questionnaire = try await QuestionnaireController().get(req: req, id: questionnaireRecipient.$questionnaire.id)
+        return questionnaire
     }
     
     // MARK: - Delete
