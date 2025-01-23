@@ -40,12 +40,8 @@ struct QuestionnaireRecipientMiddleware {
     }
     
     func validateFields(_ input: QuestionnaireRecipient.UpdateInput,
-                        with questionnaireID: Questionnaire.IDValue,
+                        with questionnaire: Questionnaire,
                         on database: Database) async throws {
-        guard let questionnaire = try await Questionnaire.find(questionnaireID, on: database) else {
-            throw Abort(.notFound, reason: "notFound.questionnaire")
-        }
-        
         guard questionnaire.fields.count == input.fields.count else {
             throw Abort(.badRequest, reason: "badRequest.missingFields")
         }

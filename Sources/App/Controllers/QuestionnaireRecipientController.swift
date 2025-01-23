@@ -67,14 +67,14 @@ struct QuestionnaireRecipientController: RouteCollection {
     func submitAnswer(req: Request) async throws -> QuestionnaireRecipient {
         let qrecipient = try await get(on: req)
         let input = try req.content.decode(QuestionnaireRecipient.UpdateInput.self)
-        try await QuestionnaireRecipientMiddleware().validateFields(input, with: qrecipient.$questionnaire.id, on: req.db)
+        let questionnaire = try await QuestionnaireController().get(req: req, id: qrecipient.$questionnaire.id)
+        try await QuestionnaireRecipientMiddleware().validateFields(input, with: questionnaire, on: req.db)
         
         qrecipient.submittedAt = Date()
         qrecipient.fields = input.fields
         qrecipient.status = .submitted
         try await qrecipient.update(on: req.db)
         
-        let questionnaire = try await QuestionnaireController().get(req: req, id: qrecipient.$questionnaire.id)
         questionnaire.responseCount += 1
         try await questionnaire.update(on: req.db)
         
