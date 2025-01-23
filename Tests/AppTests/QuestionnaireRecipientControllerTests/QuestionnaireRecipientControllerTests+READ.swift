@@ -12,13 +12,6 @@ import Fluent
 // MARK: - Get All
 extension QuestionnaireRecipientControllerTests {
     func test_GetAll_Succeed() async throws {
-        let adminID = try admin.requireID()
-        let questionnaire = try await QuestionnaireControllerTests().createExpectedQuestionnaire(adminID: adminID, on: app.db)
-        let qID = try questionnaire.requireID()
-        
-        let client = try await UserControllerTests().createExpectedUser(userType: .client, on: app.db)
-        let clientID = try client.requireID()
-        
         let _ = try await QuestionnaireRecipientControllerTests().createExpectedQRecipient(qID: qID,
                                                                                                     clientID: clientID,
                                                                                                     on: app.db)
@@ -38,13 +31,6 @@ extension QuestionnaireRecipientControllerTests {
     }
     
     func test_GetAll_WithUnauthorizedUser_Fails() async throws {
-        let adminID = try admin.requireID()
-        let questionnaire = try await QuestionnaireControllerTests().createExpectedQuestionnaire(adminID: adminID, on: app.db)
-        let qID = try questionnaire.requireID()
-        
-        let client = try await UserControllerTests().createExpectedUser(userType: .client, on: app.db)
-        let clientID = try client.requireID()
-        
         let _ = try await QuestionnaireRecipientControllerTests().createExpectedQRecipient(qID: qID,
                                                                                                     clientID: clientID,
                                                                                                     on: app.db)

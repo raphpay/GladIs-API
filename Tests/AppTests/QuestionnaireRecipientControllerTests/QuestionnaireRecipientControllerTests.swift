@@ -15,6 +15,11 @@ final class QuestionnaireRecipientControllerTests: XCTestCase {
     let baseURL = "api/questionnaires/recipients"
     var admin: User!
     var token: Token!
+    var adminID: User.IDValue!
+    var questionnaire: Questionnaire!
+    var qID: Questionnaire.IDValue!
+    var client: User!
+    var clientID: User.IDValue!
     
     override func setUp() async throws {
         try await super.setUp()
@@ -22,6 +27,11 @@ final class QuestionnaireRecipientControllerTests: XCTestCase {
         try! await configure(app)
         admin = try await UserControllerTests().createExpectedAdmin(on: app.db)
         token = try await Token.create(for: admin, on: app.db)
+        adminID = try admin.requireID()
+        questionnaire = try await QuestionnaireControllerTests().createExpectedQuestionnaire(adminID: adminID, on: app.db)
+        qID = try questionnaire.requireID()
+        client = try await UserControllerTests().createExpectedUser(userType: .client, on: app.db)
+        clientID = try client.requireID()
     }
     
     override func tearDown() async throws {
