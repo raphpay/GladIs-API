@@ -14,6 +14,13 @@ extension UserController {
         let userID = try await getUserID(on: req)
         let user = try await getUser(with: userID, on: req.db)
         try await user.delete(force: true, on: req.db)
+        
+        let questionnaireRecipients = user.questionnaireRecipients
+        for questionnaireRecipient in questionnaireRecipients {
+            let id = try questionnaireRecipient.requireID()
+            let _ = try await QuestionnaireRecipientController().remove(req: req, id: id)
+        }
+        
         return .noContent
     }
     

@@ -91,6 +91,9 @@ final class User: Model, Content {
     @Children(for: \.$user)
     var folders: [Folder]
     
+    @Children(for: \.$client)
+    var questionnaireRecipients: [QuestionnaireRecipient]
+    
     init() {}
     
     init(
