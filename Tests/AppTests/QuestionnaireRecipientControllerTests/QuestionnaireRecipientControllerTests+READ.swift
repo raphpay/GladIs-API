@@ -119,3 +119,24 @@ extension QuestionnaireRecipientControllerTests {
         })
     }
 }
+
+// MARK: - Get All For client
+extension QuestionnaireRecipientControllerTests {
+    func test_GetAllForClient_Succeed() async throws {
+        let _ = try await QuestionnaireRecipientControllerTests().createExpectedQRecipient(qID: qID, clientID: clientID, on: app.db)
+        let castedClientID = clientID as User.IDValue
+        
+        try await app.test(.GET, "\(baseURL)/all/for/client/\(castedClientID)", beforeRequest: { req in
+            req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
+        }, afterResponse: { res async in
+            // Then
+            XCTAssertEqual(res.status, .ok)
+            do {
+                let qRecipients = try res.content.decode([QuestionnaireRecipient].self)
+                XCTAssertEqual(qRecipients.count, 1)
+                XCTAssertEqual(qRecipients[0].$questionnaire.id, qID)
+                XCTAssertEqual(qRecipients[0].$client.id, clientID)
+            } catch {}
+        })
+    }
+}
