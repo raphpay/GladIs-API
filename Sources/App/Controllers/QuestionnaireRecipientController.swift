@@ -18,6 +18,7 @@ struct QuestionnaireRecipientController: RouteCollection {
         // Read
         tokenAuthGroup.get("all", use: getAll)
         tokenAuthGroup.get("questionnaire", ":qRecipientID", use: getQuestionnaire)
+        tokenAuthGroup.get("all", "for", "client", ":clientID", use: getAllForClient)
         // Update
         tokenAuthGroup.put("viewed", ":qRecipientID", use: markAsViewed)
         tokenAuthGroup.put("submit", ":qRecipientID", use: submitAnswer)
@@ -51,6 +52,16 @@ struct QuestionnaireRecipientController: RouteCollection {
         
         let questionnaire = try await QuestionnaireController().get(req: req, id: questionnaireRecipient.$questionnaire.id)
         return questionnaire
+    }
+    
+    func getAllForClient(req: Request) async throws -> [QuestionnaireRecipient] {
+        guard let clientID = req.parameters.get("clientID", as: User.IDValue.self) else {
+            throw Abort(.badRequest, reason: "badRequest.missingClientID")
+        }
+        
+        let qRecipients = try await QuestionnaireRecipient.query(on: req.db).filter(\.$client.$id == clientID).all()
+        
+        return qRecipients
     }
     
     // MARK: - Update
