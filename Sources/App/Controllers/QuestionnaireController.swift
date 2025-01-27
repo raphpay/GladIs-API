@@ -64,10 +64,25 @@ struct QuestionnaireController: RouteCollection {
     // MARK: - UPDATE
     func update(req: Request) async throws -> Questionnaire {
         let questionnaire = try await get(on: req)
+        let questionnaireID = try questionnaire.requireID()
         let input = try req.content.decode(Questionnaire.UpdateInput.self)
         
         let updatedQuestionnaire = input.update(questionnaire: questionnaire)
         try await updatedQuestionnaire.update(on: req.db)
+        
+        // Remove old qRecipients
+        let qRecipients = try await QuestionnaireRecipient.query(on: req.db).filter(\.$questionnaire.$id == questionnaireID).all()
+        try await qRecipients.delete(force: true, on: req.db)
+        
+        // Create new qRecipients
+        for clientID in input.clientIDs {
+            let recipientInput = QuestionnaireRecipient.Input(questionnaireID: questionnaireID,
+                                                              clientID: clientID,
+                                                              status: .sent,
+                                                              sentAt: Date()
+            )
+            let _ = try await QuestionnaireRecipientController().create(req: req, input: recipientInput)
+        }
         
         return updatedQuestionnaire
     }
