@@ -101,7 +101,11 @@ struct QuestionnaireController: RouteCollection {
     func remove(req: Request) async throws -> HTTPResponseStatus {
         try Utils.checkRole(on: req, allowedRoles: [.admin])
         let questionnaire = try await get(on: req)
+        let questionnaireID = try questionnaire.requireID()
         try await questionnaire.delete(force: true, on: req.db)
+
+        let qRecipients = try await QuestionnaireRecipient.query(on: req.db).filter(\.$questionnaire.$id == questionnaireID).all()
+        try await qRecipients.delete(force: true, on: req.db)
         
         return .noContent
     }
