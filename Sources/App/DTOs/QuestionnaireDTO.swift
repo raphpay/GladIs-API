@@ -33,6 +33,7 @@ extension Questionnaire {
     struct UpdateInput: Content {
         let title: String?
         let fields: [QField]?
+        let clientIDs: [User.IDValue]
         
         func update(questionnaire: Questionnaire) -> Questionnaire {
             let updatedQuestionnaire = questionnaire
