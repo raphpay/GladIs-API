@@ -71,6 +71,7 @@ extension User {
         let phoneNumber: String?
         let email: String?
         let shouldUpdateUsername: Bool?
+        let companyName: String?
 
         func update(_ user: User, on req: Request) async throws -> User {
             let updatedUser = user
@@ -92,6 +93,10 @@ extension User {
             if let value = shouldUpdateUsername, value == true {
                 let username = try await User.generateUniqueUsername(firstName: updatedUser.firstName, lastName: updatedUser.lastName, on: req)
                 updatedUser.username = username
+            }
+
+            if let companyName = companyName {
+                updatedUser.companyName = companyName
             }
             
             return updatedUser

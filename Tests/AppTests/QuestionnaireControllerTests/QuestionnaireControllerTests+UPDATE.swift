@@ -20,7 +20,7 @@ extension QuestionnaireControllerTests {
         let newFields = [Questionnaire.QField(key: "new key 1", index: 1)]
         
         let updateInput = Questionnaire.UpdateInput(title: newTitle,
-                                                    fields: newFields)
+                                                    fields: newFields, clientIDs: [])
         
         try await app.test(.PUT, "\(baseURL)/\(qID)", beforeRequest: { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
@@ -40,7 +40,7 @@ extension QuestionnaireControllerTests {
         let newFields = [Questionnaire.QField(key: "new key 1", index: 1)]
         
         let updateInput = Questionnaire.UpdateInput(title: newTitle,
-                                                    fields: newFields)
+                                                    fields: newFields, clientIDs: [])
         
         try await app.test(.PUT, "\(baseURL)/\(UUID())", beforeRequest: { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
