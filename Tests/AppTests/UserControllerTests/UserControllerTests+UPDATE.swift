@@ -269,7 +269,14 @@ extension UserControllerTests {
         let newPhoneNumber = "0609876554"
         let newEmail = "newEmail@test.com"
         let shouldUpdateUsername = false
-        let input = User.UpdateInput(firstName: newFirstName, lastName: newLastName, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: shouldUpdateUsername)
+        let newCompanyName = "Apple"
+        let input = User.UpdateInput(firstName: newFirstName,
+                                     lastName: newLastName,
+                                     phoneNumber: newPhoneNumber,
+                                     email: newEmail,
+                                     shouldUpdateUsername: shouldUpdateUsername,
+                                     companyName: newCompanyName
+        )
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/updateInfos"
@@ -284,6 +291,7 @@ extension UserControllerTests {
             XCTAssertEqual(updatedUser.lastName, newLastName)
             XCTAssertEqual(updatedUser.phoneNumber, newPhoneNumber)
             XCTAssertEqual(updatedUser.email, newEmail)
+            XCTAssertEqual(updatedUser.companyName, newCompanyName)
         }
     }
     
@@ -291,7 +299,13 @@ extension UserControllerTests {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let newPhoneNumber = "0609876554"
         let newEmail = "newEmail@test.com"
-        let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
+        let input = User.UpdateInput(firstName: nil,
+                                     lastName: nil,
+                                     phoneNumber: newPhoneNumber,
+                                     email: newEmail,
+                                     shouldUpdateUsername: nil,
+                                     companyName: nil
+        )
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/updateInfos"
@@ -315,7 +329,13 @@ extension UserControllerTests {
         let newEmail = "newEmail@test.com"
         let shouldUpdateUsername = true
         let expectedUpdatedUsername = "newfirstname.newlastname"
-        let input = User.UpdateInput(firstName: newFirstName, lastName: newLastName, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: shouldUpdateUsername)
+        let input = User.UpdateInput(firstName: newFirstName,
+                                     lastName: newLastName,
+                                     phoneNumber: newPhoneNumber,
+                                     email: newEmail,
+                                     shouldUpdateUsername: shouldUpdateUsername,
+                                     companyName: nil
+        )
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/updateInfos"
@@ -338,7 +358,13 @@ extension UserControllerTests {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let newPhoneNumber = "09"
         let newEmail = "newEmail@test.com"
-        let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
+        let input = User.UpdateInput(firstName: nil,
+                                     lastName: nil,
+                                     phoneNumber: newPhoneNumber,
+                                     email: newEmail,
+                                     shouldUpdateUsername: nil,
+                                     companyName: nil
+        )
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/updateInfos"
@@ -355,7 +381,13 @@ extension UserControllerTests {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let newPhoneNumber = "0612345678"
         let newEmail = "newEmail"
-        let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
+        let input = User.UpdateInput(firstName: nil,
+                                     lastName: nil,
+                                     phoneNumber: newPhoneNumber,
+                                     email: newEmail,
+                                     shouldUpdateUsername: nil,
+                                     companyName: nil
+        )
         
         let userID = try user.requireID()
         let path = "\(baseRoute)/\(userID)/updateInfos"
@@ -372,7 +404,11 @@ extension UserControllerTests {
         let newPhoneNumber = "0612345678"
         let newEmail = "newEmail@test.com"
         let falseUserID = UUID()
-        let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
+        let input = User.UpdateInput(firstName: nil, lastName: nil,
+                                     phoneNumber: newPhoneNumber, email: newEmail,
+                                     shouldUpdateUsername: nil,
+                                     companyName: nil
+        )
         
         let path = "\(baseRoute)/\(falseUserID)/updateInfos"
         try app.test(.PUT, path) { req in
@@ -385,10 +421,12 @@ extension UserControllerTests {
     }
     
     func testUpdateUserInfosWithIncorrectIDFails() async throws {
-        let user = try await User.create(username: expectedUsername, on: app.db)
+        let _ = try await User.create(username: expectedUsername, on: app.db)
         let newPhoneNumber = "0612345678"
         let newEmail = "newEmail@test.com"
-        let input = User.UpdateInput(firstName: nil, lastName: nil, phoneNumber: newPhoneNumber, email: newEmail, shouldUpdateUsername: nil)
+        let input = User.UpdateInput(firstName: nil, lastName: nil,
+                                     phoneNumber: newPhoneNumber, email: newEmail,
+                                     shouldUpdateUsername: nil, companyName: nil)
         
         let path = "\(baseRoute)/12345/updateInfos"
         try app.test(.PUT, path) { req in
@@ -403,8 +441,9 @@ extension UserControllerTests {
     func testUpdateUserWithoutMailSucceed() async throws {
         let user = try await User.create(username: expectedUsername, on: app.db)
         let userID = try user.requireID()
-        let input = User.UpdateInput(firstName: "new", lastName: nil, phoneNumber: nil, email: nil,
-                                     shouldUpdateUsername: true)
+        let input = User.UpdateInput(firstName: "new", lastName: nil,
+                                     phoneNumber: nil, email: nil,
+                                     shouldUpdateUsername: true, companyName: nil)
         
         try await app.test(.PUT, "\(baseRoute)/\(userID)/updateInfos") { req in
             req.headers.bearerAuthorization = BearerAuthorization(token: token.value)
