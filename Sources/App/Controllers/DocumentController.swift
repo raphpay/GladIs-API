@@ -28,6 +28,7 @@ struct DocumentController: RouteCollection {
         tokenAuthGroup.post("paginated", "path", use: getPaginatedDocumentsAtPath)
         // Update
         tokenAuthGroup.put(":documentID", use: changeDocumentStatus)
+        tokenAuthGroup.put(":documentID", "path", use: updatePath)
         // Delete
         tokenAuthGroup.delete(":documentID", use: remove)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -153,11 +154,7 @@ struct DocumentController: RouteCollection {
     }
     
     func getDocument(req: Request) async throws -> Document {
-        guard let document = try await Document.find(req.parameters.get("documentID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.document")
-        }
-        
-        return document
+        try await get(on: req)
     }
     
     func dowloadDocument(req: Request) async throws -> Response {
@@ -174,13 +171,53 @@ struct DocumentController: RouteCollection {
     // MARK: - Update
     func changeDocumentStatus(req: Request) async throws -> Document {
         let input = try req.content.decode(Document.StatusInput.self)
-        guard let document = try await Document.find(req.parameters.get("documentID"), on: req.db) else {
-            throw Abort(.notFound, reason: "notFound.document")
-        }
+        let document = try await get(on: req)
         
         document.status = input.status
         try await document.update(on: req.db)
         
+        return document
+    }
+    
+    let logger = Logger(label: "documentController")
+    
+    func updatePath(req: Request) async throws -> Document {
+        try Utils.checkRole(on: req, allowedRoles: [.admin])
+        let input = try req.content.decode(Document.PathInput.self)
+        let document = try await get(on: req)
+    
+        let inputPath = try await DocumentMiddleware().validate(input, for: document, on: req.db)
+        
+        // FileManager Logic
+        let fileManager = FileManager.default
+        
+        let currentFilePath = req.application.directory.resourcesDirectory + document.path + document.name
+        let newFilePath = req.application.directory.resourcesDirectory + inputPath + document.name
+        
+        // Ensure the current file exists
+        guard fileManager.fileExists(atPath: currentFilePath) else {
+            throw Abort(.notFound, reason: "The original file does not exist.")
+        }
+        
+        // Ensure the destination directory exists, create if not
+        let newDirectory = (newFilePath as NSString).deletingLastPathComponent
+        if !fileManager.fileExists(atPath: newDirectory) {
+            try fileManager.createDirectory(atPath: newDirectory, withIntermediateDirectories: true, attributes: nil)
+        }
+        
+        // Move the file
+        do {
+            try fileManager.moveItem(atPath: currentFilePath, toPath: newFilePath)
+            deleteEmptyDirectory(at: currentFilePath, on: req)
+        } catch {
+            throw Abort(.internalServerError, reason: "Failed to move the file: \(error.localizedDescription)")
+        }
+        
+        // Update the document's path in the database
+        document.path = inputPath
+        try await document.update(on: req.db)
+        
+        //  Return the updated document
         return document
     }
     
@@ -204,6 +241,15 @@ struct DocumentController: RouteCollection {
 
 // MARK: - Utils
 extension DocumentController {
+    // MARK: - Read
+    func get(on req: Request) async throws -> Document {
+        guard let document = try await Document.find(req.parameters.get("documentID"), on: req.db) else {
+            throw Abort(.notFound, reason: "notFound.document")
+        }
+        
+        return document
+    }
+    
     // MARK: - Upload
     func uploadFile(input: Document.FormDataInput, uploadDirectory: String, on req: Request) async throws -> Document {
         guard req.headers.contentType == .formData else {
@@ -261,6 +307,15 @@ extension DocumentController {
         }
         
         // Delete empty directories
+        deleteEmptyDirectory(at: filePath, on: req)
+        
+        try await document.delete(force: true, on: req.db)
+        
+        return .noContent
+    }
+    
+    func deleteEmptyDirectory(at filePath: String, on req: Request) {
+        let baseDirectory = req.application.directory.resourcesDirectory
         var currentPath = (filePath as NSString).deletingLastPathComponent
         while currentPath.hasPrefix(baseDirectory) && currentPath != baseDirectory {
             do {
@@ -276,9 +331,5 @@ extension DocumentController {
             }
             currentPath = (currentPath as NSString).deletingLastPathComponent
         }
-        
-        try await document.delete(force: true, on: req.db)
-        
-        return .noContent
     }
 }

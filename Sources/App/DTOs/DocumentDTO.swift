@@ -39,4 +39,8 @@ extension Document {
         let name: String
         let path: String
     }
+    
+    struct PathInput: Content {
+        let path: String
+    }
 }
