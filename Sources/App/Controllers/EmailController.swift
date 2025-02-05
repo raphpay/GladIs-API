@@ -16,7 +16,6 @@ struct EmailController: RouteCollection {
         emails.post(use: sendEmail)
     }
     
-    let logger = Logger(label: "email")
     @Sendable
     func sendEmail(req: Request) async throws -> String {
         let input = try req.content.decode(Email.Input.self)
@@ -62,7 +61,7 @@ struct EmailController: RouteCollection {
          let sendGridClient = SendGridClient(httpClient: httpClient, apiKey: sendGridApiKey)
         
          do {
-             try await sendGridClient.send(email: email)
+            try await sendGridClient.send(email: email)
          } catch {
              try await httpClient.shutdown()
              throw Abort(.internalServerError, reason: error.localizedDescription)
