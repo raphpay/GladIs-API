@@ -55,6 +55,7 @@ struct EmailController: RouteCollection {
          let httpClient = HTTPClient()
          
          guard let sendGridApiKey = Environment.get("SEND_GRID_API_KEY") else {
+             try await httpClient.shutdown()
              throw Abort(.internalServerError, reason: "internalServerError.missingEnvironmentVariable")
          }
          
