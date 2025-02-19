@@ -45,27 +45,4 @@ final class PotentialEmployee: Model, Content {
         self.email = email
         self.$pendingUser.id = pendingUserID
     }
-    
-    struct Input: Content {
-        var id: UUID?
-        let firstName: String
-        let lastName: String
-        let companyName: String
-        let phoneNumber: String
-        let email: String
-        let pendingUserID: PendingUser.IDValue
-    }
-}
-
-extension PotentialEmployee {
-    enum v20240207 {
-        static let schemaName = "potentialEmployees"
-        static let id = FieldKey(stringLiteral: "id")
-        static let firstName = FieldKey(stringLiteral: "firstName")
-        static let lastName = FieldKey(stringLiteral: "lastName")
-        static let companyName = FieldKey(stringLiteral: "companyName")
-        static let phoneNumber = FieldKey(stringLiteral: "phoneNumber")
-        static let email = FieldKey(stringLiteral: "email")
-        static let pendingUserID = FieldKey(stringLiteral: "pendingUserID")
-    }
 }

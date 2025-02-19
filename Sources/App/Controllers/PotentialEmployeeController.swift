@@ -42,10 +42,12 @@ struct PotentialEmployeeController: RouteCollection {
         guard let potentialEmployee = try await PotentialEmployee.find(req.parameters.get("employeeID"), on: req.db) else {
             throw Abort(.notFound, reason: "notFound.employee")
         }
+
+        let input = try req.content.decode(PotentialEmployee.ConvertInput.self)
         
         let newEmployee = potentialEmployee.convertToEmployee()
         
-        let givenPassword = "Passwordlong1("
+        let givenPassword = input.password;
         do {
             try PasswordValidation().validatePassword(givenPassword)
         } catch {
