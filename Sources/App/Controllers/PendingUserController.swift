@@ -67,6 +67,7 @@ struct PendingUserController: RouteCollection {
     
     func convertToUser(req: Request) async throws -> User.Public {
         let user = try req.auth.require(User.self)
+        let input = try req.content.decode(PendingUser.ConvertInput.self)
         
         guard user.userType == .admin else {
             throw Abort(.forbidden, reason: "forbidden.userShouldBeAdmin")
@@ -78,7 +79,7 @@ struct PendingUserController: RouteCollection {
         
         let newUser = pendingUser.convertToUser()
         let username = try await User.generateUniqueUsername(firstName: newUser.firstName, lastName: newUser.lastName, on: req)
-        let givenPassword = "Passwordlong1("
+        let givenPassword = input.password
         do {
             try PasswordValidation().validatePassword(givenPassword)
         } catch {
