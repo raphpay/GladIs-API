@@ -54,7 +54,7 @@ extension Validator where T == String {
     
     static var customContentLength: Validator<T> {
         .init { input in
-            guard input.count <= 60 else {
+            guard input.count <= 300 else {
                 return ValidatorResults.CustomTitleLength(isValid: false)
             }
             
