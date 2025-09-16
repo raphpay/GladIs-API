@@ -50,15 +50,6 @@ final class Message: Model, Content {
         self.$receiver.id = receiverID
         self.receiverMail = receiverMail
     }
-    
-    struct Input: Content {
-        let title: String
-        let content: String
-        let senderID: User.IDValue
-        let senderMail: String
-        let receiverID: User.IDValue
-        let receiverMail: String
-    }
 }
 
 extension Message {

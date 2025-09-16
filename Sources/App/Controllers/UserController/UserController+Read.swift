@@ -178,6 +178,39 @@ extension UserController {
         return sortedMessages
     }
 
+	func getPaginatedUserMessages(req: Request) async throws -> [Message] {
+		// Read query params safely, with defaults
+		let page = (try? req.query.get(Int.self, at: "page")) ?? 1
+		let perPage = (try? req.query.get(Int.self, at: "perPage")) ?? 20
+		let startIndex = max((page - 1) * perPage, 0)
+		let endIndex = startIndex + perPage
+
+		// Get sent & received messages
+		let sentMessages = try await getSentMessages(req: req)
+		let receivedMessages = try await getReceivedMessages(req: req)
+
+		// Merge & deduplicate
+		let overallMessages = sentMessages + receivedMessages
+		var seenIds = Set<UUID>()
+		let uniqueMessages = overallMessages.filter { message in
+			guard let id = message.id, !seenIds.contains(id) else { return false }
+			seenIds.insert(id)
+			return true
+		}
+
+		// Sort by date
+		let sortedMessages = uniqueMessages.sorted(by: { $0.dateSent < $1.dateSent })
+
+		// Apply pagination safely
+		guard startIndex < sortedMessages.count else {
+			return [] // No results for this page
+		}
+
+		let paginatedMessages = Array(sortedMessages[startIndex..<min(endIndex, sortedMessages.count)])
+
+		return paginatedMessages
+	}
+
     func getUserLoginTryOutput(req: Request) async throws -> User.LoginTryOutput {
         let username = try req.content.decode(User.UsernameInput.self).username
 

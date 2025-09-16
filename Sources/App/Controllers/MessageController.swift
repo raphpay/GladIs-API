@@ -19,6 +19,8 @@ struct MessageController: RouteCollection {
         tokenAuthGroup.post(use: create)
         // Read
         tokenAuthGroup.get(use: getAll)
+		tokenAuthGroup.get(":clientId", "paginate", use: getPaginatedMessages)
+		tokenAuthGroup.get("paginate", use: getPaginatedMessages)
         // Delete
         tokenAuthGroup.delete(":messageID", use: delete)
         tokenAuthGroup.delete("all", use: removeAll)
@@ -47,7 +49,29 @@ struct MessageController: RouteCollection {
     func getAll(req: Request) async throws -> [Message] {
         try await Message.query(on: req.db).all()
     }
-    
+
+	func getPaginatedMessages(req: Request) async throws -> Message.PaginatedOutput {
+		// Read query params with defaults
+		let page = max((try? req.query.get(Int.self, at: "page")) ?? 1, 1)
+		var perPage = (try? req.query.get(Int.self, at: "perPage")) ?? 20
+
+		// Clamp perPage to avoid overload
+		let maxPerPage = 100
+		if perPage < 1 { perPage = 20 } // fallback if < 1
+		if perPage > maxPerPage { perPage = maxPerPage }
+
+		// Perform database query with Fluent pagination
+		let paginatedResult = try await Message.query(on: req.db)
+			.sort(\.$dateSent, .descending)
+			.paginate(PageRequest(page: page, per: perPage))
+
+		// Wrap result in your custom PaginatedOutput
+		return Message.PaginatedOutput(
+			messages: paginatedResult.items,
+			pageCount: paginatedResult.metadata.pageCount
+		)
+	}
+
     // MARK: - Delete
     func delete(req: Request) async throws -> HTTPResponseStatus {
         let authUser = try req.auth.require(User.self)
