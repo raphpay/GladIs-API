@@ -39,6 +39,7 @@ struct UserController: RouteCollection {
         tokenAuthGroup.get(":userID", "messages", "all", use: getUserMessages)
         tokenAuthGroup.get(":userID", "messages", "received", use: getReceivedMessages)
         tokenAuthGroup.get(":userID", "messages", "sent", use: getSentMessages)
+		tokenAuthGroup.get(":userID", "messages", "all", "paginated", use: getPaginatedUserMessages)
         tokenAuthGroup.get(":userID", "folders", "systemQuality", use: getSystemQualityFolders)
         // Update
         tokenAuthGroup.put(":userID", "setFirstConnectionToFalse", use: setUserFirstConnectionToFalse)
