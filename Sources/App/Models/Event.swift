@@ -20,6 +20,12 @@ final class Event: Model, Content {
     @Field(key: Event.v20240207.date)
     var date: Double
 
+	@OptionalField(key: Event.v20250910.startTime)
+	var startTime: String?  // HH:mm format (or ISO8601 string if you prefer)
+
+	@OptionalField(key: Event.v20250910.endTime)
+	var endTime: String?
+
     @Timestamp(key: Event.v20240207.deletedAt, on: .delete)
     var deletedAt: Date?
 
@@ -28,29 +34,18 @@ final class Event: Model, Content {
 
     init() {}
 
-    init(id: UUID? = nil, name: String, date: Double, clientID: User.IDValue) {
+    init(id: UUID? = nil,
+		 name: String,
+		 date: Double,
+		 clientID: User.IDValue,
+		 startTime: String? = nil,
+		 endTime: String? = nil
+	) {
         self.id = id
         self.name = name
         self.date = date
         self.$client.id = clientID
-    }
-    
-    struct Input: Content {
-        var id: UUID?
-        let name: String
-        let date: Double
-        let clientID: User.IDValue
+		self.startTime = startTime
+		self.endTime = endTime
     }
 }
-
-extension Event {
-    enum v20240207 {
-        static let schemaName = "events"
-        static let id = FieldKey(stringLiteral: "id")
-        static let name = FieldKey(stringLiteral: "name")
-        static let deletedAt = FieldKey(stringLiteral: "deleted_at")
-        static let clientID = FieldKey(stringLiteral: "clientID")
-        static let date = FieldKey(stringLiteral: "date")
-    }
-}
-

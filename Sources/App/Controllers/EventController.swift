@@ -50,8 +50,13 @@ struct EventController: RouteCollection {
         }
         
         let input = try req.content.decode(Event.Input.self)
-        let event = Event(name: input.name, date: input.date, clientID: input.clientID)
-        
+        let event = Event(name: input.name,
+						  date: input.date,
+						  clientID: input.clientID,
+						  startTime: input.startTime,
+						  endTime: input.endTime
+		)
+
         try await event.save(on: req.db)
         
         return event 

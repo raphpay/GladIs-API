@@ -39,7 +39,9 @@ public func configure(_ app: Application) async throws {
     // 22/01/2025
     app.migrations.add(CreateQuestionnaire())
     app.migrations.add(CreateQuestionnaireRecipient())
-    
+	// 10/09/2025
+	app.migrations.add(AddStartTimeAndEndTimeToEvent())
+
     switch app.environment {
         case .development:
             app.databases.middleware.use(UserMiddleware(), on: .mongo)
